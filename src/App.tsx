@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, ErrorInfo } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
@@ -14,7 +14,77 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Messages from './pages/Messages';
-import { Home, Users, User } from 'lucide-react';
+import { Home, Users, User, RefreshCcw, AlertTriangle } from 'lucide-react';
+
+// Error boundary component to catch rendering errors
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode, fallback: React.ReactNode },
+  { hasError: boolean, error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode, fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Error caught by ErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+
+    return this.props.children;
+  }
+}
+
+// Fallback UI when errors occur
+const ErrorFallback = () => {
+  const handleReset = () => {
+    // Clear all storage and reload
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/';
+  };
+
+  const handleDebug = () => {
+    window.location.href = '/debug.html';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full text-white">
+        <div className="flex items-center justify-center mb-4 text-red-500">
+          <AlertTriangle size={40} />
+        </div>
+        <h2 className="text-xl font-bold text-center mb-4">Something went wrong</h2>
+        <p className="mb-6 text-gray-300 text-center">
+          We encountered an error while loading the application. This might be due to
+          authentication issues or cached data problems.
+        </p>
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={handleReset}
+            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center justify-center"
+          >
+            <RefreshCcw size={18} className="mr-2" /> Reset App & Reload
+          </button>
+          <button
+            onClick={handleDebug}
+            className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg"
+          >
+            Open Debug Page
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function AppContent() {
   const { isAuthenticated, user } = useAuth();
@@ -276,6 +346,50 @@ function AppContent() {
   );
 }
 
+// Safe app loader with retry mechanism
+const SafeAppLoader = () => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if we're coming from a reload after error
+    const hasReloadFlag = localStorage.getItem('appReloadAttempt');
+    
+    if (hasReloadFlag) {
+      const attemptCount = parseInt(hasReloadFlag) || 0;
+      
+      // If we've tried too many times, clear storage
+      if (attemptCount >= 2) {
+        console.log('Too many reload attempts, clearing storage');
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('appReloadAttempt', '0');
+      } else {
+        // Increment the reload counter
+        localStorage.setItem('appReloadAttempt', (attemptCount + 1).toString());
+      }
+    } else {
+      // First load, set counter to 0
+      localStorage.setItem('appReloadAttempt', '0');
+    }
+    
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary fallback={<ErrorFallback />}>
+      <AppContent />
+    </ErrorBoundary>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -283,7 +397,7 @@ function App() {
         <PostProvider>
           <NotificationsProvider>
             <ThemeProvider>
-              <AppContent />
+              <SafeAppLoader />
               <InstallPrompt />
               <Toaster 
                 position="top-right"
