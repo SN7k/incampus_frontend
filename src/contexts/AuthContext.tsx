@@ -685,6 +685,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const verifyOTPAndRegister = async (data: SignupData & { otp: string }) => {
     updateState({ loading: true, error: null });
     
+    // Create a promise that will reject after a timeout to prevent infinite processing
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Verification timed out. Please try again.')), 15000);
+    });
+    
     try {
       console.log('Verifying OTP and registering user:', { ...data, password: '[REDACTED]' });
       console.log('OTP data from store:', { otp: data.otp, expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
@@ -693,6 +698,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!/^\d{6}$/.test(data.otp)) {
         throw new Error('Invalid OTP format. Please enter a 6-digit code.');
       }
+      
+      // Clear any existing problematic state
+      localStorage.removeItem('fromProfileSetup');
+      localStorage.removeItem('authStateBackup');
       
       // For development mode, bypass actual API call and simulate success
       if (import.meta.env.DEV && data.otp === DEV_OTP && localStorage.getItem('useRealApi') !== 'true') {
@@ -760,7 +769,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Create an AbortController to handle timeouts
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
       // Clear any existing tokens and auth state before verification
       // This helps prevent state inconsistencies
@@ -768,23 +777,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('authToken');
       localStorage.removeItem('userToken');
       localStorage.removeItem('fromProfileSetup');
+      localStorage.removeItem('appReloadAttempt');
       
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        mode: 'cors', // Explicitly set CORS mode
-        signal: controller.signal,
-        body: JSON.stringify(data)
-      }).catch(error => {
-        console.error('Network error during OTP verification:', error);
-        if (error.name === 'AbortError') {
-          throw new Error('Request timed out. Please check your internet connection and try again.');
-        }
-        throw new Error('Network error. Please check your internet connection and try again.');
-      });
+      // Use Promise.race to ensure we don't hang indefinitely
+      const response = await Promise.race([
+        fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          mode: 'cors', // Explicitly set CORS mode
+          signal: controller.signal,
+          body: JSON.stringify(data)
+        }).catch(error => {
+          console.error('Network error during OTP verification:', error);
+          if (error.name === 'AbortError') {
+            throw new Error('Request timed out. Please check your internet connection and try again.');
+          }
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }),
+        timeoutPromise
+      ]);
       
       // Clear the timeout
       clearTimeout(timeoutId);
@@ -897,6 +911,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Ensure token is accessible in standard location
         localStorage.setItem('token', token);
+        
+        // Set a flag to indicate successful OTP verification
+        localStorage.setItem('otpVerified', 'true');
+        localStorage.setItem('otpVerifiedTimestamp', Date.now().toString());
         
         console.log('Authentication data stored successfully');
       } catch (e) {

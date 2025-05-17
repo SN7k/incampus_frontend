@@ -120,26 +120,27 @@ const SignupFormNew: React.FC<SignupFormProps> = ({ onToggleForm }) => {
     console.log('Verifying OTP');
     setFormError('');
     
-    // Basic validation - only OTP is required at this stage
-    if (!otp) {
-      setFormError('Please enter the verification code');
-      console.log('Validation failed: Verification code is required');
-      return;
-    }
-    
-    // OTP validation
-    const otpPattern = /^\d{6}$/;
-    if (!otpPattern.test(otp)) {
-      setFormError('Invalid verification code. Please enter a 6-digit code.');
-      return;
-    }
-    
-    // Clear any existing auth state before verification
-    localStorage.removeItem('token');
-    localStorage.removeItem('authState');
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('profileSetupComplete');
-    localStorage.removeItem('setupComplete');
+    try {
+      // Basic validation - only OTP is required at this stage
+      if (!otp) {
+        setFormError('Please enter the verification code');
+        console.log('Validation failed: Verification code is required');
+        return;
+      }
+      
+      // OTP validation
+      const otpPattern = /^\d{6}$/;
+      if (!otpPattern.test(otp)) {
+        setFormError('Invalid verification code. Please enter a 6-digit code.');
+        return;
+      }
+      
+      // Clear any existing auth state before verification
+      localStorage.removeItem('token');
+      localStorage.removeItem('authState');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('profileSetupComplete');
+      localStorage.removeItem('setupComplete');
     
     // Generate a random secure password since we're not asking the user for one
     const generatedPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).toUpperCase().slice(-2) + Math.random().toString(10).slice(-2);
@@ -158,7 +159,7 @@ const SignupFormNew: React.FC<SignupFormProps> = ({ onToggleForm }) => {
     
     console.log('Attempting to verify OTP and register:', signupData);
     
-    try {
+      // Attempt to verify OTP with a controlled promise
       await verifyOTPAndRegister(signupData);
       console.log('Registration successful');
       
@@ -185,17 +186,29 @@ const SignupFormNew: React.FC<SignupFormProps> = ({ onToggleForm }) => {
   const handleProfileSetupComplete = () => {
     console.log('Profile setup completed, redirecting to main app');
     
-    // Instead of toggling back to login form, redirect directly to the app
-    // This prevents the authentication loss that can happen during form toggle
-    setShowProfileSetup(false);
-    
-    // Make sure all auth flags are set
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('profileSetupComplete', 'true');
-    localStorage.setItem('setupComplete', 'true');
-    
-    // Clean reload without URL parameters to prevent white screen issues
-    window.location.href = window.location.origin;
+    try {
+      // Instead of toggling back to login form, redirect directly to the app
+      // This prevents the authentication loss that can happen during form toggle
+      setShowProfileSetup(false);
+      
+      // Make sure all auth flags are set
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('profileSetupComplete', 'true');
+      localStorage.setItem('setupComplete', 'true');
+      
+      // Set a flag to indicate we're doing a clean reload
+      localStorage.setItem('cleanReload', 'true');
+      
+      // Use a timeout to ensure state is saved before reload
+      setTimeout(() => {
+        // Clean reload without URL parameters to prevent white screen issues
+        window.location.href = window.location.origin;
+      }, 100);
+    } catch (error) {
+      console.error('Error during profile setup completion:', error);
+      // Fallback to direct navigation if there's an error
+      window.location.href = window.location.origin;
+    }
   };
   
   // Render profile setup, OTP verification form, or initial signup form
