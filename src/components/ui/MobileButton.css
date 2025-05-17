@@ -1,0 +1,13 @@
+/* Mobile button styles to match Navbar profile image */
+@layer components {
+  .mobile-button {
+    @apply rounded-full;
+  }
+
+  /* Apply these styles only on medium screens and above */
+  @media (min-width: 768px) {
+    .mobile-button {
+      @apply border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all;
+    }
+  }
+}

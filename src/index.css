@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@import './components/ui/MobileButton.css';
+
+/* Global dark mode styles */
+html.dark {
+  background-color: #111827; /* bg-gray-900 */
+}
+
+body {
+  min-height: 100vh;
+}
+
+html.dark body {
+  background-color: #111827; /* bg-gray-900 */
+  color: #f3f4f6; /* text-gray-100 */
+}
