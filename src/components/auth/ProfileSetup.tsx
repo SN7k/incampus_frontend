@@ -177,18 +177,16 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
       // 6. Manually trigger onComplete first to ensure the parent component is notified
       onComplete();
       
-      // 7. Use a longer delay to ensure all state updates are processed
+      // 7. Use a simpler approach to ensure all state updates are processed
       setTimeout(() => {
-        console.log('Profile setup completed successfully, forcing page reload');
+        console.log('Profile setup completed successfully');
         
-        // CRITICAL: Double-check all authentication data before reload
+        // CRITICAL: Double-check all authentication data before proceeding
         const token = localStorage.getItem('token') || localStorage.getItem('authToken');
         if (!token) {
-          console.error('No token found before reload, generating a new one');
+          console.error('No token found, generating a new one');
           const newToken = 'auth-token-' + Date.now();
           localStorage.setItem('token', newToken);
-          localStorage.setItem('authToken', newToken);
-          localStorage.setItem('userToken', newToken);
         }
         
         // Ensure all auth flags are set
@@ -197,19 +195,16 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
         localStorage.setItem('setupComplete', 'true');
         localStorage.setItem('currentPage', 'feed');
         
-        // Create a special flag to indicate we're coming from profile setup
-        localStorage.setItem('fromProfileSetup', 'true');
+        // Remove any URL parameters that might cause issues
+        if (window.location.search) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
         localStorage.setItem('lastAuthAction', 'profileSetup');
         localStorage.setItem('authTimestamp', Date.now().toString());
         
-        // CRITICAL FIX: Force the page to reload completely to reset all state
-        // This is the most reliable way to ensure authentication persists
-        // Add multiple auth parameters to the URL for redundancy
-        window.location.href = window.location.origin + 
-          '?auth=' + Date.now() + 
-          '&token=' + encodeURIComponent(token || '') + 
-          '&setup=complete' +
-          '&page=feed';
+        // CRITICAL FIX: Instead of forcing a reload with URL parameters,
+        // just notify the parent component that setup is complete
+        onComplete();
       }, 1000);
     
     } catch (error) {

@@ -689,6 +689,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('Verifying OTP and registering user:', { ...data, password: '[REDACTED]' });
       console.log('OTP data from store:', { otp: data.otp, expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
       
+      // Validate OTP format before proceeding
+      if (!/^\d{6}$/.test(data.otp)) {
+        throw new Error('Invalid OTP format. Please enter a 6-digit code.');
+      }
+      
       // For development mode, bypass actual API call and simulate success
       if (import.meta.env.DEV && data.otp === DEV_OTP && localStorage.getItem('useRealApi') !== 'true') {
         console.log('Development mode: Bypassing OTP verification API call');
@@ -757,6 +762,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
+      // Clear any existing tokens and auth state before verification
+      // This helps prevent state inconsistencies
+      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('fromProfileSetup');
+      
       const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: {
@@ -795,6 +807,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Handle error responses
       if (!response.ok) {
         console.error(`Verification error: Status ${response.status}:`, responseData);
+        // Clear any partial authentication state
+        localStorage.removeItem('token');
+        localStorage.removeItem('authState');
+        localStorage.removeItem('isAuthenticated');
         throw new Error(responseData.error || `Verification failed with status ${response.status}`);
       }
       
@@ -869,11 +885,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         timestamp: Date.now()
       };
       
-      // Store only the essential data
+      // Store data using tokenManager for consistency
       try {
-        localStorage.setItem('token', token);
+        // Use tokenManager for robust token storage
+        tokenManager.saveToken(token);
+        
+        // Store auth state in multiple locations for redundancy
         localStorage.setItem('authState', JSON.stringify(authState));
         localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify(newUser));
+        
+        // Ensure token is accessible in standard location
+        localStorage.setItem('token', token);
+        
         console.log('Authentication data stored successfully');
       } catch (e) {
         console.error('Error storing authentication data:', e);
@@ -903,6 +927,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateUserProfile = async (data: ProfileUpdateData) => {
     updateState({ loading: true, error: null });
     console.log('Updating user profile with data:', data);
+    
+    // Clear any problematic flags that might cause white screen
+    localStorage.removeItem('fromProfileSetup');
     
     try {
       // First, try to recover user data from multiple sources if not available in state
@@ -1143,6 +1170,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Update auth state in context
       updateState(newAuthState);
       
+      // Ensure we don't have any URL parameters that could cause issues
+      if (window.location.search.includes('auth=') || 
+          window.location.search.includes('token=') || 
+          window.location.search.includes('setup=')) {
+        // Clean the URL to prevent issues on refresh
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+      
       toast.success('Profile updated successfully!');
       console.log('User profile updated:', updatedUser);
     } catch (error: any) {
@@ -1173,6 +1209,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('profileSetupComplete');
     localStorage.removeItem('setupComplete');
     localStorage.removeItem('userData');
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('fromProfileSetup');
+    localStorage.removeItem('authStateBackup');
+    
+    // Clean the URL to prevent issues on refresh
+    if (window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
     
     // Reset auth state
     updateState(initialState);

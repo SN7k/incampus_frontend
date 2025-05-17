@@ -134,6 +134,13 @@ const SignupFormNew: React.FC<SignupFormProps> = ({ onToggleForm }) => {
       return;
     }
     
+    // Clear any existing auth state before verification
+    localStorage.removeItem('token');
+    localStorage.removeItem('authState');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('profileSetupComplete');
+    localStorage.removeItem('setupComplete');
+    
     // Generate a random secure password since we're not asking the user for one
     const generatedPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).toUpperCase().slice(-2) + Math.random().toString(10).slice(-2);
     
@@ -155,12 +162,20 @@ const SignupFormNew: React.FC<SignupFormProps> = ({ onToggleForm }) => {
       await verifyOTPAndRegister(signupData);
       console.log('Registration successful');
       
+      // Check if we have a token after verification (indicates success)
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found after OTP verification');
+        setFormError('Authentication failed. Please try again.');
+        return;
+      }
+      
       // Show profile setup after successful OTP verification
       setShowOtpVerification(false);
       setShowProfileSetup(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Verification error:', err);
-      setFormError('Verification failed. Please try again.');
+      setFormError(err.message || 'Verification failed. Please try again.');
     }
   };
   
@@ -174,13 +189,13 @@ const SignupFormNew: React.FC<SignupFormProps> = ({ onToggleForm }) => {
     // This prevents the authentication loss that can happen during form toggle
     setShowProfileSetup(false);
     
-    // Force a page reload to ensure all authentication state is properly applied
-    // Add auth parameters to ensure we're recognized as authenticated after reload
-    const token = localStorage.getItem('token');
-    window.location.href = window.location.origin + 
-      '?auth=' + Date.now() + 
-      '&token=' + encodeURIComponent(token || '') + 
-      '&page=feed';
+    // Make sure all auth flags are set
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('profileSetupComplete', 'true');
+    localStorage.setItem('setupComplete', 'true');
+    
+    // Clean reload without URL parameters to prevent white screen issues
+    window.location.href = window.location.origin;
   };
   
   // Render profile setup, OTP verification form, or initial signup form
