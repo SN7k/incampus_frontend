@@ -2,18 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import axiosInstance from '../../utils/axios';
 
 type UserRole = 'student' | 'faculty';
-
-interface ApiResponse {
-  status: string;
-  message?: string;
-  data?: {
-    token?: string;
-    user?: any;
-  };
-}
 
 interface LoginFormProps {
   onShowSignup: () => void;
@@ -32,6 +22,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     e.preventDefault();
     setFormError('');
     setLoading(true);
+    
+    // Clear any existing auth data to ensure a fresh login
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('authError');
     
     if (!identifier) {
       setFormError(role === 'student' ? 'Student ID or email is required' : 'Email is required');
@@ -59,61 +54,55 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     }
     
     try {
-      console.log('Attempting login with:', { identifier, role });
-      
-      // Create the login payload based on identifier type
-      const loginPayload = {
+      // Create a simple login payload
+      const loginPayload: any = {
         password,
         role
       };
       
-      // Add either email or universityId based on the identifier format
+      // Add the appropriate identifier field
       if (isEmail) {
-        Object.assign(loginPayload, { email: identifier });
+        loginPayload.email = identifier;
       } else {
-        Object.assign(loginPayload, { universityId: identifier });
+        loginPayload.universityId = identifier;
       }
       
-      console.log('Login payload:', loginPayload);
+      console.log('Login attempt with payload:', loginPayload);
       
-      // Attempt direct login
-      const response = await axiosInstance.post<ApiResponse>('/api/auth/login', loginPayload);
-
-      console.log('Login response:', response.data);
-
-      if (response.data.status === 'success' && response.data.data?.token) {
+      // Make a direct fetch call instead of using axios to rule out any interceptor issues
+      const response = await fetch('https://incampus-backend.onrender.com/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loginPayload)
+      });
+      
+      const data = await response.json();
+      console.log('Login response:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      if (data.status === 'success' && data.data?.token) {
         // Store the token
-        localStorage.setItem('token', response.data.data.token);
+        localStorage.setItem('token', data.data.token);
         
         // Store user data if available
-        if (response.data.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.data.user));
-          
-          // Set the authorization header for future requests
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
-          
-          // Redirect to the feed page
-          window.location.href = '/';
+        if (data.data.user) {
+          localStorage.setItem('user', JSON.stringify(data.data.user));
         }
+        
+        // Reload the page to apply the new authentication state
+        console.log('Login successful, reloading page...');
+        window.location.href = '/';
       } else {
-        setFormError(response.data.message || 'Login failed. Please check your credentials.');
+        setFormError(data.message || 'Login failed. Please check your credentials.');
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error response:', error.response.data);
-        setFormError(error.response.data.message || 'Login failed. Please check your credentials.');
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received:', error.request);
-        setFormError('No response from server. Please check your internet connection.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error setting up request:', error.message);
-        setFormError('Login failed. Please try again.');
-      }
+      setFormError(error.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
