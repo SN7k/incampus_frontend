@@ -215,7 +215,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', payload);
 
+      console.log('Login API response:', response);
+      console.log('Response status:', response.data.status);
+      console.log('Response data:', response.data.data);
+
       if (response.data.status === 'success') {
+        console.log('Login successful. Processing response data...');
         const { token, user } = response.data.data;
         
         // Ensure user object has all required fields
