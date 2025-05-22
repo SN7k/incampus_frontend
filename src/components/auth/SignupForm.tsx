@@ -102,8 +102,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         })
       };
       
+      console.log('Sending signup request with data:', { ...userData, password: '[REDACTED]' });
+      
       // Send registration request to backend
       const response = await axiosInstance.post<ApiResponse>('/api/auth/signup', userData);
+      
+      console.log('Signup response:', response.data);
       
       if (response.data.status === 'success') {
         console.log('Registration successful, proceeding to OTP verification');
@@ -123,7 +127,20 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       }
     } catch (error: any) {
       console.error('Registration error:', error);
-      setFormError(error.response?.data?.message || 'Failed to create account. Please try again.');
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response:', error.response.data);
+        setFormError(error.response.data.message || 'Failed to create account. Please try again.');
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        setFormError('No response from server. Please check your internet connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        setFormError('Failed to create account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

@@ -13,8 +13,9 @@ const axiosInstance = axios.create({
   baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
-  withCredentials: true // Enable sending cookies in cross-origin requests
+  withCredentials: false // Disable credentials for now to avoid CORS issues
 });
 
 // Add request interceptor to add JWT token to all requests
