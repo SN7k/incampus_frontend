@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import axiosInstance from '../utils/axios';
 
 // Define the User interface directly in this file to avoid import issues
@@ -121,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (token && savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
+        console.log('Restoring session with user:', parsedUser);
         
         // Validate required fields
         if (!parsedUser || !parsedUser._id || !parsedUser.name || !parsedUser.email) {
@@ -152,32 +153,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         axiosInstance.interceptors.response.use(
           response => response,
           error => {
-            // Check if error is due to authentication
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
               console.error('Authentication error detected, clearing credentials');
-              // Clear stored credentials
               localStorage.removeItem('token');
               localStorage.removeItem('user');
-              // Reset state
               setState(initialState);
-              // Redirect to login page
               window.location.href = '/';
             }
             return Promise.reject(error);
           }
         );
-        
-        // If we're completing onboarding, ensure we stay authenticated
-        const completingOnboarding = localStorage.getItem('completingOnboarding');
-        if (completingOnboarding === 'true') {
-          console.log('Completing onboarding, ensuring authentication state');
-          return {
-            isAuthenticated: true,
-            user: validUser,
-            error: null,
-            loading: false
-          };
-        }
         
         return {
           isAuthenticated: true,
@@ -194,6 +179,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     return { ...initialState, loading: false };
   });
+
+  // Add effect to verify token on mount
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = localStorage.getItem('token');
+      if (token && state.isAuthenticated) {
+        try {
+          // Verify token with backend
+          const response = await axiosInstance.get<ApiResponse<{ valid: boolean }>>('/api/auth/verify');
+          if (response.data.status === 'success' && response.data.data.valid) {
+            console.log('Token verified successfully');
+          } else {
+            throw new Error('Token verification failed');
+          }
+        } catch (error) {
+          console.error('Token verification failed:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setState(initialState);
+          // Redirect to login page on verification failure
+          window.location.href = '/';
+        }
+      }
+    };
+
+    verifyToken();
+  }, [state.isAuthenticated]);
 
   const login = async (payload: LoginPayload) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
