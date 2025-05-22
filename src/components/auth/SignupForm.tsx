@@ -167,7 +167,12 @@ const SignupForm: React.FC<SignupFormProps> = ({
 
       if (response.data.status === 'success' && response.data.data?.token) {
         // Store token and user data
-        localStorage.setItem('token', response.data.data.token);
+        const token = response.data.data.token;
+        localStorage.setItem('token', token);
+        
+        // Set the token in axios instance
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
         if (response.data.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }

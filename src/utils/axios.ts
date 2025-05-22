@@ -49,6 +49,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     } else if (!error.response) {
       // Network error or server not responding
