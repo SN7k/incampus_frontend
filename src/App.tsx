@@ -108,18 +108,20 @@ function AppContent() {
 
   const handleFriendSuggestionsComplete = () => {
     console.log('Friend suggestions complete, transitioning to feed page');
-    // First reset the registration state
-    setPendingUserData(null);
-    setPendingProfileData(null);
-    
-    // Set registration step to completed
-    setRegistrationStep('completed');
-    
-    // Use a small timeout to ensure state updates complete before navigation
-    setTimeout(() => {
-      // Navigate to the feed page
+    try {
+      // First reset the registration state
+      setPendingUserData(null);
+      setPendingProfileData(null);
+      
+      // Set registration step to completed
+      setRegistrationStep('completed');
+      
+      // Navigate to the feed page without using setTimeout
+      // This avoids potential race conditions
       window.location.href = '/';
-    }, 100);
+    } catch (error) {
+      console.error('Error completing friend suggestions:', error);
+    }
   };
 
   const handleResendOtp = async () => {

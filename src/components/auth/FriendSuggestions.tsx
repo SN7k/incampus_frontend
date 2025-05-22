@@ -73,12 +73,15 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
     // Clear any pending state
     setSelectedUsers([]);
     
-    // Use a small timeout to ensure UI shows loading state
-    setTimeout(() => {
+    try {
       // Call onComplete with empty array to indicate skip
-      // This is a synchronous operation, no need for try/catch
+      // Wrap in try/catch to handle any potential errors
       onComplete([]);
-    }, 100);
+    } catch (error) {
+      console.error('Error in handleSkip:', error);
+      setError('Failed to complete onboarding');
+      setLoading(false);
+    }
   };
   
   const getBatchOrDepartment = (user: User) => {
