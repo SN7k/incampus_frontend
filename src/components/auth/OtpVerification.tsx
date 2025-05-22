@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
-import axios from 'axios';
+import axiosInstance from '../../utils/axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ApiResponse {
   status: string;
@@ -20,62 +21,67 @@ interface OtpVerificationProps {
 const OtpVerification: React.FC<OtpVerificationProps> = ({ 
   email, 
   onVerificationComplete,
-  onResendOtp
+  onResendOtp 
 }) => {
+  const auth = useAuth();
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resendDisabled, setResendDisabled] = useState(true);
+  const [error, setError] = useState('');
+  const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
-  
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
-  // Handle countdown for resend button
+
   useEffect(() => {
-    if (countdown > 0 && resendDisabled) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (countdown === 0 && resendDisabled) {
+    // Focus the first input on mount
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    let timer: number;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else {
       setResendDisabled(false);
     }
-  }, [countdown, resendDisabled]);
-  
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
   const handleChange = (index: number, value: string) => {
-    // Only allow numbers
-    if (!/^\d*$/.test(value)) return;
-    
+    if (value.length > 1) {
+      value = value.slice(0, 1);
+    }
+
     const newOtp = [...otp];
-    // Take only the last character if multiple characters are pasted
-    newOtp[index] = value.slice(-1);
+    newOtp[index] = value;
     setOtp(newOtp);
-    
-    // Auto-focus next input
+
+    // Move to next input if value is entered
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
-  
+
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Move focus to previous input on backspace
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
-  
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+
+  const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text');
-    
-    // Check if pasted content is a 6-digit number
-    if (/^\d{6}$/.test(pastedData)) {
-      const digits = pastedData.split('');
-      setOtp(digits);
-      
-      // Focus the last input
-      inputRefs.current[5]?.focus();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    if (/^\d+$/.test(pastedData)) {
+      const newOtp = [...otp];
+      for (let i = 0; i < pastedData.length; i++) {
+        newOtp[i] = pastedData[i];
+      }
+      setOtp(newOtp);
+      inputRefs.current[pastedData.length - 1]?.focus();
     }
   };
-  
+
   const handleResendOtp = async () => {
     try {
       setResendDisabled(true);
@@ -85,7 +91,7 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
       setError('Failed to resend OTP. Please try again.');
     }
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -100,20 +106,27 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
     setLoading(true);
     
     try {
-      // Get the API URL from environment variables or use a default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      
-      // Make API call to verify OTP
-      const response = await axios.post<ApiResponse>(`${apiUrl}/api/auth/verify-otp`, {
+      const response = await axiosInstance.post<ApiResponse>('/api/auth/verify-otp', {
         email,
         otp: otpString
       });
       
-      if (response.data.status === 'success') {
-        // Store token if provided
-        if (response.data.data?.token) {
-          localStorage.setItem('token', response.data.data.token);
+      console.log('OTP verification response:', response.data);
+      
+      if (response.data.status === 'success' && response.data.data?.token) {
+        // Store token and user data
+        const token = response.data.data.token;
+        localStorage.setItem('token', token);
+        
+        // Set the token in axios instance
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        if (response.data.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }
+        
+        // Update auth context
+        await auth.login(email, '');
         
         // Call the completion handler
         onVerificationComplete();
@@ -127,37 +140,37 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full">
       <div className="text-center mb-6">
         <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-400 mb-2">Verify Your Email</h2>
         <p className="text-gray-600 dark:text-gray-400">
-          We've sent a 6-digit code to <span className="font-medium">{email}</span>
+          Enter the 6-digit code sent to {email}
         </p>
       </div>
       
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit}>
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
-        
         <div className="flex justify-center space-x-2 mb-6">
-          {Array.from({ length: 6 }).map((_, index) => (
+          {otp.map((digit, index) => (
             <input
               key={index}
-              ref={(el) => (inputRefs.current[index] = el)}
+              ref={el => inputRefs.current[index] = el}
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={1}
-              value={otp[index]}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={index === 0 ? handlePaste : undefined}
-              className="w-12 h-12 text-center text-xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              autoFocus={index === 0}
-              disabled={loading}
+              value={digit}
+              onChange={e => handleChange(index, e.target.value)}
+              onKeyDown={e => handleKeyDown(index, e)}
+              onPaste={handlePaste}
+              className="w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ))}
         </div>
@@ -168,22 +181,23 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           className="w-full mb-4"
           size="lg"
         >
-          Verify
+          Verify OTP
         </Button>
         
         <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-            Didn't receive the code?
-          </p>
           <button
             type="button"
             onClick={handleResendOtp}
-            disabled={resendDisabled || loading}
-            className={`text-blue-800 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium ${
-              resendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+            disabled={resendDisabled}
+            className={`text-sm font-medium ${
+              resendDisabled
+                ? 'text-gray-400 dark:text-gray-600'
+                : 'text-blue-800 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300'
             }`}
           >
-            {resendDisabled ? `Resend code in ${countdown}s` : 'Resend code'}
+            {resendDisabled
+              ? `Resend code in ${countdown}s`
+              : 'Resend verification code'}
           </button>
         </div>
       </form>
