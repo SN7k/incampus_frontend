@@ -1,10 +1,11 @@
 export interface User {
-  id: string;
+  _id: string;
+  id?: string; // For backward compatibility
   name: string;
   email: string;
   universityId: string;
-  role: 'student' | 'faculty';
-  avatar: string;
+  role: 'student' | 'teacher' | 'admin' | 'faculty'; // Include all possible role values
+  avatar: string; // Make required to match AuthContext usage
   department?: string;
   batch?: string;
   status?: 'pending' | 'accepted' | 'rejected';

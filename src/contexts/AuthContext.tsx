@@ -1,6 +1,32 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { AuthState, User } from '../types';
 import axiosInstance from '../utils/axios';
+
+// Define the User interface directly in this file to avoid import issues
+interface User {
+  _id: string;
+  id?: string; // For backward compatibility
+  name: string;
+  email: string;
+  universityId: string;
+  role: 'student' | 'teacher' | 'admin' | 'faculty';
+  avatar: string;
+  department?: string;
+  batch?: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+  bio?: string;
+  coverPhoto?: string;
+  relevance?: string[];
+}
+
+// Define AuthState with User type
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  error: string | null;
+  loading: boolean;
+}
 
 interface AuthContextType extends AuthState {
   login: (identifier: string, password: string) => Promise<void>;
@@ -43,31 +69,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     if (token && savedUser) {
       try {
-        // Parse the user data and validate it has an ID
         const parsedUser = JSON.parse(savedUser);
         
-        // Validate that the user object has the required fields
-        if (!parsedUser || !parsedUser.id) {
+        // Validate required fields
+        if (!parsedUser || !parsedUser._id || !parsedUser.name || !parsedUser.email) {
           console.error('Invalid user data in localStorage:', parsedUser);
-          // Clear invalid data
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           return { ...initialState, loading: false };
         }
         
-        // Set the token in axios instance
+        // Ensure user object has all required fields
+        const validUser: User = {
+          _id: parsedUser._id,
+          id: parsedUser._id, // For backward compatibility
+          name: parsedUser.name,
+          email: parsedUser.email,
+          universityId: parsedUser.universityId || '',
+          role: parsedUser.role || 'student',
+          avatar: parsedUser.avatar || '/default-avatar.png',
+          createdAt: parsedUser.createdAt || new Date().toISOString(),
+          updatedAt: parsedUser.updatedAt || new Date().toISOString()
+        };
+        
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        console.log('Successfully restored auth state with user:', parsedUser.id);
         return {
           isAuthenticated: true,
-          user: parsedUser,
+          user: validUser,
           error: null,
           loading: false
         };
       } catch (e) {
         console.error('Failed to parse saved user data', e);
-        // Clear invalid data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         return { ...initialState, loading: false };
@@ -87,12 +121,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
+        
+        // Ensure user object has all required fields
+        const validUser: User = {
+          _id: user._id,
+          id: user._id, // For backward compatibility
+          name: user.name,
+          email: user.email,
+          universityId: user.universityId || '',
+          role: user.role || 'student',
+          avatar: user.avatar || '/default-avatar.png',
+          createdAt: user.createdAt || new Date().toISOString(),
+          updatedAt: user.updatedAt || new Date().toISOString()
+        };
+        
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(validUser));
         
         setState({
           isAuthenticated: true,
-          user,
+          user: validUser,
           loading: false,
           error: null
         });
@@ -126,15 +174,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const response = await axiosInstance.patch<ApiResponse<User>>(`/api/user/${state.user.id}`, profileData);
+      const response = await axiosInstance.patch<ApiResponse<User>>(`/api/user/${state.user._id}`, profileData);
       
       if (response.data.status === 'success') {
         const updatedUser = response.data.data;
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // Ensure updated user has all required fields
+        const validUser: User = {
+          _id: updatedUser._id,
+          id: updatedUser._id, // For backward compatibility
+          name: updatedUser.name,
+          email: updatedUser.email,
+          universityId: updatedUser.universityId || '',
+          role: updatedUser.role || 'student',
+          avatar: updatedUser.avatar || '/default-avatar.png',
+          createdAt: updatedUser.createdAt || new Date().toISOString(),
+          updatedAt: updatedUser.updatedAt || new Date().toISOString()
+        };
+        
+        localStorage.setItem('user', JSON.stringify(validUser));
         
         setState(prev => ({
           ...prev,
-          user: updatedUser,
+          user: validUser,
           loading: false,
           error: null
         }));
@@ -156,8 +218,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const authenticateWithToken = (token: string, user: User) => {
     try {
-      // Validate user data before storing
-      if (!user || !user.id) {
+      // Validate required fields
+      if (!user || !user._id || !user.name || !user.email) {
         console.error('Invalid user data in authenticateWithToken:', user);
         setState({
           isAuthenticated: false,
@@ -168,19 +230,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       
-      console.log('Authenticating with token, user ID:', user.id);
+      // Ensure user object has all required fields
+      const validUser: User = {
+        _id: user._id,
+        id: user._id, // For backward compatibility
+        name: user.name,
+        email: user.email,
+        universityId: user.universityId || '',
+        role: user.role || 'student',
+        avatar: user.avatar || '/default-avatar.png',
+        createdAt: user.createdAt || new Date().toISOString(),
+        updatedAt: user.updatedAt || new Date().toISOString()
+      };
       
-      // Store token and user data
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(validUser));
       
-      // Set the token in axios instance
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Update auth state
       setState({
         isAuthenticated: true,
-        user,
+        user: validUser,
         loading: false,
         error: null
       });
