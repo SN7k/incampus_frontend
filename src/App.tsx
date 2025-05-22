@@ -44,25 +44,29 @@ function AppContent() {
   const [pendingProfileData, setPendingProfileData] = useState<PendingProfileData | null>(null);
 
   const handleSignupSuccess = (userData: PendingUserData) => {
+    console.log('Signup success, user data:', userData);
     setPendingUserData(userData);
     setRegistrationStep('otp');
   };
 
   const handleOtpVerificationComplete = () => {
+    console.log('OTP verification complete, moving to profile setup');
     setRegistrationStep('profile-setup');
   };
 
   const handleProfileComplete = (profileData: PendingProfileData) => {
+    console.log('Profile setup complete, profile data:', profileData);
     setPendingProfileData(profileData);
     setRegistrationStep('friend-suggestions');
   };
 
   const handleSkipProfile = () => {
+    console.log('Profile setup skipped, moving to friend suggestions');
     setRegistrationStep('friend-suggestions');
   };
 
   const handleFriendSuggestionsComplete = () => {
-    // Reset registration state
+    console.log('Friend suggestions complete, resetting registration state');
     setRegistrationStep('login');
     setPendingUserData(null);
     setPendingProfileData(null);
@@ -96,7 +100,10 @@ function AppContent() {
           <SignupForm 
             onBackToLogin={() => setRegistrationStep('login')} 
             onSignupSuccess={handleSignupSuccess}
-            onShowProfileSetup={() => setRegistrationStep('profile-setup')}
+            onShowProfileSetup={() => {
+              console.log('Showing profile setup');
+              setRegistrationStep('profile-setup');
+            }}
           />
         )}
         

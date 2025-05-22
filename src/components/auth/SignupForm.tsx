@@ -175,6 +175,17 @@ const SignupForm: React.FC<SignupFormProps> = ({
         // Update auth context using login function
         await auth.login(email, password);
 
+        // Call onSignupSuccess to update the registration step
+        onSignupSuccess({
+          fullName,
+          email,
+          universityId: role === 'student' ? universityId : undefined,
+          program: role === 'student' ? program : undefined,
+          batch: role === 'student' ? batch : undefined,
+          department: role === 'faculty' ? department : undefined,
+          role
+        });
+
         // Show profile setup
         onShowProfileSetup();
       } else {
