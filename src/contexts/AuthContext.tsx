@@ -28,7 +28,7 @@ interface AuthState {
   loading: boolean;
 }
 
-interface LoginPayload {
+export interface LoginPayload {
   email?: string;
   universityId?: string;
   password: string;
