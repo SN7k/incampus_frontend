@@ -113,19 +113,23 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
       
       console.log('OTP verification response:', response.data);
       
-      if (response.data.status === 'success' && response.data.data?.token) {
+      if (response.data.status === 'success') {
         // Store token and user data
-        const token = response.data.data.token;
-        const user = response.data.data.user;
+        const token = response.data.data?.token;
+        const user = response.data.data?.user;
         
-        // Set the token in axios instance
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Update auth context
-        auth.authenticateWithToken(token, user);
-        
-        // Call the completion handler
-        onVerificationComplete();
+        if (token && user) {
+          // Set the token in axios instance
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Update auth context
+          auth.authenticateWithToken(token, user);
+          
+          // Call the completion handler
+          onVerificationComplete();
+        } else {
+          setError('Verification successful but missing token or user data');
+        }
       } else {
         setError(response.data.message || 'Verification failed. Please try again.');
       }
