@@ -132,15 +132,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const authenticateWithToken = (token: string, user: User) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    
-    setState({
-      isAuthenticated: true,
-      user,
-      loading: false,
-      error: null
-    });
+    try {
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Set the token in axios instance
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Update auth state
+      setState({
+        isAuthenticated: true,
+        user,
+        loading: false,
+        error: null
+      });
+    } catch (error) {
+      console.error('Error in authenticateWithToken:', error);
+      setState({
+        isAuthenticated: false,
+        user: null,
+        loading: false,
+        error: 'Failed to authenticate user'
+      });
+    }
   };
 
   return (

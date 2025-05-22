@@ -53,7 +53,16 @@ function AppContent() {
     console.log('OTP verification complete, moving to profile setup');
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
     if (token && user) {
+      // Ensure we have the required user data
+      if (!user.fullName || !user.email || !user.role) {
+        console.error('Missing required user data:', user);
+        setRegistrationStep('login');
+        return;
+      }
+      
+      // Set the registration step to profile setup
       setRegistrationStep('profile-setup');
     } else {
       console.error('Token or user data not found after OTP verification');
