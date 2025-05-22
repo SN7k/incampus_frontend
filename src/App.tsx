@@ -32,9 +32,9 @@ interface PendingUserData {
 }
 
 interface PendingProfileData {
-  bio?: string;
   avatar?: string;
   coverPhoto?: string;
+  bio?: string;
 }
 
 function AppContent() {
