@@ -37,7 +37,7 @@ interface PendingProfileData {
 }
 
 function AppContent() {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading, user, logout } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
   const [pendingProfileData, setPendingProfileData] = useState<PendingProfileData | null>(null);
@@ -46,6 +46,33 @@ function AppContent() {
   useEffect(() => {
     console.log('Auth state changed:', { isAuthenticated, loading, userId: user?.id });
   }, [isAuthenticated, loading, user]);
+  
+  // Add error handling for initial load
+  useEffect(() => {
+    // Only run this when authenticated and not loading
+    if (isAuthenticated && !loading) {
+      // Add a global error handler for uncaught errors
+      const handleError = (event: ErrorEvent) => {
+        console.error('Uncaught error:', event.error);
+        // Check if the error message contains "r is not a function"
+        if (event.error && event.error.toString().includes('is not a function')) {
+          console.log('Detected authentication error, logging out...');
+          // Clear local storage and log out
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          logout();
+        }
+      };
+      
+      // Add the error handler
+      window.addEventListener('error', handleError);
+      
+      // Clean up the error handler when the component unmounts
+      return () => {
+        window.removeEventListener('error', handleError);
+      };
+    }
+  }, [isAuthenticated, loading, logout]);
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);

@@ -92,7 +92,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           updatedAt: parsedUser.updatedAt || new Date().toISOString()
         };
         
+        // Set axios authorization header
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Add error interceptor to handle authentication errors
+        axiosInstance.interceptors.response.use(
+          response => response,
+          error => {
+            // Check if error is due to authentication
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+              console.error('Authentication error detected, clearing credentials');
+              // Clear stored credentials
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              // Reset state
+              setState(initialState);
+              // Redirect to login page
+              window.location.href = '/';
+            }
+            return Promise.reject(error);
+          }
+        );
         
         return {
           isAuthenticated: true,
