@@ -184,12 +184,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    const boundHandler = handleFriendRequest.bind(null);
-    window.addEventListener('friendRequest', boundHandler);
-    return () => {
-      window.removeEventListener('friendRequest', boundHandler);
-    };
-  }, [user]);
+    const eventHandler = (e: Event) => handleFriendRequest(e);
+    window.addEventListener('friendRequest', eventHandler);
+    return () => window.removeEventListener('friendRequest', eventHandler);
+  }, [user, addNotification]);
 
   // Listen for post likes to create notifications
   useEffect(() => {
@@ -207,12 +205,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    const boundHandler = handlePostLike.bind(null);
-    window.addEventListener('postLike', boundHandler);
-    return () => {
-      window.removeEventListener('postLike', boundHandler);
-    };
-  }, [user]);
+    const eventHandler = (e: Event) => handlePostLike(e);
+    window.addEventListener('postLike', eventHandler);
+    return () => window.removeEventListener('postLike', eventHandler);
+  }, [user, addNotification]);
 
   // Listen for post comments to create notifications
   useEffect(() => {
@@ -230,12 +226,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    const boundHandler = handlePostComment.bind(null);
-    window.addEventListener('postComment', boundHandler);
-    return () => {
-      window.removeEventListener('postComment', boundHandler);
-    };
-  }, [user]);
+    const eventHandler = (e: Event) => handlePostComment(e);
+    window.addEventListener('postComment', eventHandler);
+    return () => window.removeEventListener('postComment', eventHandler);
+  }, [user, addNotification]);
 
   const value = {
     notifications,

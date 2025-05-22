@@ -9,13 +9,6 @@ import { User } from '../types';
 import { Post } from '../types/post';
 import axiosInstance from '../utils/axios';
 
-interface Comment {
-  id: string;
-  content: string;
-  author: User;
-  createdAt: string;
-}
-
 interface ApiResponse<T> {
   status: 'success' | 'error';
   message: string;

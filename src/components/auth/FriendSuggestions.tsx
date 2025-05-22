@@ -9,7 +9,7 @@ interface FriendSuggestionsProps {
   onComplete: (followedUsers: string[]) => void;
 }
 
-const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onComplete }) => {
+const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => {
   const [suggestions, setSuggestions] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -64,6 +64,21 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onCo
     } finally {
       setLoading(false);
     }
+  };
+  
+  const handleSkip = () => {
+    // Set loading state
+    setLoading(true);
+    
+    // Clear any pending state
+    setSelectedUsers([]);
+    
+    // Use a small timeout to ensure UI shows loading state
+    setTimeout(() => {
+      // Call onComplete with empty array to indicate skip
+      // This is a synchronous operation, no need for try/catch
+      onComplete([]);
+    }, 100);
   };
   
   const getBatchOrDepartment = (user: User) => {
@@ -140,7 +155,7 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onCo
       
       <div className="flex justify-between items-center">
         <button
-          onClick={() => onComplete([])}
+          onClick={handleSkip}
           disabled={loading}
           className="text-gray-500 dark:text-gray-400 text-sm hover:text-blue-800 dark:hover:text-blue-400"
         >

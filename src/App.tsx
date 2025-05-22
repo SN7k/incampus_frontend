@@ -18,7 +18,7 @@ import Settings from './pages/Settings';
 
 // Friend request data is now handled by the Friends component
 
-type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-suggestions';
+type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-suggestions' | 'completed';
 
 interface PendingUserData {
   fullName: string;
@@ -107,12 +107,19 @@ function AppContent() {
   };
 
   const handleFriendSuggestionsComplete = () => {
-    console.log('Friend suggestions complete, resetting registration state');
+    console.log('Friend suggestions complete, transitioning to feed page');
+    // First reset the registration state
     setPendingUserData(null);
     setPendingProfileData(null);
-    setRegistrationStep('login');
-    // Force a page reload to ensure all contexts are properly initialized
-    window.location.href = '/';
+    
+    // Set registration step to completed
+    setRegistrationStep('completed');
+    
+    // Use a small timeout to ensure state updates complete before navigation
+    setTimeout(() => {
+      // Navigate to the feed page
+      window.location.href = '/';
+    }, 100);
   };
 
   const handleResendOtp = async () => {
