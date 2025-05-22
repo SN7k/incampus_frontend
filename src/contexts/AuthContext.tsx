@@ -28,8 +28,15 @@ interface AuthState {
   loading: boolean;
 }
 
+interface LoginPayload {
+  email?: string;
+  universityId?: string;
+  password: string;
+  role: 'student' | 'faculty';
+}
+
 interface AuthContextType extends AuthState {
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<void>;
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => Promise<void>;
   authenticateWithToken: (token: string, user: User) => void;
@@ -188,29 +195,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { ...initialState, loading: false };
   });
 
-  const login = async (identifier: string, password: string) => {
+  const login = async (payload: LoginPayload) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      // Check if the identifier is an email
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+      console.log('Sending login request with payload:', payload);
       
-      // Create the login payload
-      const loginPayload: any = {
-        password,
-        role: 'student' // Default to student role
-      };
-      
-      // Add the appropriate identifier field
-      if (isEmail) {
-        loginPayload.email = identifier;
-      } else {
-        loginPayload.universityId = identifier;
-      }
-      
-      console.log('Sending login request with payload:', loginPayload);
-      
-      const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', loginPayload);
+      const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', payload);
 
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;

@@ -178,7 +178,11 @@ const SignupForm: React.FC<SignupFormProps> = ({
         }
         
         // Update auth context using login function
-        await auth.login(email, password);
+        await auth.login({
+          email,
+          password,
+          role
+        });
 
         // Call onSignupSuccess to update the registration step
         onSignupSuccess({

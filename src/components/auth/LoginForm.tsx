@@ -69,8 +69,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
       
       console.log('Login attempt with payload:', loginPayload);
       
-      // Use the login function from AuthContext
-      await login(identifier, password);
+      // Use the login function from AuthContext with the correct payload
+      await login(loginPayload);
       
       // If login is successful, the AuthContext will handle the state update
       // and the page will be redirected
