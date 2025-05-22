@@ -88,6 +88,13 @@ const checkAndFixAuthIssues = () => {
     return true;
   }
   
+  // Check if we're completing onboarding - in this case, do NOT force logout
+  const completingOnboarding = localStorage.getItem('completingOnboarding');
+  if (completingOnboarding === 'true') {
+    console.log('Detected onboarding completion flag in AuthContext, preserving authentication');
+    return false;
+  }
+  
   return false;
 };
 

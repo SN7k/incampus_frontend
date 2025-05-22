@@ -38,7 +38,17 @@ interface PendingProfileData {
 
 function AppContent() {
   const { isAuthenticated, loading, user, logout } = useAuth();
-  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
+  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(() => {
+    // Check if we're completing onboarding
+    const completingOnboarding = localStorage.getItem('completingOnboarding');
+    if (completingOnboarding === 'true') {
+      console.log('Detected onboarding completion flag, setting registration step to completed');
+      // Remove the flag
+      localStorage.removeItem('completingOnboarding');
+      return 'completed';
+    }
+    return 'login';
+  });
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
   const [pendingProfileData, setPendingProfileData] = useState<PendingProfileData | null>(null);
   

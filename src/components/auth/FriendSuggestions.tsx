@@ -88,24 +88,29 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       }
       
       // Ensure the user object is valid
+      let user;
       try {
-        const user = JSON.parse(userStr);
+        user = JSON.parse(userStr);
         console.log('User data available during skip:', user);
       } catch (e) {
         console.error('Invalid user data during friend suggestions skip');
+        setError('Invalid user data. Please try logging in again.');
+        setLoading(false);
+        return;
       }
+      
+      // Set a flag in localStorage to indicate we're in the middle of a transition
+      localStorage.setItem('completingOnboarding', 'true');
       
       // Call onComplete with empty array to indicate skip
       onComplete([]);
       
-      // As a fallback, directly redirect to the main app after a short delay
-      // This ensures the user doesn't get stuck on a blank page
+      // Direct approach - bypass the App.tsx handler and go straight to the feed
       setTimeout(() => {
-        if (document.body.classList.contains('loading') || document.body.innerHTML === '') {
-          console.log('Fallback navigation triggered - direct redirect to main app');
-          window.location.href = '/';
-        }
-      }, 2000);
+        console.log('Direct navigation to feed page');
+        // Force a complete page reload to ensure fresh state
+        window.location.replace('/');
+      }, 500);
     } catch (error) {
       console.error('Error in handleSkip:', error);
       setError('Failed to complete onboarding');
