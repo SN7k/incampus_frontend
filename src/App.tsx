@@ -9,7 +9,6 @@ import SignupForm from './components/auth/SignupForm';
 import OtpVerification from './components/auth/OtpVerification';
 import ProfileSetup from './components/auth/ProfileSetup';
 import FriendSuggestions from './components/auth/FriendSuggestions';
-import ProtectedRoute from './components/auth/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
@@ -52,20 +51,39 @@ function AppContent() {
   const handleOtpVerificationComplete = () => {
     console.log('OTP verification complete, moving to profile setup');
     const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userStr = localStorage.getItem('user');
     
-    if (token && user) {
+    if (!token || !userStr) {
+      console.error('Token or user data not found after OTP verification');
+      setRegistrationStep('login');
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userStr);
+      
       // Ensure we have the required user data
-      if (!user.fullName || !user.email || !user.role) {
+      // Check for name instead of fullName to match the User interface
+      if (!user.name || !user.email || !user.role) {
         console.error('Missing required user data:', user);
         setRegistrationStep('login');
         return;
       }
       
+      // If we have valid user data, update pendingUserData to match what we need
+      setPendingUserData({
+        fullName: user.name,
+        email: user.email,
+        role: user.role,
+        universityId: user.universityId,
+        department: user.department,
+        batch: user.batch
+      });
+      
       // Set the registration step to profile setup
       setRegistrationStep('profile-setup');
-    } else {
-      console.error('Token or user data not found after OTP verification');
+    } catch (error) {
+      console.error('Error parsing user data:', error);
       setRegistrationStep('login');
     }
   };

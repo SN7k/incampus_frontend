@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
 import axiosInstance from '../../utils/axios';
-import { useAuth } from '../../contexts/AuthContext';
+// useAuth import removed as it's not needed
+import { User } from '../../types';
 
-interface ApiResponse {
+interface ApiResponse<T> {
   status: string;
   message?: string;
-  data?: {
-    token?: string;
-    user?: any;
-  };
+  data?: T;
 }
 
 interface OtpVerificationProps {
@@ -23,7 +21,7 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
   onVerificationComplete,
   onResendOtp 
 }) => {
-  const auth = useAuth();
+  // Auth context not needed in this component
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,48 +92,44 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
-    
+
     const otpString = otp.join('');
-    
+
     if (otpString.length !== 6) {
-      setError('Please enter all 6 digits of the OTP');
+      setError('Please enter a valid 6-digit OTP');
+      setLoading(false);
       return;
     }
-    
-    setLoading(true);
-    
+
     try {
-      const response = await axiosInstance.post<ApiResponse>('/api/auth/verify-otp', {
+      console.log('Sending OTP verification request:', { email, otp: otpString });
+      const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/verify-otp', {
         email,
         otp: otpString
       });
-      
+
       console.log('OTP verification response:', response.data);
-      
-      if (response.data.status === 'success') {
-        // Store token and user data
-        const token = response.data.data?.token;
-        const user = response.data.data?.user;
+
+      if (response.data.status === 'success' && response.data.data?.token && response.data.data?.user) {
+        const { token, user } = response.data.data;
         
-        if (token && user) {
-          // Set the token in axios instance
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Update auth context
-          auth.authenticateWithToken(token, user);
-          
-          // Call the completion handler
-          onVerificationComplete();
-        } else {
-          setError('Verification successful but missing token or user data');
-        }
+        // Store token and user data
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Set the token in axios instance
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Call the completion handler
+        onVerificationComplete();
       } else {
         setError(response.data.message || 'Verification failed. Please try again.');
       }
-    } catch (err: any) {
-      console.error('OTP verification error:', err);
-      setError(err.response?.data?.message || 'Verification failed. Please try again.');
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      setError(error.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
