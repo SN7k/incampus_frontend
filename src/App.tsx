@@ -146,11 +146,41 @@ function AppContent() {
       // Set registration step to completed
       setRegistrationStep('completed');
       
-      // Navigate to the feed page without using setTimeout
-      // This avoids potential race conditions
+      // Ensure we have valid authentication data
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      if (!token || !userStr) {
+        console.error('Missing authentication data during friend suggestions completion');
+        // Redirect to login page if authentication data is missing
+        window.location.href = '/?forceLogout=true';
+        return;
+      }
+      
+      // Validate the user object
+      try {
+        const user = JSON.parse(userStr);
+        console.log('Valid user data available for transition:', user);
+        
+        // Ensure the auth header is set for the next page load
+        if (token) {
+          console.log('Setting auth header for transition');
+          // This will be used by axios on the next page load
+          localStorage.setItem('authHeader', `Bearer ${token}`);
+        }
+      } catch (e) {
+        console.error('Invalid user data during friend suggestions completion');
+        window.location.href = '/?forceLogout=true';
+        return;
+      }
+      
+      // Navigate to the feed page
+      console.log('Redirecting to main application...');
       window.location.href = '/';
     } catch (error) {
       console.error('Error completing friend suggestions:', error);
+      // Fallback to login page on error
+      window.location.href = '/?forceLogout=true';
     }
   };
 

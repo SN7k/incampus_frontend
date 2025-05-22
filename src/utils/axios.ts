@@ -16,6 +16,15 @@ const axiosInstance = axios.create({
   timeout: 10000 // Add a 10 second timeout
 });
 
+// Check for authHeader that might have been set during page transitions
+const authHeader = localStorage.getItem('authHeader');
+if (authHeader) {
+  console.log('Found authHeader, applying to axios instance');
+  axiosInstance.defaults.headers.common['Authorization'] = authHeader;
+  // Remove it after using it
+  localStorage.removeItem('authHeader');
+}
+
 // Add request interceptor to add JWT token to all requests
 axiosInstance.interceptors.request.use(
   (config) => {

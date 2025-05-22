@@ -74,9 +74,38 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
     setSelectedUsers([]);
     
     try {
+      console.log('Skipping friend suggestions and completing onboarding');
+      
+      // Make sure authentication is properly set up
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      if (!token || !userStr) {
+        console.error('Missing authentication data during friend suggestions skip');
+        setError('Authentication error. Please try logging in again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Ensure the user object is valid
+      try {
+        const user = JSON.parse(userStr);
+        console.log('User data available during skip:', user);
+      } catch (e) {
+        console.error('Invalid user data during friend suggestions skip');
+      }
+      
       // Call onComplete with empty array to indicate skip
-      // Wrap in try/catch to handle any potential errors
       onComplete([]);
+      
+      // As a fallback, directly redirect to the main app after a short delay
+      // This ensures the user doesn't get stuck on a blank page
+      setTimeout(() => {
+        if (document.body.classList.contains('loading') || document.body.innerHTML === '') {
+          console.log('Fallback navigation triggered - direct redirect to main app');
+          window.location.href = '/';
+        }
+      }, 2000);
     } catch (error) {
       console.error('Error in handleSkip:', error);
       setError('Failed to complete onboarding');
