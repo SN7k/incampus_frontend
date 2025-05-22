@@ -39,6 +39,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
+    setIsUploading(true);
+    
     // Convert FileList to array and filter by image type
     const newFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
     
@@ -50,6 +52,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     
     // Reset the file input
     if (e.target) e.target.value = '';
+    
+    // Set uploading to false after previews are generated
+    setIsUploading(false);
   };
   
   const removeMedia = (index: number) => {
@@ -65,6 +70,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     
     setIsSubmitting(true);
     setError(null);
+    
+    // If we have media files, set uploading state to true
+    if (mediaFiles.length > 0) {
+      setIsUploading(true);
+    }
     
     try {
       const formData = new FormData();
@@ -104,6 +114,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
       setError(error.response?.data?.message || 'Failed to create post. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
   

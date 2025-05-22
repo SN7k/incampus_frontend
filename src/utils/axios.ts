@@ -1,11 +1,20 @@
 import axios from 'axios';
 
+// Get the base URL based on the environment
+const getBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    return 'https://incampus-backend.onrender.com';
+  }
+  return 'http://localhost:5000';
+};
+
 // Create axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: 'https://incampus-backend.onrender.com',
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true // Enable sending cookies in cross-origin requests
 });
 
 // Add request interceptor to add JWT token to all requests
