@@ -192,10 +192,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', {
-        identifier,
-        password
-      });
+      // Check if the identifier is an email
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+      
+      // Create the login payload
+      const loginPayload: any = {
+        password,
+        role: 'student' // Default to student role
+      };
+      
+      // Add the appropriate identifier field
+      if (isEmail) {
+        loginPayload.email = identifier;
+      } else {
+        loginPayload.universityId = identifier;
+      }
+      
+      console.log('Sending login request with payload:', loginPayload);
+      
+      const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', loginPayload);
 
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
@@ -210,11 +225,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: user.role || 'student',
           avatar: user.avatar || '/default-avatar.png',
           createdAt: user.createdAt || new Date().toISOString(),
-          updatedAt: user.updatedAt || new Date().toISOString()
+          updatedAt: user.updatedAt || new Date().toISOString(),
+          bio: user.bio,
+          coverPhoto: user.coverPhoto
         };
         
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(validUser));
+        
+        // Set axios authorization header
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         setState({
           isAuthenticated: true,
@@ -222,6 +242,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           loading: false,
           error: null
         });
+        
+        // Redirect to home page
+        window.location.href = '/';
       } else {
         setState({
           isAuthenticated: false,
@@ -231,12 +254,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
     } catch (error: any) {
+      console.error('Login error:', error);
       setState({
         isAuthenticated: false,
         user: null,
         loading: false,
         error: error.response?.data?.message || 'Authentication failed. Please try again.'
       });
+      throw error; // Re-throw the error to be handled by the component
     }
   };
 

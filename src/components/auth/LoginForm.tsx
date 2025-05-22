@@ -16,7 +16,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { } = useAuth(); // We're handling login directly without using the AuthContext login method
+  const { login } = useAuth(); // Use the login function from AuthContext
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,37 +69,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
       
       console.log('Login attempt with payload:', loginPayload);
       
-      // Make a direct fetch call instead of using axios to rule out any interceptor issues
-      const response = await fetch('https://incampus-backend.onrender.com/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(loginPayload)
-      });
+      // Use the login function from AuthContext
+      await login(identifier, password);
       
-      const data = await response.json();
-      console.log('Login response:', data);
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-      
-      if (data.status === 'success' && data.data?.token) {
-        // Store the token
-        localStorage.setItem('token', data.data.token);
-        
-        // Store user data if available
-        if (data.data.user) {
-          localStorage.setItem('user', JSON.stringify(data.data.user));
-        }
-        
-        // Reload the page to apply the new authentication state
-        console.log('Login successful, reloading page...');
-        window.location.href = '/';
-      } else {
-        setFormError(data.message || 'Login failed. Please check your credentials.');
-      }
+      // If login is successful, the AuthContext will handle the state update
+      // and the page will be redirected
     } catch (error: any) {
       console.error('Login error:', error);
       setFormError(error.message || 'Login failed. Please try again.');
