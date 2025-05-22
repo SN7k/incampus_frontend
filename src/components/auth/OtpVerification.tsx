@@ -116,17 +116,13 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
       if (response.data.status === 'success' && response.data.data?.token) {
         // Store token and user data
         const token = response.data.data.token;
-        localStorage.setItem('token', token);
+        const user = response.data.data.user;
         
         // Set the token in axios instance
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        if (response.data.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.data.user));
-        }
-        
         // Update auth context
-        await auth.login(email, '');
+        auth.authenticateWithToken(token, user);
         
         // Call the completion handler
         onVerificationComplete();

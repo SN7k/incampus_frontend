@@ -6,6 +6,7 @@ interface AuthContextType extends AuthState {
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => Promise<void>;
+  authenticateWithToken: (token: string, user: User) => void;
 }
 
 interface ApiResponse<T> {
@@ -25,7 +26,8 @@ const AuthContext = createContext<AuthContextType>({
   ...initialState,
   login: async () => {},
   logout: () => {},
-  updateProfile: async () => {}
+  updateProfile: async () => {},
+  authenticateWithToken: () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -129,8 +131,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const authenticateWithToken = (token: string, user: User) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    setState({
+      isAuthenticated: true,
+      user,
+      loading: false,
+      error: null
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateProfile, authenticateWithToken }}>
       {children}
     </AuthContext.Provider>
   );

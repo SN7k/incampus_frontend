@@ -51,7 +51,14 @@ function AppContent() {
 
   const handleOtpVerificationComplete = () => {
     console.log('OTP verification complete, moving to profile setup');
-    setRegistrationStep('profile-setup');
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (token && user) {
+      setRegistrationStep('profile-setup');
+    } else {
+      console.error('Token or user data not found after OTP verification');
+      setRegistrationStep('login');
+    }
   };
 
   const handleProfileComplete = (profileData: PendingProfileData) => {
