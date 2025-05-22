@@ -57,10 +57,13 @@ function AppContent() {
         // Check if the error message contains "r is not a function"
         if (event.error && event.error.toString().includes('is not a function')) {
           console.log('Detected authentication error, logging out...');
+          // Set auth error flag
+          localStorage.setItem('authError', 'true');
           // Clear local storage and log out
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          logout();
+          // Redirect to login with force logout parameter
+          window.location.href = '/?forceLogout=true';
         }
       };
       

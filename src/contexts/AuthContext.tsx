@@ -62,8 +62,45 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+// Add a function to detect and fix authentication issues on page load
+const checkAndFixAuthIssues = () => {
+  // Check if there's a URL parameter indicating we should force logout
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceLogout = urlParams.get('forceLogout');
+  
+  if (forceLogout === 'true') {
+    console.log('Force logout parameter detected, clearing authentication data');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Remove the parameter from URL
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+    return true;
+  }
+  
+  // Check for previous errors
+  const hasAuthError = localStorage.getItem('authError');
+  if (hasAuthError) {
+    console.log('Previous authentication error detected, clearing authentication data');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('authError');
+    return true;
+  }
+  
+  return false;
+};
+
+// Execute the check immediately
+const forcedLogout = checkAndFixAuthIssues();
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>(() => {
+    // If we've already forced a logout, return initial state
+    if (forcedLogout) {
+      return { ...initialState, loading: false };
+    }
+    
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     

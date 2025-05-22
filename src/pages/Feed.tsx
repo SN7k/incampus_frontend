@@ -20,6 +20,21 @@ interface SuggestedUser extends User {
 }
 
 const Feed: React.FC = () => {
+  // Add safety check for authentication issues
+  useEffect(() => {
+    // Check for the specific error that's causing problems
+    const handleError = (event: ErrorEvent) => {
+      if (event.error && event.error.toString().includes('is not a function')) {
+        console.error('Critical error detected in Feed component, forcing logout');
+        localStorage.setItem('authError', 'true');
+        window.location.href = '/?forceLogout=true';
+      }
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+  
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
