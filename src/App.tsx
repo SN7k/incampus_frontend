@@ -110,6 +110,9 @@ function AppContent() {
     console.log('Friend suggestions complete, resetting registration state');
     setPendingUserData(null);
     setPendingProfileData(null);
+    setRegistrationStep('login');
+    // Force a page reload to ensure all contexts are properly initialized
+    window.location.href = '/';
   };
 
   const handleResendOtp = async () => {
