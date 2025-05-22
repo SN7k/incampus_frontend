@@ -59,21 +59,48 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     }
     
     try {
-      // Send OTP to email
-      const response = await axiosInstance.post<ApiResponse>('/auth/send-otp', {
+      console.log('Attempting login with:', { identifier, role });
+      
+      // Attempt direct login
+      const response = await axiosInstance.post<ApiResponse>('/api/auth/login', {
         email: isEmail ? identifier : undefined,
         universityId: !isEmail ? identifier : undefined,
+        password,
         role
       });
 
-      if (response.data.status === 'success') {
+      console.log('Login response:', response.data);
+
+      if (response.data.status === 'success' && response.data.data?.token) {
+        // Store the token
+        localStorage.setItem('token', response.data.data.token);
+        
+        // Store user data if available
+        if (response.data.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        }
+        
         // Call the login function from AuthContext
         await login(identifier, password);
       } else {
-        setFormError(response.data.message || 'Failed to send OTP. Please try again.');
+        setFormError(response.data.message || 'Login failed. Please check your credentials.');
       }
-    } catch (err) {
-      setFormError('Failed to send OTP. Please try again.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response:', error.response.data);
+        setFormError(error.response.data.message || 'Login failed. Please check your credentials.');
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        setFormError('No response from server. Please check your internet connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        setFormError('Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
