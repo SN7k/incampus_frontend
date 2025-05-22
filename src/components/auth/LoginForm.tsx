@@ -26,7 +26,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { } = useAuth(); // We're handling login directly without using the AuthContext login method
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,13 +61,23 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     try {
       console.log('Attempting login with:', { identifier, role });
       
-      // Attempt direct login
-      const response = await axiosInstance.post<ApiResponse>('/api/auth/login', {
-        email: isEmail ? identifier : undefined,
-        universityId: !isEmail ? identifier : undefined,
+      // Create the login payload based on identifier type
+      const loginPayload = {
         password,
         role
-      });
+      };
+      
+      // Add either email or universityId based on the identifier format
+      if (isEmail) {
+        Object.assign(loginPayload, { email: identifier });
+      } else {
+        Object.assign(loginPayload, { universityId: identifier });
+      }
+      
+      console.log('Login payload:', loginPayload);
+      
+      // Attempt direct login
+      const response = await axiosInstance.post<ApiResponse>('/api/auth/login', loginPayload);
 
       console.log('Login response:', response.data);
 
@@ -78,10 +88,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         // Store user data if available
         if (response.data.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
+          
+          // Set the authorization header for future requests
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
+          
+          // Redirect to the feed page
+          window.location.href = '/';
         }
-        
-        // Call the login function from AuthContext
-        await login(identifier, password);
       } else {
         setFormError(response.data.message || 'Login failed. Please check your credentials.');
       }
