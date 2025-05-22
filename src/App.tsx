@@ -69,28 +69,33 @@ function AppContent() {
       console.log('User object properties:', Object.keys(user));
       
       // Ensure we have the required user data
-      // Check for name instead of fullName to match the User interface
       console.log('User name:', user.name);
       console.log('User email:', user.email);
       console.log('User role:', user.role);
       
-      if (!user.name || !user.email || !user.role) {
-        console.error('Missing required user data:', user);
+      // Even if some properties are missing, try to create a valid pendingUserData object
+      // This is more forgiving than the previous implementation
+      const userData = {
+        fullName: user.name || '',
+        email: user.email || '',
+        role: (user.role as 'student' | 'faculty') || 'student',
+        universityId: user.universityId,
+        department: user.department,
+        batch: user.batch
+      };
+      
+      // Check if we have the minimum required data
+      if (!userData.fullName || !userData.email) {
+        console.error('Critical user data missing even after processing:', userData);
         setRegistrationStep('login');
         return;
       }
       
-      // If we have valid user data, update pendingUserData to match what we need
-      setPendingUserData({
-        fullName: user.name,
-        email: user.email,
-        role: user.role,
-        universityId: user.universityId,
-        department: user.department,
-        batch: user.batch
-      });
+      console.log('Setting pendingUserData:', userData);
+      setPendingUserData(userData);
       
-      // Set the registration step to profile setup
+      // Force the registration step to profile setup
+      console.log('Forcing navigation to profile-setup');
       setRegistrationStep('profile-setup');
     } catch (error) {
       console.error('Error parsing user data:', error);

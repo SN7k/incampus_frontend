@@ -122,9 +122,23 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
         console.log('User has email property:', !!user.email);
         console.log('User has role property:', !!user.role);
         
-        // Store token and user data
+        // Ensure user object has all required properties
+        // If the API doesn't provide the expected structure, create it
+        const processedUser = {
+          ...user,
+          // Ensure name exists
+          name: user.name || '',
+          // Ensure email exists
+          email: user.email || '',
+          // Ensure role exists
+          role: user.role || 'student'
+        };
+        
+        console.log('Processed user data:', processedUser);
+        
+        // Store token and processed user data
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(processedUser));
         
         // Set the token in axios instance
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
