@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import axios from 'axios';
+import axiosInstance from '../../utils/axios';
 
 interface ApiResponse {
   status: string;
@@ -10,8 +10,6 @@ interface ApiResponse {
 }
 
 type UserRole = 'student' | 'faculty';
-
-
 
 interface SignupFormProps {
   onBackToLogin: () => void;
@@ -89,17 +87,14 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
     // Make API call to register user
     setLoading(true);
     try {
-      // Get the API URL from environment variables or use a default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      
       // Prepare user data for API
       const userData = {
         name: fullName,
         email,
         password,
         role,
+        collegeId: role === 'student' ? universityId : undefined,
         ...(role === 'student' ? {
-          universityId,
           program,
           batch
         } : {
@@ -108,7 +103,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       };
       
       // Send registration request to backend
-      const response = await axios.post<ApiResponse>(`${apiUrl}/api/auth/signup`, userData);
+      const response = await axiosInstance.post<ApiResponse>('/api/auth/signup', userData);
       
       if (response.data.status === 'success') {
         console.log('Registration successful, proceeding to OTP verification');
@@ -129,6 +124,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
     } catch (error: any) {
       console.error('Registration error:', error);
       setFormError(error.response?.data?.message || 'Failed to create account. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
