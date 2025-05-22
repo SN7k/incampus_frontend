@@ -7,6 +7,10 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => Promise<void>;
   authenticateWithToken: (token: string, user: User) => void;
+  isAuthenticated: boolean;
+  loading: boolean;
+  user: User | null;
+  error: string | null;
 }
 
 interface ApiResponse<T> {

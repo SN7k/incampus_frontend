@@ -5,8 +5,16 @@ import PostForm from '../components/post/PostForm';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, Users, BookOpen, Bookmark, Settings, HelpCircle, Heart } from 'lucide-react';
-import { User, Post } from '../types';
+import { User } from '../types';
+import { Post } from '../types/post';
 import axiosInstance from '../utils/axios';
+
+interface Comment {
+  id: string;
+  content: string;
+  author: User;
+  createdAt: string;
+}
 
 interface ApiResponse<T> {
   status: 'success' | 'error';
@@ -14,10 +22,14 @@ interface ApiResponse<T> {
   data: T;
 }
 
+interface SuggestedUser extends User {
+  relevance?: string[];
+}
+
 const Feed: React.FC = () => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +53,10 @@ const Feed: React.FC = () => {
     try {
       const response = await axiosInstance.get<ApiResponse<User[]>>('/api/users/suggestions');
       if (response.data.status === 'success') {
-        setSuggestedUsers(response.data.data);
+        setSuggestedUsers(response.data.data.map(user => ({
+          ...user,
+          relevance: []
+        }) as SuggestedUser));
       }
     } catch (error) {
       console.error('Failed to fetch suggested users:', error);
@@ -279,18 +294,18 @@ const Feed: React.FC = () => {
                 <div className="space-y-2 -mx-4 px-4">
                   {suggestedUsers.map((suggestedUser) => (
                     <div 
-                      key={suggestedUser.id} 
+                      key={suggestedUser._id} 
                       className="flex items-center p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors mx-0"
                     >
                       <img 
-                        src={suggestedUser.avatar} 
+                        src={suggestedUser.avatar || '/default-avatar.png'} 
                         alt={suggestedUser.name}
                         className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.location.href = `/profile/${suggestedUser.id}`}
+                        onClick={() => window.location.href = `/profile/${suggestedUser._id}`}
                       />
                       <div 
                         className="ml-3 cursor-pointer" 
-                        onClick={() => window.location.href = `/profile/${suggestedUser.id}`}
+                        onClick={() => window.location.href = `/profile/${suggestedUser._id}`}
                       >
                         <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                           {suggestedUser.name}
@@ -301,13 +316,13 @@ const Feed: React.FC = () => {
                           )}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {suggestedUser.role === 'faculty' ? 'Faculty' : suggestedUser.department}
+                          {suggestedUser.role === 'faculty' ? 'Faculty' : suggestedUser.department || suggestedUser.program || ''}
                         </p>
                       </div>
                       <div className="ml-auto">
                         <button 
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium whitespace-nowrap"
-                          onClick={() => window.location.href = `/friends?add=${suggestedUser.id}`}
+                          onClick={() => window.location.href = `/friends?add=${suggestedUser._id}`}
                         >
                           Add Friend
                         </button>

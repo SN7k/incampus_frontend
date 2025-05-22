@@ -1,7 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2 } from 'lucide-react';
-import { Post } from '../../types';
+import { User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+
+// Import the User interface but extend it locally to ensure it has universityId
+interface ExtendedUser extends User {
+  universityId: string;
+}
+
+// Define Media type for post attachments
+interface Media {
+  type: 'image' | 'video';
+  url: string;
+}
+
+interface Post {
+  id: string;
+  content: string;
+  images?: string[];
+  user: ExtendedUser;
+  likes: number; // Changed to number only since it's used in arithmetic operations
+  comments: any[];
+  createdAt: string;
+  updatedAt: string;
+  media?: Media[];
+}
 
 interface PostCardProps {
   post: Post;
@@ -131,7 +154,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     
     if (!isCurrentUser) {
       // Store the target user ID if it's not the current user
-      localStorage.setItem('viewProfileUserId', post.user.id);
+      // Ensure the ID is always a string
+      localStorage.setItem('viewProfileUserId', post.user.id || '');
       
       // If this is a faculty profile, store a special ID
       if (post.user.role === 'faculty') {
@@ -268,12 +292,18 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+  // Updated formatDate to accept a string parameter
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Unknown date';
+    }
   };
 
   return (

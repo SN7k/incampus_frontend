@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User } from '../types';
+import type { User } from '../types';
+
+// Extend the User type to ensure universityId is recognized
+interface ExtendedUser extends User {
+  universityId: string;
+}
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { ArrowLeft, User as UserIcon, Lock, Trash2 } from 'lucide-react';
@@ -67,7 +72,10 @@ const Settings: React.FC = () => {
         
         {/* Personal Information Tab */}
         {activeTab === 'personal' && (
-          <PersonalInformationTab user={user} updateProfile={updateProfile} />
+          <PersonalInformationTab 
+            user={user as ExtendedUser | null} 
+            updateProfile={updateProfile as (profileData: Partial<ExtendedUser>) => void} 
+          />
         )}
         
         {/* Password & Security Tab */}
@@ -86,8 +94,8 @@ const Settings: React.FC = () => {
 
 // Personal Information Tab Component
 const PersonalInformationTab: React.FC<{
-  user: User | null;
-  updateProfile: (profileData: Partial<User>) => void;
+  user: ExtendedUser | null;
+  updateProfile: (profileData: Partial<ExtendedUser>) => void;
 }> = ({ user, updateProfile }) => {
   const [formData, setFormData] = useState({
     email: user?.email || '',

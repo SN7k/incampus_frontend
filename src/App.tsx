@@ -71,36 +71,23 @@ function AppContent() {
       console.log('Raw user string from localStorage:', userStr);
       const user = JSON.parse(userStr);
       console.log('Parsed user object:', user);
-      console.log('User object properties:', Object.keys(user));
       
-      // Ensure we have the required user data
-      console.log('User name:', user.name);
-      console.log('User email:', user.email);
-      console.log('User role:', user.role);
-      
-      // Even if some properties are missing, try to create a valid pendingUserData object
-      // This is more forgiving than the previous implementation
+      // Create a valid pendingUserData object
       const userData = {
-        fullName: user.name || '',
+        fullName: user.name || user.collegeId || '',
         email: user.email || '',
         role: (user.role as 'student' | 'faculty') || 'student',
-        universityId: user.universityId,
+        universityId: user.collegeId,
         department: user.department,
+        program: user.program,
         batch: user.batch
       };
-      
-      // Check if we have the minimum required data
-      if (!userData.fullName || !userData.email) {
-        console.error('Critical user data missing even after processing:', userData);
-        setRegistrationStep('login');
-        return;
-      }
       
       console.log('Setting pendingUserData:', userData);
       setPendingUserData(userData);
       
-      // Force the registration step to profile setup
-      console.log('Forcing navigation to profile-setup');
+      // Set the registration step to profile setup
+      console.log('Moving to profile setup');
       setRegistrationStep('profile-setup');
     } catch (error) {
       console.error('Error parsing user data:', error);

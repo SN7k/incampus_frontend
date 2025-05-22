@@ -118,18 +118,14 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
         
         // Log the user data we're about to store
         console.log('Storing user data in localStorage:', user);
-        console.log('User has name property:', !!user.name);
-        console.log('User has email property:', !!user.email);
-        console.log('User has role property:', !!user.role);
         
-        // Ensure user object has all required properties
-        // If the API doesn't provide the expected structure, create it
+        // Create a processed user object with all required fields
         const processedUser = {
           ...user,
-          // Ensure name exists
-          name: user.name || '',
+          // Use collegeId as name if name is not available
+          name: user.name || user.collegeId || '',
           // Ensure email exists
-          email: user.email || '',
+          email: user.email || email,
           // Ensure role exists
           role: user.role || 'student'
         };

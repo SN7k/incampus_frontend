@@ -5,7 +5,8 @@ import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
 import { School, MapPin, Edit, Camera, Award, X, UserMinus } from 'lucide-react';
 import Button from '../components/ui/Button';
-import { Post, User } from '../types';
+import { User } from '../types';
+import { Post } from '../types/post';
 import CreatePostModal from '../components/post/CreatePostModal';
 import axiosInstance from '../utils/axios';
 
@@ -327,9 +328,19 @@ const Profile: React.FC = () => {
                   Create Post
                       </Button>
                     )}
-              {userPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
+              {userPosts.map((post) => {
+                // Create a compatible post object that matches what PostCard expects
+                const compatiblePost = {
+                  ...post,
+                  // Ensure user object has all required properties
+                  user: {
+                    ...post.user,
+                    // Ensure _id is always present (use id as fallback)
+                    _id: post.user._id || post.user.id
+                  }
+                };
+                return <PostCard key={post.id} post={compatiblePost as any} />;
+              })}
             </motion.div>
           )}
 

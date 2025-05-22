@@ -4,13 +4,17 @@ import { Users } from 'lucide-react';
 import { User } from '../../types';
 import { friendService } from '../../services/friendService';
 
+interface FriendRequest extends User {
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
 interface FriendSearchPopupProps {
   isVisible: boolean;
   searchQuery: string;
   currentUserId: string;
   friends: User[];
   friendRequests: User[];
-  sentRequests: User[];
+  sentRequests: FriendRequest[];
   onUserClick: (userId: string) => void;
 }
 
@@ -58,11 +62,11 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   
   // Determine user type for each filtered user
   const getUserType = (userId: string) => {
-    if (friends.some(friend => friend.id === userId)) {
+    if (friends.some(friend => friend._id === userId)) {
       return 'friend';
-    } else if (friendRequests.some(req => req.id === userId)) {
+    } else if (friendRequests.some(req => req._id === userId)) {
       return 'request';
-    } else if (sentRequests.some(req => req.id === userId && req.status === 'pending')) {
+    } else if (sentRequests.some(req => req._id === userId && req.status === 'pending')) {
       return 'sent';
     } else {
       return 'other';
@@ -115,7 +119,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
 
           <div className="space-y-2">
             {searchResults.map(user => {
-              const userType = getUserType(user.id);
+              const userType = getUserType(user._id);
               let statusBadge = null;
               
               // Determine badge based on user type
@@ -141,15 +145,21 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
               
               return (
                 <div 
-                  key={user.id}
+                  key={user._id}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
-                  onClick={() => onUserClick(user.id)}
+                  onClick={() => onUserClick(user._id)}
                 >
                   <div className="flex items-center">
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                    <img 
+                      src={user.avatar || '/default-avatar.png'} 
+                      alt={user.name} 
+                      className="w-8 h-8 rounded-full object-cover" 
+                    />
                     <div className="ml-2">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.role === 'faculty' ? 'Faculty' : 'Computer Science'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {user.role === 'faculty' ? 'Faculty' : 'Student'} • {user.department || user.program || ''}
+                      </p>
                     </div>
                   </div>
                   {statusBadge}

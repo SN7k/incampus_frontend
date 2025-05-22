@@ -17,21 +17,21 @@ export interface User {
 
 export interface Post {
   id: string;
-  userId: string;
-  user: User;
   content: string;
-  media?: Media[];
+  images?: string[];
+  user: User;
   likes: number;
-  comments: Comment[];
-  createdAt: Date;
+  comments: any[];
+  createdAt: string;
+  updatedAt: string;
+  media?: Media[];
 }
 
 export interface Comment {
   id: string;
-  userId: string;
-  user: User;
   content: string;
-  createdAt: Date;
+  author: User;
+  createdAt: string;
 }
 
 export interface Media {
