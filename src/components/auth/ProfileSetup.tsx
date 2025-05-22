@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
-import axios from 'axios';
+import axiosInstance from '../../utils/axios';
 
 interface ApiResponse {
   status: string;
@@ -62,12 +62,10 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
     try {
-      // Get the API URL from environment variables or use a default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      
-      // Get token from localStorage (should be set during OTP verification)
+      // Get token from localStorage
       const token = localStorage.getItem('token');
       
       if (!token) {
@@ -85,20 +83,14 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         role: userInfo.role
       };
       
-      // Send profile data to backend
-      const response = await axios.post<ApiResponse>(
-        `${apiUrl}/api/profile/setup`,
-        profileData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      console.log('Sending profile setup request:', { ...profileData, avatar: '[REDACTED]' });
+      
+      // Send profile data to backend using axiosInstance
+      const response = await axiosInstance.post<ApiResponse>('/api/profile/setup', profileData);
+      
+      console.log('Profile setup response:', response.data);
       
       if (response.data.status === 'success') {
-        console.log('Profile setup successful');
-        
         // Update user data in localStorage if returned
         if (response.data.data?.user) {
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
@@ -111,7 +103,13 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       }
     } catch (error: any) {
       console.error('Profile setup error:', error);
-      setError(error.response?.data?.message || 'Failed to complete profile setup. Please try again.');
+      if (error.response) {
+        setError(error.response.data.message || 'Failed to complete profile setup. Please try again.');
+      } else if (error.request) {
+        setError('No response from server. Please check your internet connection.');
+      } else {
+        setError('Failed to complete profile setup. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
