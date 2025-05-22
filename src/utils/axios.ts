@@ -2,10 +2,7 @@ import axios from 'axios';
 
 // Get the base URL based on the environment
 const getBaseUrl = () => {
-  if (import.meta.env.PROD) {
-    return 'https://incampus-backend.onrender.com';
-  }
-  return 'http://localhost:5000';
+  return 'https://incampus-backend.onrender.com';
 };
 
 // Create axios instance with default config
