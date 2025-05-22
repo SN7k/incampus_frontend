@@ -169,8 +169,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Listen for friend requests to create notifications
   useEffect(() => {
     const handleFriendRequest = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { fromUser, toUser, requestType } = customEvent.detail;
+      if (!(event instanceof CustomEvent)) return;
+      const { fromUser, toUser, requestType } = event.detail;
       
       if (user && ((requestType === 'new' && toUser === user.id) || 
                    (requestType === 'accepted' && toUser === user.id))) {
@@ -184,17 +184,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    window.addEventListener('friendRequest', handleFriendRequest);
+    const boundHandler = handleFriendRequest.bind(null);
+    window.addEventListener('friendRequest', boundHandler);
     return () => {
-      window.removeEventListener('friendRequest', handleFriendRequest);
+      window.removeEventListener('friendRequest', boundHandler);
     };
   }, [user]);
 
   // Listen for post likes to create notifications
   useEffect(() => {
     const handlePostLike = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { fromUser, postId, postAuthorId } = customEvent.detail;
+      if (!(event instanceof CustomEvent)) return;
+      const { fromUser, postId, postAuthorId } = event.detail;
       
       if (user && postAuthorId === user.id && fromUser !== user.id) {
         addNotification({
@@ -206,17 +207,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    window.addEventListener('postLike', handlePostLike);
+    const boundHandler = handlePostLike.bind(null);
+    window.addEventListener('postLike', boundHandler);
     return () => {
-      window.removeEventListener('postLike', handlePostLike);
+      window.removeEventListener('postLike', boundHandler);
     };
   }, [user]);
 
   // Listen for post comments to create notifications
   useEffect(() => {
     const handlePostComment = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { fromUser, postId, postAuthorId } = customEvent.detail;
+      if (!(event instanceof CustomEvent)) return;
+      const { fromUser, postId, postAuthorId } = event.detail;
       
       if (user && postAuthorId === user.id && fromUser !== user.id) {
         addNotification({
@@ -228,9 +230,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    window.addEventListener('postComment', handlePostComment);
+    const boundHandler = handlePostComment.bind(null);
+    window.addEventListener('postComment', boundHandler);
     return () => {
-      window.removeEventListener('postComment', handlePostComment);
+      window.removeEventListener('postComment', boundHandler);
     };
   }, [user]);
 

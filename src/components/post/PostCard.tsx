@@ -1,30 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2 } from 'lucide-react';
-import { User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
-
-// Import the User interface but extend it locally to ensure it has universityId
-interface ExtendedUser extends User {
-  universityId: string;
-}
-
-// Define Media type for post attachments
-interface Media {
-  type: 'image' | 'video';
-  url: string;
-}
-
-interface Post {
-  id: string;
-  content: string;
-  images?: string[];
-  user: ExtendedUser;
-  likes: number; // Changed to number only since it's used in arithmetic operations
-  comments: any[];
-  createdAt: string;
-  updatedAt: string;
-  media?: Media[];
-}
+import { Post } from '../../types/post';
 
 interface PostCardProps {
   post: Post;
