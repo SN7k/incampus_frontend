@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -37,10 +37,15 @@ interface PendingProfileData {
 }
 
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
   const [pendingProfileData, setPendingProfileData] = useState<PendingProfileData | null>(null);
+  
+  // Add debug logging for authentication state
+  useEffect(() => {
+    console.log('Auth state changed:', { isAuthenticated, loading, userId: user?.id });
+  }, [isAuthenticated, loading, user]);
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);

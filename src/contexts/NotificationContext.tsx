@@ -52,9 +52,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Fetch notifications from API
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user || !user.id) {
+      console.log('Skipping notification fetch: User or user ID is undefined');
+      return;
+    }
 
     try {
+      console.log('Fetching notifications for user ID:', user.id);
       const response = await axiosInstance.get<ApiResponse<Notification[]>>(`/api/notifications/${user.id}`);
       
       if (response.data.status === 'success') {

@@ -39,17 +39,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     if (token && savedUser) {
       try {
+        // Parse the user data and validate it has an ID
+        const parsedUser = JSON.parse(savedUser);
+        
+        // Validate that the user object has the required fields
+        if (!parsedUser || !parsedUser.id) {
+          console.error('Invalid user data in localStorage:', parsedUser);
+          // Clear invalid data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return { ...initialState, loading: false };
+        }
+        
         // Set the token in axios instance
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
+        console.log('Successfully restored auth state with user:', parsedUser.id);
         return {
           isAuthenticated: true,
-          user: JSON.parse(savedUser),
+          user: parsedUser,
           error: null,
           loading: false
         };
       } catch (e) {
         console.error('Failed to parse saved user data', e);
+        // Clear invalid data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         return { ...initialState, loading: false };
       }
     }
@@ -136,6 +152,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const authenticateWithToken = (token: string, user: User) => {
     try {
+      // Validate user data before storing
+      if (!user || !user.id) {
+        console.error('Invalid user data in authenticateWithToken:', user);
+        setState({
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+          error: 'Invalid user data received from server'
+        });
+        return;
+      }
+      
+      console.log('Authenticating with token, user ID:', user.id);
+      
       // Store token and user data
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
