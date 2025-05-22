@@ -53,6 +53,9 @@ function AppContent() {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
+    console.log('Token exists:', !!token);
+    console.log('User string exists:', !!userStr);
+    
     if (!token || !userStr) {
       console.error('Token or user data not found after OTP verification');
       setRegistrationStep('login');
@@ -60,10 +63,17 @@ function AppContent() {
     }
 
     try {
+      console.log('Raw user string from localStorage:', userStr);
       const user = JSON.parse(userStr);
+      console.log('Parsed user object:', user);
+      console.log('User object properties:', Object.keys(user));
       
       // Ensure we have the required user data
       // Check for name instead of fullName to match the User interface
+      console.log('User name:', user.name);
+      console.log('User email:', user.email);
+      console.log('User role:', user.role);
+      
       if (!user.name || !user.email || !user.role) {
         console.error('Missing required user data:', user);
         setRegistrationStep('login');

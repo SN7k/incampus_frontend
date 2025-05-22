@@ -111,9 +111,16 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
       });
 
       console.log('OTP verification response:', response.data);
+      console.log('OTP verification user data:', response.data.data?.user);
 
       if (response.data.status === 'success' && response.data.data?.token && response.data.data?.user) {
         const { token, user } = response.data.data;
+        
+        // Log the user data we're about to store
+        console.log('Storing user data in localStorage:', user);
+        console.log('User has name property:', !!user.name);
+        console.log('User has email property:', !!user.email);
+        console.log('User has role property:', !!user.role);
         
         // Store token and user data
         localStorage.setItem('token', token);
