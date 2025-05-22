@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import axios from 'axios';
+
+interface ApiResponse {
+  status: string;
+  message?: string;
+  data?: any;
+}
 
 type UserRole = 'student' | 'faculty';
 
@@ -79,25 +86,49 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       }
     }
     
-    // Simulate API call
+    // Make API call to register user
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      // Here you would normally send the data to your backend
+      // Get the API URL from environment variables or use a default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
-      // Pass the user data to the parent component to handle OTP verification
-      onSignupSuccess({
-        role,
-        fullName,
+      // Prepare user data for API
+      const userData = {
+        name: fullName,
         email,
-        universityId: role === 'student' ? universityId : undefined,
-        program: role === 'student' ? program : undefined,
-        batch: role === 'student' ? batch : undefined,
-        department: role === 'faculty' ? department : undefined
-      });
+        password,
+        role,
+        ...(role === 'student' ? {
+          universityId,
+          program,
+          batch
+        } : {
+          department
+        })
+      };
       
-    } catch (error) {
-      setFormError('Failed to create account. Please try again.');
+      // Send registration request to backend
+      const response = await axios.post<ApiResponse>(`${apiUrl}/api/auth/signup`, userData);
+      
+      if (response.data.status === 'success') {
+        console.log('Registration successful, proceeding to OTP verification');
+        
+        // Pass the user data to the parent component to handle OTP verification
+        onSignupSuccess({
+          role,
+          fullName,
+          email,
+          universityId: role === 'student' ? universityId : undefined,
+          program: role === 'student' ? program : undefined,
+          batch: role === 'student' ? batch : undefined,
+          department: role === 'faculty' ? department : undefined
+        });
+      } else {
+        setFormError(response.data.message || 'Failed to create account. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setFormError(error.response?.data?.message || 'Failed to create account. Please try again.');
       setLoading(false);
     }
   };

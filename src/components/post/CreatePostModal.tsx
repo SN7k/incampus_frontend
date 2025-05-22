@@ -4,17 +4,19 @@ import { useTheme } from '../../contexts/ThemeContext';
 import axios from 'axios';
 
 interface CreatePostModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   userAvatar: string;
   userName: string;
+  onPostCreated?: (newPost: any) => void;
 }
 
 const CreatePostModal: React.FC<CreatePostModalProps> = ({ 
   isOpen, 
   onClose, 
   userAvatar,
-  userName 
+  userName,
+  onPostCreated
 }) => {
   const { isDarkMode } = useTheme();
   const [content, setContent] = useState('');
@@ -82,6 +84,14 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
       window.dispatchEvent(new CustomEvent('postCreated', { 
         detail: { post: (response.data as { data: { post: any } }).data.post } 
       }));
+      
+      // Get the newly created post from the response
+      const newPost = (response.data as { data: { post: any } }).data.post;
+      
+      // Call the onPostCreated callback if provided
+      if (onPostCreated) {
+        onPostCreated(newPost);
+      }
       
       // Reset the form and close modal
       setContent('');

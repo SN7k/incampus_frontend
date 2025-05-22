@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
+import axios from 'axios';
+
+interface ApiResponse {
+  status: string;
+  message?: string;
+  data?: {
+    user?: User;
+    token?: string;
+  };
+}
 
 interface ProfileSetupProps {
   userInfo: {
@@ -54,19 +64,54 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setLoading(true);
     
     try {
-      // For demo purposes, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get the API URL from environment variables or use a default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
-      // In a real app, you would send this data to your backend
-      onProfileComplete({
+      // Get token from localStorage (should be set during OTP verification)
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError('Authentication token not found. Please try signing up again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Prepare profile data
+      const profileData = {
         name: userInfo.fullName,
         avatar: profilePicture || '',
         coverPhoto: coverPhoto || undefined,
         bio: bio || undefined,
         role: userInfo.role
-      });
-    } catch (error) {
-      setError('Failed to complete profile setup. Please try again.');
+      };
+      
+      // Send profile data to backend
+      const response = await axios.post<ApiResponse>(
+        `${apiUrl}/api/profile/setup`,
+        profileData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.status === 'success') {
+        console.log('Profile setup successful');
+        
+        // Update user data in localStorage if returned
+        if (response.data.data?.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        }
+        
+        // Call the completion handler
+        onProfileComplete(profileData);
+      } else {
+        setError(response.data.message || 'Failed to complete profile setup. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Profile setup error:', error);
+      setError(error.response?.data?.message || 'Failed to complete profile setup. Please try again.');
     } finally {
       setLoading(false);
     }

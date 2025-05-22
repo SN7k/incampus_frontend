@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
+import axios from 'axios';
 
-// Keeping the interface for future reference when backend is connected
-// interface ApiResponse {
-//   status: string;
-//   message?: string;
-//   data?: {
-//     token?: string;
-//     user?: any;
-//   };
-// }
+interface ApiResponse {
+  status: string;
+  message?: string;
+  data?: {
+    token?: string;
+    user?: any;
+  };
+}
 
 interface OtpVerificationProps {
   email: string;
@@ -100,15 +100,29 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
     setLoading(true);
     
     try {
-      // In a real application, this would make an API call to verify the OTP
-      // For now, we'll simulate a verification process with a delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get the API URL from environment variables or use a default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
-      // Call the completion handler
-      // This would normally happen after successful API verification
-      onVerificationComplete();
-    } catch (err) {
-      setError('Verification failed. Please try again.');
+      // Make API call to verify OTP
+      const response = await axios.post<ApiResponse>(`${apiUrl}/api/auth/verify-otp`, {
+        email,
+        otp: otpString
+      });
+      
+      if (response.data.status === 'success') {
+        // Store token if provided
+        if (response.data.data?.token) {
+          localStorage.setItem('token', response.data.data.token);
+        }
+        
+        // Call the completion handler
+        onVerificationComplete();
+      } else {
+        setError(response.data.message || 'Verification failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('OTP verification error:', err);
+      setError(err.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }

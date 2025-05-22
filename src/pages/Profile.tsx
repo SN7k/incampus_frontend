@@ -581,6 +581,8 @@ const Profile: React.FC = () => {
             setUserPosts(prev => [newPost, ...prev]);
             setIsCreatePostModalOpen(false);
           }}
+          userAvatar={user?.avatar || '/default-avatar.png'}
+          userName={user?.name || 'User'}
         />
       )}
     </div>
