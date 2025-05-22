@@ -221,12 +221,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           coverPhoto: user.coverPhoto
         };
         
+        // Set axios authorization header first
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Then store the data
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(validUser));
         
-        // Set axios authorization header
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
+        // Update state
         setState({
           isAuthenticated: true,
           user: validUser,
@@ -234,8 +236,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           error: null
         });
         
-        // Redirect to home page
-        window.location.href = '/';
+        // Wait a bit before redirecting to ensure state is updated
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 100);
       } else {
         setState({
           isAuthenticated: false,

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
 import axiosInstance from '../../utils/axios';
-import { useNavigate } from 'react-router-dom';
 
 interface ApiResponse {
   status: string;
@@ -24,7 +23,6 @@ interface ProfileSetupProps {
 }
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete, onSkip }) => {
-  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);

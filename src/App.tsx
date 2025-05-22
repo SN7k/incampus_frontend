@@ -14,6 +14,7 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
+import axiosInstance from './utils/axios';
 // Import types as needed
 
 // Friend request data is now handled by the Friends component
@@ -60,7 +61,8 @@ function AppContent() {
   // Add error handling for initial load
   useEffect(() => {
     // Only run this when authenticated and not loading
-    if (isAuthenticated && !loading) {
+    if (isAuthenticated && !loading && user) {
+      console.log('User is authenticated:', user);
       // Add a global error handler for uncaught errors
       const handleError = (event: ErrorEvent) => {
         console.error('Uncaught error:', event.error);
@@ -85,7 +87,27 @@ function AppContent() {
         window.removeEventListener('error', handleError);
       };
     }
-  }, [isAuthenticated, loading, logout]);
+  }, [isAuthenticated, loading, user, logout]);
+
+  // Add a check for token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser && !isAuthenticated && !loading) {
+      console.log('Found saved credentials, attempting to restore session');
+      try {
+        const user = JSON.parse(savedUser);
+        console.log('Parsed user data:', user);
+        // Set axios authorization header
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } catch (error) {
+        console.error('Failed to restore session:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, [isAuthenticated, loading]);
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);
