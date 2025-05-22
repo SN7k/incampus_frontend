@@ -1,13 +1,17 @@
 export interface User {
   id: string;
   name: string;
+  email: string;
   universityId: string;
   role: 'student' | 'faculty';
   avatar: string;
+  department?: string;
+  batch?: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
   bio?: string;
   coverPhoto?: string;
-  email?: string;
-  department?: string;
   relevance?: string[];
 }
 

@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
-import { mockUsers } from '../../data/mockData';
 import { Search } from 'lucide-react';
+import { friendService } from '../../services/friendService';
 
 interface FriendSuggestionsProps {
   currentUser: Partial<User>;
@@ -10,26 +10,37 @@ interface FriendSuggestionsProps {
 }
 
 const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onComplete }) => {
-  // Filter out the current user from suggestions
-  const allSuggestions = mockUsers.filter(user => 
-    user.universityId !== currentUser.universityId
-  );
-  
+  const [suggestions, setSuggestions] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch suggestions on component mount
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      try {
+        const data = await friendService.getSuggestions();
+        setSuggestions(data);
+      } catch (err) {
+        setError('Failed to load suggestions');
+        console.error('Error fetching suggestions:', err);
+      }
+    };
+    fetchSuggestions();
+  }, []);
   
   // Filter suggestions based on search query
-  const suggestions = useMemo(() => {
-    if (!searchQuery.trim()) return allSuggestions;
+  const filteredSuggestions = useMemo(() => {
+    if (!searchQuery.trim()) return suggestions;
     
     const query = searchQuery.toLowerCase();
-    return allSuggestions.filter(user => 
+    return suggestions.filter(user => 
       user.name.toLowerCase().includes(query) || 
       user.universityId.toLowerCase().includes(query) ||
       (user.role && user.role.toLowerCase().includes(query))
     );
-  }, [allSuggestions, searchQuery]);
+  }, [suggestions, searchQuery]);
   
   const toggleUserSelection = (userId: string) => {
     if (selectedUsers.includes(userId)) {
@@ -42,10 +53,13 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onCo
   const handleComplete = async () => {
     setLoading(true);
     try {
-      // In a real app, you would send the followed users to your backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send friend requests to selected users
+      await Promise.all(
+        selectedUsers.map(userId => friendService.sendFriendRequest(userId))
+      );
       onComplete(selectedUsers);
     } catch (error) {
+      setError('Failed to send friend requests');
       console.error('Failed to save followed users', error);
     } finally {
       setLoading(false);
@@ -74,9 +88,15 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onCo
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg">
+          {error}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        {suggestions.map(user => (
+        {filteredSuggestions.map(user => (
           <div 
             key={user.id}
             className={`p-4 rounded-lg border ${

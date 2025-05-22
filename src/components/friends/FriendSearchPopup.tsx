@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users } from 'lucide-react';
-import { mockUsers } from '../../data/mockData';
+import { User } from '../../types';
+import { friendService } from '../../services/friendService';
 
 interface FriendSearchPopupProps {
   isVisible: boolean;
   searchQuery: string;
   currentUserId: string;
-  friends: any[];
-  friendRequests: any[];
-  sentRequests: any[];
-  onUserClick: (userId: number) => void;
+  friends: User[];
+  friendRequests: User[];
+  sentRequests: User[];
+  onUserClick: (userId: string) => void;
 }
 
 const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
@@ -22,32 +23,46 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   sentRequests,
   onUserClick
 }) => {
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!isVisible || !searchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const results = await friendService.searchUsers(searchQuery);
+        setSearchResults(results);
+      } catch (err) {
+        setError('Failed to search users');
+        console.error('Error searching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, isVisible]);
+  
   // Don't show popup if search query is empty
   if (!isVisible || !searchQuery) {
     return null;
   }
   
-  // Filter users based on search query only (not by active tab)
-  const filteredUsers = mockUsers
-    .filter(user => user.id !== currentUserId) // Exclude current user
-    .filter(user => 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  
-  // If no results found, return null
-  if (filteredUsers.length === 0) {
-    return null;
-  }
-  
   // Determine user type for each filtered user
   const getUserType = (userId: string) => {
-    const numId = parseInt(userId);
-    if (friends.some(friend => friend.id === numId)) {
+    if (friends.some(friend => friend.id === userId)) {
       return 'friend';
-    } else if (friendRequests.some(req => req.id === numId)) {
+    } else if (friendRequests.some(req => req.id === userId)) {
       return 'request';
-    } else if (sentRequests.some(req => req.id === numId && req.status === 'pending')) {
+    } else if (sentRequests.some(req => req.id === userId && req.status === 'pending')) {
       return 'sent';
     } else {
       return 'other';
@@ -79,8 +94,27 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
             <Users size={16} className="text-blue-500 dark:text-blue-400 mr-2" />
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">All Users</h3>
           </div>
+
+          {loading && (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg mb-2">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && searchResults.length === 0 && (
+            <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+              No users found
+            </div>
+          )}
+
           <div className="space-y-2">
-            {filteredUsers.map(user => {
+            {searchResults.map(user => {
               const userType = getUserType(user.id);
               let statusBadge = null;
               
@@ -109,7 +143,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
                 <div 
                   key={user.id}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
-                  onClick={() => onUserClick(parseInt(user.id))}
+                  onClick={() => onUserClick(user.id)}
                 >
                   <div className="flex items-center">
                     <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
