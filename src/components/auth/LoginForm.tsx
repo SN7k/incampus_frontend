@@ -16,7 +16,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth(); // Use the login function from AuthContext
+  const { login, loading: authLoading, error } = useAuth(); // Use the login function from AuthContext
+
+  // If login function is not available from context, maybe render a fallback or null
+  if (!login) {
+    console.error('LoginForm: Auth context login function is not available.');
+    return <div>Error: Authentication context not fully initialized.</div>; // Or return null or a loading indicator
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

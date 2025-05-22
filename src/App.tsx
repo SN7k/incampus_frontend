@@ -60,13 +60,21 @@ function AppContent() {
       loading, 
       userId: user?._id,
       hasToken: !!localStorage.getItem('token'),
-      hasUser: !!localStorage.getItem('user')
+      hasUser: !!localStorage.getItem('user'),
+      // Log dependency values
+      dependencies: { isAuthenticated, loading, user: !!user }
     });
   }, [isAuthenticated, loading, user]); // Dependencies: isAuthenticated, loading, user
   
   // Add error handling for initial load and uncaught errors
   useEffect(() => {
-    console.log('AppContent: Error handling useEffect triggered.', { isAuthenticated, loading, user: !!user });
+    console.log('AppContent: Error handling useEffect triggered.', { 
+      isAuthenticated, 
+      loading, 
+      user: !!user, 
+      // Log dependency values
+      dependencies: { isAuthenticated, loading, user: !!user, logout: !!logout }
+    });
     // Only run this when authenticated and not loading
     if (isAuthenticated && !loading && user) {
       console.log('AppContent: User is authenticated, setting up error handlers.', user);
@@ -120,7 +128,12 @@ function AppContent() {
 
   // Add a check for token on mount (handled in AuthProvider init state)
   useEffect(() => {
-    console.log('AppContent: Token check useEffect triggered.', { isAuthenticated, loading });
+    console.log('AppContent: Token check useEffect triggered.', { 
+      isAuthenticated, 
+      loading,
+      // Log dependency values
+      dependencies: { isAuthenticated, loading }
+    });
     // This effect is primarily for debugging or if AuthProvider init isn't enough
     // AuthProvider's initial state logic handles session restoration.
     // We can keep this for extra logging if needed, but ensure it doesn't cause issues.
