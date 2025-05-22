@@ -100,11 +100,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }
         
+        // Set a flag to indicate we're completing onboarding
+        localStorage.setItem('completingOnboarding', 'true');
+        
         // Call the completion handler
         onProfileComplete(profileData);
-        
-        // Navigate to home page
-        navigate('/');
       } else {
         setError(response.data.message || 'Failed to complete profile setup. Please try again.');
       }
@@ -155,11 +155,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }
         
+        // Set a flag to indicate we're completing onboarding
+        localStorage.setItem('completingOnboarding', 'true');
+        
         // Call the skip handler
         onSkip();
-        
-        // Navigate to home page
-        navigate('/');
       } else {
         setError(response.data.message || 'Failed to skip profile setup. Please try again.');
       }

@@ -133,7 +133,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: parsedUser.role || 'student',
           avatar: parsedUser.avatar || '/default-avatar.png',
           createdAt: parsedUser.createdAt || new Date().toISOString(),
-          updatedAt: parsedUser.updatedAt || new Date().toISOString()
+          updatedAt: parsedUser.updatedAt || new Date().toISOString(),
+          bio: parsedUser.bio,
+          coverPhoto: parsedUser.coverPhoto
         };
         
         // Set axios authorization header
@@ -157,6 +159,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return Promise.reject(error);
           }
         );
+        
+        // If we're completing onboarding, ensure we stay authenticated
+        const completingOnboarding = localStorage.getItem('completingOnboarding');
+        if (completingOnboarding === 'true') {
+          console.log('Completing onboarding, ensuring authentication state');
+          return {
+            isAuthenticated: true,
+            user: validUser,
+            error: null,
+            loading: false
+          };
+        }
         
         return {
           isAuthenticated: true,
