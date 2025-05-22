@@ -30,6 +30,17 @@ interface ApiResponse<T> {
   data: T;
 }
 
+interface NotificationResponse {
+  notifications: Notification[];
+  pagination: {
+    total: number;
+    unreadCount: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const useNotifications = () => {
@@ -59,11 +70,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     try {
       console.log('Fetching notifications for user ID:', user.id);
-      const response = await axiosInstance.get<ApiResponse<Notification[]>>(`/api/notifications/${user.id}`);
+      const response = await axiosInstance.get<ApiResponse<NotificationResponse>>('/api/notifications');
       
       if (response.data.status === 'success') {
-        setNotifications(response.data.data);
-        setUnreadCount(response.data.data.filter(notif => !notif.read).length);
+        setNotifications(response.data.data.notifications);
+        setUnreadCount(response.data.data.pagination.unreadCount);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -157,8 +168,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Listen for friend requests to create notifications
   useEffect(() => {
-    const handleFriendRequest = (event: CustomEvent) => {
-      const { fromUser, toUser, requestType } = event.detail;
+    const handleFriendRequest = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { fromUser, toUser, requestType } = customEvent.detail;
       
       if (user && ((requestType === 'new' && toUser === user.id) || 
                    (requestType === 'accepted' && toUser === user.id))) {
@@ -172,16 +184,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    window.addEventListener('friendRequest', handleFriendRequest as EventListener);
+    window.addEventListener('friendRequest', handleFriendRequest);
     return () => {
-      window.removeEventListener('friendRequest', handleFriendRequest as EventListener);
+      window.removeEventListener('friendRequest', handleFriendRequest);
     };
   }, [user]);
 
   // Listen for post likes to create notifications
   useEffect(() => {
-    const handlePostLike = (event: CustomEvent) => {
-      const { fromUser, postId, postAuthorId } = event.detail;
+    const handlePostLike = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { fromUser, postId, postAuthorId } = customEvent.detail;
       
       if (user && postAuthorId === user.id && fromUser !== user.id) {
         addNotification({
@@ -193,16 +206,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    window.addEventListener('postLike', handlePostLike as EventListener);
+    window.addEventListener('postLike', handlePostLike);
     return () => {
-      window.removeEventListener('postLike', handlePostLike as EventListener);
+      window.removeEventListener('postLike', handlePostLike);
     };
   }, [user]);
 
   // Listen for post comments to create notifications
   useEffect(() => {
-    const handlePostComment = (event: CustomEvent) => {
-      const { fromUser, postId, postAuthorId } = event.detail;
+    const handlePostComment = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { fromUser, postId, postAuthorId } = customEvent.detail;
       
       if (user && postAuthorId === user.id && fromUser !== user.id) {
         addNotification({
@@ -214,9 +228,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    window.addEventListener('postComment', handlePostComment as EventListener);
+    window.addEventListener('postComment', handlePostComment);
     return () => {
-      window.removeEventListener('postComment', handlePostComment as EventListener);
+      window.removeEventListener('postComment', handlePostComment);
     };
   }, [user]);
 
