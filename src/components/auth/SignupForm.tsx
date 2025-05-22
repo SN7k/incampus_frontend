@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import axiosInstance from '../../utils/axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ApiResponse {
   status: string;
@@ -22,9 +23,15 @@ interface SignupFormProps {
     department?: string;
     role: 'student' | 'faculty';
   }) => void;
+  onShowProfileSetup: () => void;
 }
 
-const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess }) => {
+const SignupForm: React.FC<SignupFormProps> = ({ 
+  onBackToLogin, 
+  onSignupSuccess,
+  onShowProfileSetup 
+}) => {
+  const auth = useAuth();
   const [role, setRole] = useState<UserRole>('student');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +43,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +120,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       
       if (response.data.status === 'success') {
         console.log('Registration successful, proceeding to OTP verification');
+        setShowOTPVerification(true);
         
         // Pass the user data to the parent component to handle OTP verification
         onSignupSuccess({
@@ -128,16 +138,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error('Error response:', error.response.data);
         setFormError(error.response.data.message || 'Failed to create account. Please try again.');
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('No response received:', error.request);
         setFormError('No response from server. Please check your internet connection.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error('Error setting up request:', error.message);
         setFormError('Failed to create account. Please try again.');
       }
@@ -145,6 +151,82 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       setLoading(false);
     }
   };
+
+  const handleOTPVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setFormError('');
+
+    try {
+      const response = await axiosInstance.post<ApiResponse>('/api/auth/verify-otp', {
+        email,
+        otp
+      });
+
+      console.log('OTP verification response:', response.data);
+
+      if (response.data.status === 'success' && response.data.data?.token) {
+        // Store token and user data
+        localStorage.setItem('token', response.data.data.token);
+        if (response.data.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        }
+        
+        // Update auth context using login function
+        await auth.login(email, password);
+
+        // Show profile setup
+        onShowProfileSetup();
+      } else {
+        setFormError('Failed to verify OTP. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      if (error.response?.data?.message) {
+        setFormError(error.response.data.message);
+      } else {
+        setFormError('Failed to verify OTP. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showOTPVerification) {
+    return (
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full">
+        <div className="text-center mb-6">
+          <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-400 mb-2">Verify Your Email</h2>
+          <p className="text-gray-600 dark:text-gray-400">Enter the OTP sent to your email</p>
+        </div>
+        
+        <form onSubmit={handleOTPVerification}>
+          {formError && (
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4">
+              {formError}
+            </div>
+          )}
+          
+          <Input
+            label="OTP"
+            placeholder="Enter the 6-digit OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            fullWidth
+          />
+          
+          <Button
+            type="submit"
+            loading={loading}
+            className="w-full mt-2"
+            size="lg"
+          >
+            Verify OTP
+          </Button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full">

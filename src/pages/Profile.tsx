@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { School, MapPin, Edit, Link, Camera, BookOpen, Users, Award, Bookmark, Heart, X, Save, UserMinus } from 'lucide-react';
+import { School, MapPin, Edit, Camera, Award, X, UserMinus } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Post, User } from '../types';
 import CreatePostModal from '../components/post/CreatePostModal';

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
 import axiosInstance from '../../utils/axios';
+import { useNavigate } from 'react-router-dom';
 
 interface ApiResponse {
   status: string;
@@ -23,6 +24,7 @@ interface ProfileSetupProps {
 }
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete, onSkip }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
@@ -33,20 +35,22 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload this to a server
-      // For demo, we'll use a local URL
-      const imageUrl = URL.createObjectURL(file);
-      setProfilePicture(imageUrl);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
   
   const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload this to a server
-      // For demo, we'll use a local URL
-      const imageUrl = URL.createObjectURL(file);
-      setCoverPhoto(imageUrl);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
   
@@ -98,6 +102,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         
         // Call the completion handler
         onProfileComplete(profileData);
+        
+        // Navigate to home page
+        navigate('/');
       } else {
         setError(response.data.message || 'Failed to complete profile setup. Please try again.');
       }
@@ -109,6 +116,61 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         setError('No response from server. Please check your internet connection.');
       } else {
         setError('Failed to complete profile setup. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError('Authentication token not found. Please try signing up again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Prepare minimal profile data
+      const profileData = {
+        name: userInfo.fullName,
+        role: userInfo.role
+      };
+      
+      console.log('Sending skip profile setup request:', profileData);
+      
+      // Send minimal profile data to backend
+      const response = await axiosInstance.post<ApiResponse>('/api/profile/setup', profileData);
+      
+      console.log('Skip profile setup response:', response.data);
+      
+      if (response.data.status === 'success') {
+        // Update user data in localStorage if returned
+        if (response.data.data?.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        }
+        
+        // Call the skip handler
+        onSkip();
+        
+        // Navigate to home page
+        navigate('/');
+      } else {
+        setError(response.data.message || 'Failed to skip profile setup. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Skip profile setup error:', error);
+      if (error.response) {
+        setError(error.response.data.message || 'Failed to skip profile setup. Please try again.');
+      } else if (error.request) {
+        setError('No response from server. Please check your internet connection.');
+      } else {
+        setError('Failed to skip profile setup. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -183,7 +245,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
             
             <button
               type="button"
-              onClick={onSkip}
+              onClick={handleSkip}
               className="text-gray-600 dark:text-gray-400 hover:text-blue-800 dark:hover:text-blue-400 text-sm font-medium"
             >
               Skip profile setup
@@ -250,7 +312,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
           <div className="flex justify-between">
             <Button
               variant="outline"
-              onClick={onSkip}
+              onClick={handleSkip}
               disabled={loading}
               size="lg"
             >

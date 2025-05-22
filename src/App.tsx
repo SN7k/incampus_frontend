@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -15,13 +15,9 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
-import { User } from './types';
+// Import types as needed
 
-// Mock data for friend requests (in a real app, this would come from an API)
-const mockFriendRequests = [
-  { id: 5, name: 'Priya Sharma', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150', department: 'Mathematics', mutualFriends: 3 },
-  { id: 6, name: 'James Wilson', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150', department: 'Physics', mutualFriends: 1 },
-];
+// Friend request data is now handled by the Friends component
 
 type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-suggestions';
 
@@ -100,6 +96,7 @@ function AppContent() {
           <SignupForm 
             onBackToLogin={() => setRegistrationStep('login')} 
             onSignupSuccess={handleSignupSuccess}
+            onShowProfileSetup={() => setRegistrationStep('profile-setup')}
           />
         )}
         
