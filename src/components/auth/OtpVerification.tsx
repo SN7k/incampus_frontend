@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
-import axios from 'axios';
 
-interface ApiResponse {
-  status: string;
-  message?: string;
-  data?: {
-    token?: string;
-    user?: any;
-  };
-}
+// Keeping the interface for future reference when backend is connected
+// interface ApiResponse {
+//   status: string;
+//   message?: string;
+//   data?: {
+//     token?: string;
+//     user?: any;
+//   };
+// }
 
 interface OtpVerificationProps {
   email: string;
@@ -100,20 +100,13 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
     setLoading(true);
     
     try {
-      const response = await axios.post<ApiResponse>('/api/auth/verify-otp', {
-        email,
-        otp: otpString
-      });
-
-      if (response.data.status === 'success' && response.data.data?.token) {
-        // Store the JWT token in localStorage
-        localStorage.setItem('token', response.data.data.token);
-        
-        // Call the completion handler
-        onVerificationComplete();
-      } else {
-        setError(response.data.message || 'Invalid OTP. Please try again or request a new one.');
-      }
+      // In a real application, this would make an API call to verify the OTP
+      // For now, we'll simulate a verification process with a delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Call the completion handler
+      // This would normally happen after successful API verification
+      onVerificationComplete();
     } catch (err) {
       setError('Verification failed. Please try again.');
     } finally {
