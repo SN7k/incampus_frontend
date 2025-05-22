@@ -166,70 +166,56 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   };
 
-  // Listen for friend requests to create notifications
+  // Effect to handle real-time notification events
   useEffect(() => {
+    console.log('NotificationContext: Setting up event listeners.');
+
     const handleFriendRequest = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return;
-      const { fromUser, toUser, requestType } = event.detail;
-      
-      if (user && ((requestType === 'new' && toUser === user.id) || 
-                   (requestType === 'accepted' && toUser === user.id))) {
-        addNotification({
-          type: 'friend_request',
-          message: requestType === 'new' 
-            ? 'You have a new friend request' 
-            : 'Your friend request was accepted',
-          userId: fromUser
-        });
+      console.log('NotificationContext: Friend request event received.', event);
+      if (event instanceof CustomEvent && event.detail) {
+        console.log('NotificationContext: Friend request event detail:', event.detail);
+        // Assuming the event detail contains the notification object
+        addNotification(event.detail);
       }
     };
 
-    const eventHandler = (e: Event) => handleFriendRequest(e);
-    window.addEventListener('friendRequest', eventHandler);
-    return () => window.removeEventListener('friendRequest', eventHandler);
-  }, [user, addNotification]);
-
-  // Listen for post likes to create notifications
-  useEffect(() => {
     const handlePostLike = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return;
-      const { fromUser, postId, postAuthorId } = event.detail;
-      
-      if (user && postAuthorId === user.id && fromUser !== user.id) {
-        addNotification({
-          type: 'like',
-          message: 'Someone liked your post',
-          userId: fromUser,
-          postId
-        });
+       console.log('NotificationContext: Post like event received.', event);
+      if (event instanceof CustomEvent && event.detail) {
+        console.log('NotificationContext: Post like event detail:', event.detail);
+        addNotification(event.detail);
       }
     };
 
-    const eventHandler = (e: Event) => handlePostLike(e);
-    window.addEventListener('postLike', eventHandler);
-    return () => window.removeEventListener('postLike', eventHandler);
-  }, [user, addNotification]);
-
-  // Listen for post comments to create notifications
-  useEffect(() => {
     const handlePostComment = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return;
-      const { fromUser, postId, postAuthorId } = event.detail;
-      
-      if (user && postAuthorId === user.id && fromUser !== user.id) {
-        addNotification({
-          type: 'comment',
-          message: 'Someone commented on your post',
-          userId: fromUser,
-          postId
-        });
+      console.log('NotificationContext: Post comment event received.', event);
+      if (event instanceof CustomEvent && event.detail) {
+        console.log('NotificationContext: Post comment event detail:', event.detail);
+        addNotification(event.detail);
       }
     };
+    
+    // Using bound handlers for stable references
+    const boundHandleFriendRequest = handleFriendRequest.bind(null);
+    const boundHandlePostLike = handlePostLike.bind(null);
+    const boundHandlePostComment = handlePostComment.bind(null);
 
-    const eventHandler = (e: Event) => handlePostComment(e);
-    window.addEventListener('postComment', eventHandler);
-    return () => window.removeEventListener('postComment', eventHandler);
-  }, [user, addNotification]);
+    window.addEventListener('newFriendRequest', boundHandleFriendRequest as EventListener);
+    window.addEventListener('newPostLike', boundHandlePostLike as EventListener);
+    window.addEventListener('newPostComment', boundHandlePostComment as EventListener);
+    
+    console.log('NotificationContext: Event listeners added.');
+
+    // Cleanup function
+    return () => {
+      console.log('NotificationContext: Cleaning up event listeners.');
+      window.removeEventListener('newFriendRequest', boundHandleFriendRequest as EventListener);
+      window.removeEventListener('newPostLike', boundHandlePostLike as EventListener);
+      window.removeEventListener('newPostComment', boundHandlePostComment as EventListener);
+      console.log('NotificationContext: Event listeners removed.');
+    };
+    
+  }, [addNotification]); // Dependency array includes addNotification
 
   const value = {
     notifications,

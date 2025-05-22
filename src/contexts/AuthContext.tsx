@@ -213,9 +213,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       console.log('Sending login request with payload:', payload);
       
-      const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', payload);
+      const responsePromise = axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', payload);
+      console.log('Login API request sent.');
 
-      console.log('Login API response:', response);
+      const response = await responsePromise;
+      console.log('Login API response received:', response);
       console.log('Response status:', response.data.status);
       console.log('Response data:', response.data.data);
 
@@ -223,6 +225,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('Login successful. Processing response data...');
         const { token, user } = response.data.data;
         
+        console.log('Token and user data extracted.');
+
         // Ensure user object has all required fields
         const validUser: User = {
           _id: user._id,
@@ -237,42 +241,57 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           bio: user.bio,
           coverPhoto: user.coverPhoto
         };
+        console.log('Valid user object created.');
         
         // Set axios authorization header first
+        console.log('Setting axios authorization header...');
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('Axios authorization header set.');
+
         
         // Then store the data
+        console.log('Storing token and user in local storage...');
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(validUser));
+        console.log('Token and user stored in local storage.');
+
         
         // Update state
+        console.log('Updating authentication state...');
         setState({
           isAuthenticated: true,
           user: validUser,
           loading: false,
           error: null
         });
+        console.log('Authentication state updated.');
+
         
         // Use requestAnimationFrame to ensure state is updated before redirect
+        console.log('Requesting next animation frame for redirect...');
         requestAnimationFrame(() => {
+          console.log('Executing redirect...');
           window.location.href = '/';
         });
       } else {
+        console.log('Login failed. Setting error state.');
         setState({
           isAuthenticated: false,
           user: null,
           loading: false,
           error: response.data.message
         });
+        console.log('Error state set.');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login caught error:', error);
       setState({
         isAuthenticated: false,
         user: null,
         loading: false,
         error: error.response?.data?.message || 'Authentication failed. Please try again.'
       });
+      // Re-throw the error to be handled by the global unhandledrejection handler if it's a promise rejection
       throw error;
     }
   };

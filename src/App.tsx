@@ -53,81 +53,85 @@ function AppContent() {
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
   const [pendingProfileData, setPendingProfileData] = useState<PendingProfileData | null>(null);
   
-  // Add debug logging for authentication state
-  useEffect(() => {
-    console.log('Auth state changed:', { isAuthenticated, loading, userId: user?.id });
-  }, [isAuthenticated, loading, user]);
-  
-  // Add error handling for initial load
-  useEffect(() => {
-    // Only run this when authenticated and not loading
-    if (isAuthenticated && !loading && user) {
-      console.log('User is authenticated:', user);
-      // Add a global error handler for uncaught errors
-      const handleError = (event: ErrorEvent) => {
-        console.error('Uncaught error:', event.error);
-        // Check if the error message contains "r is not a function"
-        if (event.error && event.error.toString().includes('is not a function')) {
-          console.log('Detected authentication error, logging out...');
-          // Set auth error flag
-          localStorage.setItem('authError', 'true');
-          // Clear local storage and log out
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          // Redirect to login with force logout parameter
-          window.location.href = '/?forceLogout=true';
-        }
-      };
-      
-      // Add the error handler
-      window.addEventListener('error', handleError);
-      
-      // Clean up the error handler when the component unmounts
-      return () => {
-        window.removeEventListener('error', handleError);
-      };
-    }
-  }, [isAuthenticated, loading, user, logout]);
-
-  // Add a check for token on mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser && !isAuthenticated && !loading) {
-      console.log('Found saved credentials, attempting to restore session');
-      try {
-        const user = JSON.parse(savedUser);
-        console.log('Parsed user data:', user);
-        
-        // Validate user data
-        if (user && user._id && user.name && user.email) {
-          // Set axios authorization header
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Use authenticateWithToken from auth context
-          authenticateWithToken(token, user);
-        } else {
-          throw new Error('Invalid user data');
-        }
-      } catch (error) {
-        console.error('Failed to restore session:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
-  }, [isAuthenticated, loading, authenticateWithToken]);
-
   // Add debug logging for authentication state changes
   useEffect(() => {
-    console.log('Auth state changed:', { 
+    console.log('AppContent: Auth state changed useEffect triggered.', { 
       isAuthenticated, 
       loading, 
       userId: user?._id,
       hasToken: !!localStorage.getItem('token'),
       hasUser: !!localStorage.getItem('user')
     });
-  }, [isAuthenticated, loading, user]);
+  }, [isAuthenticated, loading, user]); // Dependencies: isAuthenticated, loading, user
+  
+  // Add error handling for initial load and uncaught errors
+  useEffect(() => {
+    console.log('AppContent: Error handling useEffect triggered.', { isAuthenticated, loading, user: !!user });
+    // Only run this when authenticated and not loading
+    if (isAuthenticated && !loading && user) {
+      console.log('AppContent: User is authenticated, setting up error handlers.', user);
+    }
+
+    // Add a global error handler for uncaught errors (sync errors)
+    const handleError = (event: ErrorEvent) => {
+      console.error('Uncaught (sync) error:', event.error);
+      // Check if the error message contains "is not a function"
+      if (event.error && typeof event.error.toString === 'function' && event.error.toString().includes('is not a function')) {
+        console.log('Detected potential authentication error, logging out...');
+        // Set auth error flag
+        localStorage.setItem('authError', 'true');
+        // Clear local storage and log out
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Redirect to login with force logout parameter
+        window.location.href = '/?forceLogout=true';
+      }
+    };
+    
+    // Add a global handler for unhandled promise rejections (async errors)
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled Promise Rejection:', event.reason);
+      // Prevent the default handling (which might be the refresh)
+      event.preventDefault();
+      // Optionally, trigger a logout if the error looks like an auth issue
+      if (event.reason && typeof event.reason.toString === 'function' && event.reason.toString().includes('is not a function')) {
+         console.log('Detected potential authentication error in unhandled rejection, logging out...');
+         localStorage.setItem('authError', 'true');
+         localStorage.removeItem('token');
+         localStorage.removeItem('user');
+         window.location.href = '/?forceLogout=true';
+      }
+       // You might want to handle other types of unhandled rejections here
+    };
+    
+    // Add the error handlers
+    console.log('AppContent: Adding global error and unhandledrejection listeners.');
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
+    // Clean up the error handlers when the component unmounts
+    return () => {
+      console.log('AppContent: Cleaning up global error and unhandledrejection listeners.');
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+    
+  }, [isAuthenticated, loading, user, logout]); // Dependencies: isAuthenticated, loading, user, logout
+
+  // Add a check for token on mount (handled in AuthProvider init state)
+  useEffect(() => {
+    console.log('AppContent: Token check useEffect triggered.', { isAuthenticated, loading });
+    // This effect is primarily for debugging or if AuthProvider init isn't enough
+    // AuthProvider's initial state logic handles session restoration.
+    // We can keep this for extra logging if needed, but ensure it doesn't cause issues.
+    // The core logic is in AuthProvider.
+    console.log('AppContent useEffect running - checking auth state for potential issues');
+    if (isAuthenticated && !user) {
+       console.warn('Authenticated but user object is null!');
+       // Potentially log out or attempt re-fetch user here if necessary
+    }
+
+  }, [isAuthenticated, user]);
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);
@@ -259,6 +263,7 @@ function AppContent() {
 
   // Show loading state while checking authentication
   if (loading) {
+    console.log('AppContent: loading state is true, rendering loading message.');
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
@@ -266,8 +271,11 @@ function AppContent() {
     );
   }
 
+  console.log('AppContent: loading state is false, checking authentication status.');
+
   // If not authenticated, show auth forms
   if (!isAuthenticated) {
+    console.log('AppContent: Not authenticated, rendering auth forms. Current step:', registrationStep);
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
         {registrationStep === 'signup' && (
