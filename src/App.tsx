@@ -108,7 +108,6 @@ function AppContent() {
 
   const handleFriendSuggestionsComplete = () => {
     console.log('Friend suggestions complete, resetting registration state');
-    setRegistrationStep('login');
     setPendingUserData(null);
     setPendingProfileData(null);
   };
