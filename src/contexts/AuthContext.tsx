@@ -236,10 +236,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           error: null
         });
         
-        // Wait a bit before redirecting to ensure state is updated
-        setTimeout(() => {
+        // Use requestAnimationFrame to ensure state is updated before redirect
+        requestAnimationFrame(() => {
           window.location.href = '/';
-        }, 100);
+        });
       } else {
         setState({
           isAuthenticated: false,
@@ -256,7 +256,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading: false,
         error: error.response?.data?.message || 'Authentication failed. Please try again.'
       });
-      throw error; // Re-throw the error to be handled by the component
+      throw error;
     }
   };
 

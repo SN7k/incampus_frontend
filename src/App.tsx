@@ -38,7 +38,7 @@ interface PendingProfileData {
 }
 
 function AppContent() {
-  const { isAuthenticated, loading, user, logout } = useAuth();
+  const { isAuthenticated, loading, user, logout, authenticateWithToken } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(() => {
     // Check if we're completing onboarding
     const completingOnboarding = localStorage.getItem('completingOnboarding');
@@ -99,15 +99,35 @@ function AppContent() {
       try {
         const user = JSON.parse(savedUser);
         console.log('Parsed user data:', user);
-        // Set axios authorization header
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Validate user data
+        if (user && user._id && user.name && user.email) {
+          // Set axios authorization header
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Use authenticateWithToken from auth context
+          authenticateWithToken(token, user);
+        } else {
+          throw new Error('Invalid user data');
+        }
       } catch (error) {
         console.error('Failed to restore session:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
     }
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, authenticateWithToken]);
+
+  // Add debug logging for authentication state changes
+  useEffect(() => {
+    console.log('Auth state changed:', { 
+      isAuthenticated, 
+      loading, 
+      userId: user?._id,
+      hasToken: !!localStorage.getItem('token'),
+      hasUser: !!localStorage.getItem('user')
+    });
+  }, [isAuthenticated, loading, user]);
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);
