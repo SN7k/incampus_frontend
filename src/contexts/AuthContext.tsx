@@ -39,6 +39,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     if (token && savedUser) {
       try {
+        // Set the token in axios instance
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
         return {
           isAuthenticated: true,
           user: JSON.parse(savedUser),
@@ -47,10 +50,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
       } catch (e) {
         console.error('Failed to parse saved user data', e);
-        return initialState;
+        return { ...initialState, loading: false };
       }
     }
-    return initialState;
+    return { ...initialState, loading: false };
   });
 
   const login = async (identifier: string, password: string) => {

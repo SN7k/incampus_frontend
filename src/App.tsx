@@ -38,7 +38,7 @@ interface PendingProfileData {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
   const [pendingProfileData, setPendingProfileData] = useState<PendingProfileData | null>(null);
@@ -109,6 +109,16 @@ function AppContent() {
     }
   };
 
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show auth forms
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
@@ -160,31 +170,16 @@ function AppContent() {
     );
   }
 
+  // If authenticated, show protected routes
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <Navbar />
       <main className="container mx-auto px-4 py-8">
         <Routes>
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Feed />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/:userId" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          <Route path="/friends" element={
-            <ProtectedRoute>
-              <Friends />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          } />
+          <Route path="/" element={<Feed />} />
+          <Route path="/profile/:userId" element={<Profile />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
