@@ -157,43 +157,50 @@ function AppContent() {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
-    console.log('Token exists:', !!token);
-    console.log('User string exists:', !!userStr);
-    
+    // If we don't have token or user in localStorage, go back to login
     if (!token || !userStr) {
       console.error('Token or user data not found after OTP verification');
       setRegistrationStep('login');
       return;
     }
-
+    
     try {
-      console.log('Raw user string from localStorage:', userStr);
+      // Parse the user data
       const user = JSON.parse(userStr);
-      console.log('Parsed user object:', user);
+      console.log('User data from local storage:', user);
       
-      // Create a valid pendingUserData object
-      const userData = {
-        fullName: user.name || user.collegeId || '',
-        email: user.email || '',
-        role: (user.role as 'student' | 'faculty') || 'student',
-        universityId: user.collegeId,
-        department: user.department,
-        program: user.program,
-        batch: user.batch
+      // Validate user data
+      if (!user._id || !user.name || !user.email) {
+        throw new Error('Invalid user data');
+      }
+      
+      // Set axios authorization header
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Convert data to the expected format
+      const userData: PendingUserData = {
+        fullName: user.name,
+        email: user.email,
+        role: user.role || 'student'
       };
       
-      console.log('Setting pendingUserData:', userData);
       setPendingUserData(userData);
       
-      // Authenticate the user with the token
-      await authenticateWithToken(token, user);
-      
-      // Only proceed to profile setup if authentication was successful
-      if (isAuthenticated) {
+      // Use try-catch to handle any errors during authentication
+      try {
+        // Authenticate the user with the token - prevent redirects
+        console.log('Authenticating with token...');
+        await authenticateWithToken(token, user);
+        console.log('Authentication successful, isAuthenticated:', isAuthenticated);
+        
+        // Simply move to profile setup regardless of isAuthenticated state
+        // since we just authenticated and the state may not have updated yet
         console.log('Moving to profile setup');
         setRegistrationStep('profile-setup');
-      } else {
-        console.error('Authentication failed after OTP verification');
+      } catch (authError) {
+        console.error('Authentication failed during OTP verification:', authError);
+        // Don't redirect to login with forceLogout parameter
+        // Just update the registration step
         setRegistrationStep('login');
       }
     } catch (error) {
