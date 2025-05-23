@@ -38,6 +38,17 @@ interface PendingProfileData {
 }
 
 function AppContent() {
+  // Clean up URL parameters on first render to prevent force logout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('forceLogout')) {
+      console.log('Removing forceLogout parameter from URL');
+      // Create a new URL without the forceLogout parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []); // Empty dependency array means this runs once on mount
+  
   const { isAuthenticated, loading, user, logout, authenticateWithToken } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(() => {
     // Check if we're completing onboarding

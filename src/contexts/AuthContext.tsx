@@ -71,6 +71,16 @@ export const useAuth = () => useContext(AuthContext);
 
 // Add a function to detect and fix authentication issues on page load
 const checkAndFixAuthIssues = () => {
+  // Always remove the forceLogout parameter from URL, regardless of whether we clear auth data
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('forceLogout')) {
+    // Remove the parameter from URL without causing a refresh
+    const newUrl = window.location.pathname + 
+      (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+    window.history.replaceState({}, document.title, newUrl);
+    console.log('Removed forceLogout parameter from URL');
+  }
+
   // Check if we're in the middle of OTP verification or registration flow
   const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
   if (inRegistrationFlow === 'true') {
@@ -86,17 +96,13 @@ const checkAndFixAuthIssues = () => {
   }
   
   // Check if there's a URL parameter indicating we should force logout
-  const urlParams = new URLSearchParams(window.location.search);
+  // But only check AFTER we've already removed it from the URL
   const forceLogout = urlParams.get('forceLogout');
-  
   if (forceLogout === 'true') {
-    console.log('Force logout parameter detected, clearing authentication data');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Remove the parameter from URL
-    const newUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, newUrl);
-    return true;
+    console.log('Force logout parameter detected, but NOT clearing authentication data');
+    // NOTE: We're no longer clearing authentication data here
+    // This change allows login to proceed normally
+    return false;
   }
   
   // Check for previous errors
