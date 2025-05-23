@@ -56,10 +56,24 @@ axiosInstance.interceptors.response.use(
     });
 
     if (error.response?.status === 401) {
-      // Token expired or invalid
+      // Check if we're in the registration flow or just completed it
+      const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
+      const completingOnboarding = localStorage.getItem('completingOnboarding');
+      const justCompletedRegistration = localStorage.getItem('justCompletedRegistration');
+      const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration');
+      
+      if (inRegistrationFlow === 'true' || completingOnboarding === 'true' || 
+          justCompletedRegistration === 'true' || redirectAfterRegistration === 'true') {
+        console.log('In registration flow or just completed it, ignoring 401 error');
+        // Don't clear auth data or redirect if we're in the registration flow
+        return Promise.reject(error);
+      }
+      
+      // Token expired or invalid (not in registration flow)
+      console.log('401 error outside of registration flow, clearing auth data');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.location.href = '/';
     } else if (!error.response) {
       // Network error or server not responding
       console.error('Network error - server might be down');

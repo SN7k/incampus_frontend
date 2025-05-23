@@ -45,22 +45,27 @@ const Feed: React.FC = () => {
   const fetchPosts = async () => {
     if (!user) return;
     try {
-      // Ensure token is set in axios headers
+      // Ensure the token is set in axios headers
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (token) {
+        console.log('Setting token in axios headers for post fetch');
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.error('No token available when fetching posts');
       }
       
-      console.log('Fetching posts with token:', token ? 'Token exists' : 'No token');
+      console.log('Fetching posts for user:', user._id);
       const response = await axiosInstance.get<ApiResponse<Post[]>>('/api/posts/feed');
-      console.log('Posts response:', response.data);
       
       if (response.data.status === 'success') {
+        console.log(`Successfully fetched ${response.data.data.length} posts`);
         setPosts(response.data.data);
+      } else {
+        console.error('Failed to fetch posts:', response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch posts:', error);
-      setError('Failed to load posts');
+      console.error('Error fetching posts:', error);
+      setError('Failed to fetch posts');
     }
   };
 

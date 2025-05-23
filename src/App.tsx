@@ -524,6 +524,10 @@ function AppContent() {
           localStorage.removeItem('completingOnboarding');
           localStorage.removeItem('registrationStep');
           
+          // Set a flag to indicate we just completed registration
+          // This will be used by AuthContext to prevent clearing auth data
+          localStorage.setItem('justCompletedRegistration', 'true');
+          
           // Refresh the authentication state before redirecting
           const refreshAuth = async () => {
             try {
@@ -552,10 +556,22 @@ function AppContent() {
               await authenticateWithToken(token, validUser);
               
               console.log('Authentication refreshed, redirecting to feed');
-              // Use a small timeout to ensure state is updated
+              // Use a more reliable approach to transition to the feed page
               setTimeout(() => {
-                window.location.href = '/';
-              }, 500); // Increased timeout to ensure state updates properly
+                console.log('Redirecting to feed page after authentication refresh');
+                
+                // Set multiple flags to ensure we don't lose authentication during transition
+                localStorage.setItem('justCompletedRegistration', 'true');
+                sessionStorage.setItem('redirectAfterRegistration', 'true');
+                
+                // Ensure we're not redirecting with any query parameters
+                const cleanUrl = window.location.origin + '/';
+                console.log('Redirecting to clean URL:', cleanUrl);
+                
+                // Use replaceState to avoid adding to browser history
+                window.history.replaceState(null, '', cleanUrl);
+                window.location.replace(cleanUrl);
+              }, 1500); // Increased timeout further to ensure state updates properly
             } catch (err) {
               console.error('Error refreshing authentication:', err);
               // Try a direct redirect as a fallback

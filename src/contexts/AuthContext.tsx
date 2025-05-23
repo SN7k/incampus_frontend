@@ -77,7 +77,26 @@ const checkAndFixAuthIssues = () => {
   // Check if we're in the middle of OTP verification or registration flow
   const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
   const completingOnboarding = localStorage.getItem('completingOnboarding');
+  const justCompletedRegistration = localStorage.getItem('justCompletedRegistration');
   
+  // First, check if we just completed registration
+  if (justCompletedRegistration === 'true') {
+    console.log('Just completed registration, preserving authentication data');
+    // Remove the flag after checking it
+    localStorage.removeItem('justCompletedRegistration');
+    
+    // Remove the forceLogout parameter if present, but don't clear auth data
+    if (urlParams.has('forceLogout')) {
+      const newUrl = window.location.pathname + 
+        (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+      window.history.replaceState({}, document.title, newUrl);
+      console.log('Removed forceLogout parameter but preserved auth data due to just completed registration');
+    }
+    
+    return false; // Don't force logout
+  }
+  
+  // Handle regular forceLogout parameter
   if (urlParams.has('forceLogout')) {
     // If we're in registration or onboarding flow, preserve the state
     if (inRegistrationFlow !== 'true' && completingOnboarding !== 'true') {
@@ -201,6 +220,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Add effect to verify token on mount
   useEffect(() => {
     const verifyToken = async () => {
+      // Check if we're redirecting after registration
+      const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration');
+      if (redirectAfterRegistration === 'true') {
+        console.log('Detected redirect after registration, skipping token verification');
+        // Remove the flag after checking it
+        sessionStorage.removeItem('redirectAfterRegistration');
+        return; // Skip verification to prevent token verification issues during transition
+      }
+      
       const token = localStorage.getItem('token');
       if (token && state.isAuthenticated) {
         try {
@@ -213,6 +241,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         } catch (error) {
           console.error('Token verification failed:', error);
+          // Check if we just completed registration before clearing auth data
+          const justCompletedRegistration = localStorage.getItem('justCompletedRegistration');
+          if (justCompletedRegistration === 'true') {
+            console.log('Just completed registration, preserving auth data despite verification failure');
+            localStorage.removeItem('justCompletedRegistration');
+            return;
+          }
+          
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setState(initialState);
