@@ -148,6 +148,8 @@ function AppContent() {
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);
+    // Set a flag to indicate we're in the registration flow
+    localStorage.setItem('inRegistrationFlow', 'true');
     setPendingUserData(userData);
     setRegistrationStep('otp');
   };
@@ -160,6 +162,7 @@ function AppContent() {
     // If we don't have token or user in localStorage, go back to login
     if (!token || !userStr) {
       console.error('Token or user data not found after OTP verification');
+      localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
       setRegistrationStep('login');
       return;
     }
@@ -186,6 +189,9 @@ function AppContent() {
       
       setPendingUserData(userData);
       
+      // We're still in registration flow, keep the flag
+      console.log('Still in registration flow, maintaining flag');
+      
       // Use try-catch to handle any errors during authentication
       try {
         // Authenticate the user with the token - prevent redirects
@@ -201,10 +207,12 @@ function AppContent() {
         console.error('Authentication failed during OTP verification:', authError);
         // Don't redirect to login with forceLogout parameter
         // Just update the registration step
+        localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
         setRegistrationStep('login');
       }
     } catch (error) {
       console.error('Error in OTP verification completion:', error);
+      localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
       setRegistrationStep('login');
     }
   };

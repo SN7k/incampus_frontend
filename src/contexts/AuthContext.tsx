@@ -71,6 +71,20 @@ export const useAuth = () => useContext(AuthContext);
 
 // Add a function to detect and fix authentication issues on page load
 const checkAndFixAuthIssues = () => {
+  // Check if we're in the middle of OTP verification or registration flow
+  const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
+  if (inRegistrationFlow === 'true') {
+    console.log('In registration flow, preserving authentication data regardless of URL parameters');
+    return false;
+  }
+
+  // Check if we're completing onboarding - in this case, do NOT force logout
+  const completingOnboarding = localStorage.getItem('completingOnboarding');
+  if (completingOnboarding === 'true') {
+    console.log('Detected onboarding completion flag in AuthContext, preserving authentication');
+    return false;
+  }
+  
   // Check if there's a URL parameter indicating we should force logout
   const urlParams = new URLSearchParams(window.location.search);
   const forceLogout = urlParams.get('forceLogout');
@@ -93,13 +107,6 @@ const checkAndFixAuthIssues = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('authError');
     return true;
-  }
-  
-  // Check if we're completing onboarding - in this case, do NOT force logout
-  const completingOnboarding = localStorage.getItem('completingOnboarding');
-  if (completingOnboarding === 'true') {
-    console.log('Detected onboarding completion flag in AuthContext, preserving authentication');
-    return false;
   }
   
   return false;
