@@ -133,26 +133,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         </div>
         
         <Input
+          id="login-identifier"
+          name="identifier"
           label={role === 'student' ? "Student ID or Email" : "Email"}
           placeholder={role === 'student' ? "BWU/ABC/00/000 or your email" : "Enter your email"}
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           fullWidth
+          aria-required="true"
         />
         
         <Input
+          id="login-password"
+          name="password"
           label="Password"
           type="password"
           placeholder="Enter your password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           fullWidth
+          aria-required="true"
         />
         
         <div className="flex items-center justify-between mb-6 mt-2">
           <div className="flex items-center">
             <input 
-              id="remember-me" 
+              id="remember-me"
+              name="remember-me"
               type="checkbox" 
               className="h-4 w-4 text-blue-800 dark:text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
             />

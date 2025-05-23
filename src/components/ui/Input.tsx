@@ -5,6 +5,9 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   fullWidth?: boolean;
+  // Explicitly define id and name for better TypeScript support
+  id?: string;
+  name?: string;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -19,7 +22,10 @@ const Input: React.FC<InputProps> = ({
   return (
     <div className={`mb-4 ${fullWidth ? 'w-full' : ''}`}>
       {label && (
-        <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1.5">
+        <label 
+          htmlFor={props.id} 
+          className="block text-gray-700 dark:text-gray-300 font-medium mb-1.5"
+        >
           {label}
         </label>
       )}
