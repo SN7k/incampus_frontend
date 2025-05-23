@@ -100,13 +100,26 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       // Ensure the token is set in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Prepare profile data
+      // Get user data from storage to ensure we have complete information
+      let userData = null;
+      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+      if (userStr) {
+        try {
+          userData = JSON.parse(userStr);
+          console.log('Retrieved user data from storage:', userData);
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+        }
+      }
+      
+      // Prepare profile data with fallbacks to ensure required fields are never empty
       const profileData = {
-        name: userInfo.fullName,
-        avatar: profilePicture || '',
-        coverPhoto: coverPhoto || undefined,
-        bio: bio || undefined,
-        role: userInfo.role
+        name: userInfo.fullName || userData?.name || 'User' + Math.floor(Math.random() * 10000), // Ensure name is never empty
+        avatar: profilePicture || userData?.avatar || '',
+        coverPhoto: coverPhoto || userData?.coverPhoto || undefined,
+        bio: bio || userData?.bio || undefined,
+        role: userInfo.role || userData?.role || 'student',
+        email: userInfo.email || userData?.email // Include email for better identification
       };
       
       console.log('Sending profile setup request:', { ...profileData, avatar: '[REDACTED]' });
@@ -193,10 +206,25 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       // Ensure the token is set in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Prepare minimal profile data
+      // Get user data from storage to ensure we have complete information
+      let userData = null;
+      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+      if (userStr) {
+        try {
+          userData = JSON.parse(userStr);
+          console.log('Retrieved user data from storage for skip:', userData);
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+        }
+      }
+      
+      // Prepare minimal profile data with fallbacks to ensure required fields are never empty
       const profileData = {
-        name: userInfo.fullName,
-        role: userInfo.role
+        name: userInfo.fullName || userData?.name || 'User' + Math.floor(Math.random() * 10000), // Ensure name is never empty
+        role: userInfo.role || userData?.role || 'student',
+        email: userInfo.email || userData?.email, // Include email for better identification
+        // Include a default avatar to ensure profile is complete
+        avatar: userData?.avatar || '/default-avatar.png'
       };
       
       console.log('Sending skip profile setup request:', profileData);

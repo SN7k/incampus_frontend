@@ -172,6 +172,18 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           localStorage.setItem('user', JSON.stringify(processedUser));
           sessionStorage.setItem('user', JSON.stringify(processedUser)); // Backup in session storage
           
+          // Store individual user fields for easier access and as additional backup
+          localStorage.setItem('fullName', processedUser.name);
+          sessionStorage.setItem('fullName', processedUser.name);
+          localStorage.setItem('email', processedUser.email);
+          sessionStorage.setItem('email', processedUser.email);
+          localStorage.setItem('role', processedUser.role);
+          sessionStorage.setItem('role', processedUser.role);
+          if (processedUser.universityId) {
+            localStorage.setItem('universityId', processedUser.universityId);
+            sessionStorage.setItem('universityId', processedUser.universityId);
+          }
+          
           // Set the token in axios instance
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
@@ -187,6 +199,9 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           } else {
             console.log('Token successfully saved to localStorage:', savedToken.substring(0, 10) + '...');
           }
+          
+          // Store token in cookie as well for maximum compatibility
+          document.cookie = `authToken=${token};path=/;max-age=86400`; // 1 day
         } catch (storageError) {
           console.error('Error saving to storage:', storageError);
           // Try again with a different approach if there's an error

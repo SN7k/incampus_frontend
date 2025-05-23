@@ -459,9 +459,9 @@ function AppContent() {
         {registrationStep === 'profile-setup' && (
           <ProfileSetup 
             userInfo={{
-              fullName: pendingUserData?.fullName || (user?.name || ''),
-              email: pendingUserData?.email || (user?.email || ''),
-              role: (pendingUserData?.role || user?.role || 'student') as 'student' | 'faculty'
+              fullName: pendingUserData?.fullName || (user?.name || '') || localStorage.getItem('fullName') || sessionStorage.getItem('fullName') || 'User' + Math.floor(Math.random() * 10000),
+              email: pendingUserData?.email || (user?.email || '') || localStorage.getItem('email') || sessionStorage.getItem('email') || '',
+              role: (pendingUserData?.role || user?.role || localStorage.getItem('role') || sessionStorage.getItem('role') || 'student') as 'student' | 'faculty'
             }}
             onProfileComplete={handleProfileComplete}
             onSkip={handleSkipProfile}
