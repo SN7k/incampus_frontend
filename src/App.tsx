@@ -170,7 +170,7 @@ function AppContent() {
     // If we don't have token or user in localStorage, go back to login
     if (!token || !userStr) {
       console.error('Token or user data not found after OTP verification');
-      localStorage.removeItem('inRegistrationFlow');
+      localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
       setRegistrationStep('login');
       return;
     }
@@ -200,18 +200,33 @@ function AppContent() {
       };
       
       console.log('Setting pendingUserData:', userData);
+      
+      // Set the pending user data first
       setPendingUserData(userData);
       
-      // Ensure we're in registration flow
+      // Ensure we're still in registration flow
       localStorage.setItem('inRegistrationFlow', 'true');
+      localStorage.setItem('completingOnboarding', 'true');
       
-      // Authenticate the user with the token
-      await authenticateWithToken(token, user);
-      
-      // Move to profile setup
-      console.log('Moving to profile setup');
-      setRegistrationStep('profile-setup');
-      
+      // Use a small timeout to ensure state updates are processed
+      setTimeout(async () => {
+        try {
+          // Authenticate the user with the token
+          await authenticateWithToken(token, user);
+          
+          // Check if we're still in registration flow after authentication
+          if (localStorage.getItem('inRegistrationFlow') === 'true') {
+            console.log('Moving to profile setup');
+            setRegistrationStep('profile-setup');
+          } else {
+            console.log('No longer in registration flow, redirecting to feed');
+            window.location.href = '/';
+          }
+        } catch (error) {
+          console.error('Error during authentication after OTP verification:', error);
+          setRegistrationStep('login');
+        }
+      }, 100);
     } catch (error) {
       console.error('Error in OTP verification completion:', error);
       localStorage.removeItem('inRegistrationFlow');
@@ -246,6 +261,9 @@ function AppContent() {
       
       if (!token || !userStr) {
         console.error('Missing authentication data during friend suggestions completion');
+        // Clean up any registration flags
+        localStorage.removeItem('inRegistrationFlow');
+        localStorage.removeItem('completingOnboarding');
         // Redirect to login page if authentication data is missing
         window.location.href = '/?forceLogout=true';
         return;
@@ -259,20 +277,47 @@ function AppContent() {
         // Ensure the auth header is set for the next page load
         if (token) {
           console.log('Setting auth header for transition');
-          // This will be used by axios on the next page load
-          localStorage.setItem('authHeader', `Bearer ${token}`);
+          // Set the authorization header for axios
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Clear the registration flow flags since we're done with onboarding
+          localStorage.removeItem('inRegistrationFlow');
+          localStorage.removeItem('completingOnboarding');
+          
+          // Refresh the authentication state before redirecting
+          const refreshAuth = async () => {
+            try {
+              await authenticateWithToken(token, user);
+              console.log('Authentication refreshed, redirecting to feed');
+              // Use a small timeout to ensure state is updated
+              setTimeout(() => {
+                window.location.href = '/';
+              }, 100);
+            } catch (err) {
+              console.error('Error refreshing authentication:', err);
+              window.location.href = '/';
+            }
+          };
+          refreshAuth();
+          return;
         }
       } catch (e) {
-        console.error('Invalid user data during friend suggestions completion');
+        console.error('Invalid user data during friend suggestions completion:', e);
+        // Clean up any registration flags
+        localStorage.removeItem('inRegistrationFlow');
+        localStorage.removeItem('completingOnboarding');
         window.location.href = '/?forceLogout=true';
         return;
       }
       
-      // Navigate to the feed page
+      // Fallback redirect if something went wrong
       console.log('Redirecting to main application...');
       window.location.href = '/';
     } catch (error) {
       console.error('Error completing friend suggestions:', error);
+      // Clean up any registration flags
+      localStorage.removeItem('inRegistrationFlow');
+      localStorage.removeItem('completingOnboarding');
       // Fallback to login page on error
       window.location.href = '/?forceLogout=true';
     }
