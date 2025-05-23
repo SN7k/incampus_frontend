@@ -11,7 +11,6 @@ export interface ExtendedUser extends User {
   avatar: string;
   
   // Optional properties that might be present in API responses
-  _id?: string;
   isVerified?: boolean;
   __v?: number;
 }
