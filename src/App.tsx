@@ -152,7 +152,7 @@ function AppContent() {
     setRegistrationStep('otp');
   };
 
-  const handleOtpVerificationComplete = () => {
+  const handleOtpVerificationComplete = async () => {
     console.log('OTP verification complete, moving to profile setup');
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
@@ -186,13 +186,18 @@ function AppContent() {
       setPendingUserData(userData);
       
       // Authenticate the user with the token
-      authenticateWithToken(token, user);
+      await authenticateWithToken(token, user);
       
-      // Set the registration step to profile setup
-      console.log('Moving to profile setup');
-      setRegistrationStep('profile-setup');
+      // Only proceed to profile setup if authentication was successful
+      if (isAuthenticated) {
+        console.log('Moving to profile setup');
+        setRegistrationStep('profile-setup');
+      } else {
+        console.error('Authentication failed after OTP verification');
+        setRegistrationStep('login');
+      }
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      console.error('Error in OTP verification completion:', error);
       setRegistrationStep('login');
     }
   };
