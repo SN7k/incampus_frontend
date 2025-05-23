@@ -36,10 +36,40 @@ const Feed: React.FC = () => {
     return () => window.removeEventListener('error', handleError);
   }, []);
   
-  // Check for and clear registration flags
+  // Handle special case when coming from friend suggestions
   useEffect(() => {
-    // Check if we have registration flags, which would indicate the user just completed registration
-    if (hasRegistrationFlags()) {
+    // Check for special parameters that indicate we're coming from registration
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromRegistration = urlParams.get('fromRegistration') === 'true';
+    const preserveAuth = urlParams.get('preserveAuth') === 'true';
+    const completedFriendSuggestions = localStorage.getItem('completedFriendSuggestions') === 'true';
+    
+    // If we're coming from registration, clean up the URL but preserve auth state
+    if (fromRegistration || preserveAuth || completedFriendSuggestions) {
+      console.log('Detected navigation from registration flow, ensuring authentication is preserved');
+      
+      // Clean up URL parameters without triggering a page reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Keep registration flags active for a while to ensure auth state is preserved
+      // Only clear them after a delay to ensure all components have loaded
+      const timeout = setTimeout(() => {
+        console.log('Clearing registration flags after successful navigation to feed');
+        // Clear registration flags but keep the authentication state
+        clearRegistrationFlags();
+        // Also clear the special flags we set for this transition
+        localStorage.removeItem('forceAuthenticated');
+        localStorage.removeItem('completedFriendSuggestions');
+        localStorage.removeItem('skipAuthCheck');
+        localStorage.removeItem('authBypassTimestamp');
+        
+        // Log the successful completion of the registration flow
+        console.log('Registration flow completed successfully');
+      }, 5000); // 5 second delay to ensure all components have loaded
+      
+      return () => clearTimeout(timeout);
+    } else if (hasRegistrationFlags()) {
+      // Handle the case where we have registration flags but no special parameters
       console.log('Registration flags detected in Feed component, user has completed registration');
       
       // Use a timeout to ensure all components have loaded and used the flags if needed

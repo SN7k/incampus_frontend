@@ -15,7 +15,7 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import axiosInstance from './utils/axios';
-import { hasRegistrationFlags, clearRegistrationFlags, navigateWithoutForceLogout, setRegistrationFlags, saveToken } from './utils/authFlowHelpers';
+import { hasRegistrationFlags, clearRegistrationFlags, navigateWithoutForceLogout, setRegistrationFlags, saveToken, handleFriendSuggestionsToFeedTransition } from './utils/authFlowHelpers';
 // Import types as needed
 
 // Friend request data is now handled by the Friends component
@@ -646,19 +646,18 @@ function AppContent() {
         return;
       }
       
-      // Fallback redirect if something went wrong
-      console.log('Redirecting to main application...');
+      // Use our specialized function to handle this critical transition
+      console.log('Using specialized function to handle transition to feed...');
+      
+      // This function handles all the necessary flags and navigation
+      // to ensure authentication is maintained during this critical transition
+      handleFriendSuggestionsToFeedTransition();
+    } catch (error) {
+      console.error('Error completing friend suggestions:', error);
       
       // Clean up registration flags properly using our utility function
       clearRegistrationFlags();
       
-      // Navigate to the main feed
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Error completing friend suggestions:', error);
-      // Clean up any registration flags
-      localStorage.removeItem('inRegistrationFlow');
-      localStorage.removeItem('completingOnboarding');
       // Fallback to login page on error
       window.location.href = '/?forceLogout=true';
     }

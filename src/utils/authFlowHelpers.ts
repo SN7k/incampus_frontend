@@ -101,11 +101,36 @@ export const navigateWithoutForceLogout = (url: string = '/') => {
   // Set registration flags before navigating
   setRegistrationFlags();
   
+  // Set a special flag to indicate we're forcing authentication
+  localStorage.setItem('forceAuthenticated', 'true');
+  
   // Remove any existing forceLogout parameter
   window.history.replaceState(null, '', cleanUrl);
   
   // Use direct assignment to avoid adding query parameters
-  window.location.replace(cleanUrl);
+  window.location.replace(cleanUrl + '?fromRegistration=true');
+};
+
+/**
+ * Special function to handle the transition from friend suggestions to feed
+ * This is a critical transition that needs extra care to maintain authentication
+ */
+export const handleFriendSuggestionsToFeedTransition = () => {
+  console.log('Handling critical transition from friend suggestions to feed');
+  
+  // Set ALL possible flags to ensure authentication is preserved
+  setRegistrationFlags();
+  
+  // Set additional special flags for this specific transition
+  localStorage.setItem('forceAuthenticated', 'true');
+  localStorage.setItem('completedFriendSuggestions', 'true');
+  localStorage.setItem('skipAuthCheck', 'true');
+  
+  // Store the current time to allow for temporary bypassing of auth checks
+  localStorage.setItem('authBypassTimestamp', Date.now().toString());
+  
+  // Navigate to the feed with a special parameter
+  window.location.href = '/?fromRegistration=true&preserveAuth=true';
 };
 
 /**
