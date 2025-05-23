@@ -119,16 +119,27 @@ const Feed: React.FC = () => {
       }
       
       // Don't clear flags immediately to ensure they're used by any pending requests
+      // Increase the timeout to 30 seconds to ensure all components are fully loaded
       const clearFlagsTimeout = setTimeout(() => {
         console.log('Feed: Delayed clearing of registration flags');
-        // Clear registration flags but keep the authentication state
-        clearRegistrationFlags();
-        // Also clear the special flags we set for this transition
-        localStorage.removeItem('completedFriendSuggestions');
+        // DON'T clear registration flags immediately after login - this causes the blinking
+        // Instead, just clear non-critical flags
         localStorage.removeItem('skipAuthCheck');
-        localStorage.removeItem('forceAuthenticated');
-        localStorage.removeItem('authBypassTimestamp');
-      }, 10000); // 10 second delay to ensure all requests complete
+        
+        // Set a flag to indicate we've successfully loaded the feed
+        localStorage.setItem('feedLoaded', 'true');
+        
+        // After feed is fully loaded, wait another 30 seconds before clearing all flags
+        setTimeout(() => {
+          console.log('Feed fully loaded, now clearing all registration flags');
+          // Clear registration flags but keep the authentication state
+          clearRegistrationFlags();
+          // Also clear the special flags we set for this transition
+          localStorage.removeItem('completedFriendSuggestions');
+          localStorage.removeItem('forceAuthenticated');
+          localStorage.removeItem('authBypassTimestamp');
+        }, 30000);
+      }, 30000); // 30 second delay to ensure all requests complete
       
       return () => clearTimeout(clearFlagsTimeout);
     } else if (hasRegistrationFlags()) {

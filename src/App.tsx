@@ -137,6 +137,19 @@ function AppContent() {
     // Add a global error handler for uncaught errors (sync errors)
     const handleError = (event: ErrorEvent) => {
       console.error('Uncaught (sync) error:', event.error);
+      
+      // First check if we're in registration flow - if so, don't log out
+      const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+      const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+      const completedFriendSuggestions = localStorage.getItem('completedFriendSuggestions') === 'true';
+      const inRegistrationFlow = localStorage.getItem('inRegistrationFlow') === 'true';
+      
+      if (justCompletedRegistration || redirectAfterRegistration || completedFriendSuggestions || inRegistrationFlow) {
+        console.log('Error occurred during registration flow, preserving authentication state');
+        // Don't log out or redirect during registration flow
+        return;
+      }
+      
       // Check if the error message contains "is not a function"
       if (event.error && typeof event.error.toString === 'function' && event.error.toString().includes('is not a function')) {
         console.log('Detected potential authentication error, logging out...');
@@ -155,6 +168,19 @@ function AppContent() {
       console.error('Unhandled Promise Rejection:', event.reason);
       // Prevent the default handling (which might be the refresh)
       event.preventDefault();
+      
+      // First check if we're in registration flow - if so, don't log out
+      const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+      const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+      const completedFriendSuggestions = localStorage.getItem('completedFriendSuggestions') === 'true';
+      const inRegistrationFlow = localStorage.getItem('inRegistrationFlow') === 'true';
+      
+      if (justCompletedRegistration || redirectAfterRegistration || completedFriendSuggestions || inRegistrationFlow) {
+        console.log('Unhandled rejection during registration flow, preserving authentication state');
+        // Don't log out or redirect during registration flow
+        return;
+      }
+      
       // Optionally, trigger a logout if the error looks like an auth issue
       if (event.reason && typeof event.reason.toString === 'function' && event.reason.toString().includes('is not a function')) {
          console.log('Detected potential authentication error in unhandled rejection, logging out...');
