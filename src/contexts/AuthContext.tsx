@@ -156,8 +156,35 @@ const checkAndFixAuthIssues = () => {
   return false;
 };
 
-// Execute the check immediately
-const forcedLogout = checkAndFixAuthIssues();
+// Check for registration flags before doing any auth checks
+const checkForRegistrationFlags = () => {
+  const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+  const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+  const bypassTokenVerification = localStorage.getItem('bypassTokenVerification') === 'true';
+  const comingFromRegistration = localStorage.getItem('comingFromRegistration') === 'true';
+  const inRegistrationFlow = localStorage.getItem('inRegistrationFlow') === 'true';
+  const completingOnboarding = localStorage.getItem('completingOnboarding') === 'true';
+  
+  return {
+    hasFlags: justCompletedRegistration || redirectAfterRegistration || bypassTokenVerification || 
+             comingFromRegistration || inRegistrationFlow || completingOnboarding,
+    flags: {
+      justCompletedRegistration,
+      redirectAfterRegistration,
+      bypassTokenVerification,
+      comingFromRegistration,
+      inRegistrationFlow,
+      completingOnboarding
+    }
+  };
+};
+
+// Check registration flags first
+const registrationStatus = checkForRegistrationFlags();
+console.log('Checking for registration flags before any auth checks:', registrationStatus);
+
+// Only execute the auth check if we don't have any registration flags
+const forcedLogout = registrationStatus.hasFlags ? false : checkAndFixAuthIssues();
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>(() => {

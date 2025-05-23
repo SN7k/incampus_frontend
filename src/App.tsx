@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -44,14 +44,57 @@ interface ApiResponse {
 }
 
 function AppContent() {
-  // Clean up URL parameters on first render to prevent force logout
+  // Add a ref to track if we've checked for registration flags
+  const registrationFlagsChecked = useRef(false);
+  
+  // Check for registration flags on first render, before any other checks
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('forceLogout')) {
-      console.log('Removing forceLogout parameter from URL');
-      // Create a new URL without the forceLogout parameter
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+    if (registrationFlagsChecked.current) return;
+    registrationFlagsChecked.current = true;
+    
+    // Check for all possible registration flags
+    const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+    const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+    const bypassTokenVerification = localStorage.getItem('bypassTokenVerification') === 'true';
+    const comingFromRegistration = localStorage.getItem('comingFromRegistration') === 'true';
+    const inRegistrationFlow = localStorage.getItem('inRegistrationFlow') === 'true';
+    const completingOnboarding = localStorage.getItem('completingOnboarding') === 'true';
+    
+    const hasRegistrationFlags = justCompletedRegistration || redirectAfterRegistration || 
+                               bypassTokenVerification || comingFromRegistration || 
+                               inRegistrationFlow || completingOnboarding;
+    
+    console.log('Initial check for registration flags:', {
+      justCompletedRegistration,
+      redirectAfterRegistration,
+      bypassTokenVerification,
+      comingFromRegistration,
+      inRegistrationFlow,
+      completingOnboarding,
+      hasRegistrationFlags
+    });
+    
+    // If we have registration flags, ensure we don't have forceLogout parameter
+    if (hasRegistrationFlags) {
+      // Remove the forceLogout parameter if present
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('forceLogout')) {
+        console.log('Removing forceLogout parameter while preserving registration flags');
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Force a reload without the forceLogout parameter
+        window.location.reload();
+      }
+    } else {
+      // Normal URL cleanup if no registration flags
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('forceLogout')) {
+        console.log('Removing forceLogout parameter from URL');
+        // Create a new URL without the forceLogout parameter
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
     }
   }, []); // Empty dependency array means this runs once on mount
   
