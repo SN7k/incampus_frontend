@@ -146,8 +146,9 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         
         console.log(`Successfully followed ${selectedUsers.length} users`);
         
-        // Delay slightly before calling onComplete to ensure all flags are set
-        setTimeout(() => {
+        // Instead of using the callback which might be causing the error,
+        // let's implement a more direct navigation approach
+        try {
           // Double-check that flags are still set
           if (!localStorage.getItem('justCompletedRegistration')) {
             localStorage.setItem('justCompletedRegistration', 'true');
@@ -156,10 +157,34 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
             sessionStorage.setItem('redirectAfterRegistration', 'true');
           }
           
-          // Call the onComplete handler with the selected users
-          // This will trigger the App.tsx handler which will navigate to the feed
-          onComplete(selectedUsers);
-        }, 100);
+          console.log('Friend suggestions complete, navigating directly to feed');
+          
+          // First notify the parent component that we're done
+          // This is wrapped in a try-catch to prevent errors from blocking navigation
+          try {
+            onComplete(selectedUsers);
+          } catch (callbackError) {
+            console.error('Error in onComplete callback:', callbackError);
+            // Continue with navigation even if callback fails
+          }
+          
+          // Add a small delay before navigation to ensure state updates are processed
+          setTimeout(() => {
+            // Use a direct approach to navigate to the feed
+            const cleanUrl = window.location.origin + '/';
+            console.log('Directly navigating to:', cleanUrl);
+            
+            // Use replaceState to avoid adding to browser history
+            window.history.replaceState(null, '', cleanUrl);
+            
+            // Force a full page reload to ensure a clean state
+            window.location.replace(cleanUrl);
+          }, 300);
+        } catch (navError) {
+          console.error('Navigation error:', navError);
+          // If all else fails, try a simple redirect
+          window.location.href = '/';
+        }
       } catch (err) {
         console.error('Error following users:', err);
         // Continue even if following fails - still call onComplete
