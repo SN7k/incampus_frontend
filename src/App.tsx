@@ -185,6 +185,9 @@ function AppContent() {
       console.log('Setting pendingUserData:', userData);
       setPendingUserData(userData);
       
+      // Authenticate the user with the token
+      authenticateWithToken(token, user);
+      
       // Set the registration step to profile setup
       console.log('Moving to profile setup');
       setRegistrationStep('profile-setup');
