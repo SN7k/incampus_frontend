@@ -162,12 +162,36 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
         
         console.log('Processed user data:', processedUser);
         
-        // Store token and processed user data first
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(processedUser));
-        
-        // Set the token in axios instance
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Store token and processed user data first with proper error handling
+        try {
+          // Store token in multiple ways to ensure it persists
+          localStorage.setItem('token', token);
+          sessionStorage.setItem('token', token); // Backup in session storage
+          
+          // Store the user data
+          localStorage.setItem('user', JSON.stringify(processedUser));
+          sessionStorage.setItem('user', JSON.stringify(processedUser)); // Backup in session storage
+          
+          // Set the token in axios instance
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Double-check that token was properly saved
+          const savedToken = localStorage.getItem('token');
+          if (!savedToken) {
+            console.error('Failed to save token to localStorage, trying again');
+            // Try again with a small delay
+            setTimeout(() => {
+              localStorage.setItem('token', token);
+              axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            }, 100);
+          } else {
+            console.log('Token successfully saved to localStorage:', savedToken.substring(0, 10) + '...');
+          }
+        } catch (storageError) {
+          console.error('Error saving to storage:', storageError);
+          // Try again with a different approach if there's an error
+          document.cookie = `authToken=${token};path=/;max-age=86400`; // 1 day
+        }
         
         // Set flags to ensure we stay in the registration flow
         localStorage.setItem('inRegistrationFlow', 'true');

@@ -67,14 +67,35 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setError('');
     
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
+      // Try to get token from multiple sources
+      let token = localStorage.getItem('token');
+      
+      // If not in localStorage, try sessionStorage as fallback
+      if (!token) {
+        console.log('Token not found in localStorage, trying sessionStorage');
+        token = sessionStorage.getItem('token');
+      }
+      
+      // If not in sessionStorage, try cookies as fallback
+      if (!token) {
+        console.log('Token not found in sessionStorage, trying cookies');
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+          console.log('Found token in cookies');
+        }
+      }
       
       if (!token) {
         setError('Authentication token not found. Please try signing up again.');
         setLoading(false);
         return;
       }
+      
+      // Ensure token is saved in localStorage for future use
+      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
       
       // Ensure the token is set in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -139,14 +160,35 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setError('');
     
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
+      // Try to get token from multiple sources
+      let token = localStorage.getItem('token');
+      
+      // If not in localStorage, try sessionStorage as fallback
+      if (!token) {
+        console.log('Token not found in localStorage, trying sessionStorage');
+        token = sessionStorage.getItem('token');
+      }
+      
+      // If not in sessionStorage, try cookies as fallback
+      if (!token) {
+        console.log('Token not found in sessionStorage, trying cookies');
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+          console.log('Found token in cookies');
+        }
+      }
       
       if (!token) {
         setError('Authentication token not found. Please try signing up again.');
         setLoading(false);
         return;
       }
+      
+      // Ensure token is saved in localStorage for future use
+      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
       
       // Ensure the token is set in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;

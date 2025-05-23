@@ -177,16 +177,45 @@ function AppContent() {
 
   const handleOtpVerificationComplete = async () => {
     console.log('OTP verification complete, moving to profile setup');
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
     
-    // If we don't have token or user in localStorage, go back to login
+    // Try to get token from multiple sources
+    let token = localStorage.getItem('token');
+    let userStr = localStorage.getItem('user');
+    
+    // If not in localStorage, try sessionStorage as fallback
+    if (!token) {
+      console.log('Token not found in localStorage, trying sessionStorage');
+      token = sessionStorage.getItem('token');
+    }
+    
+    // If not in sessionStorage, try cookies as fallback
+    if (!token) {
+      console.log('Token not found in sessionStorage, trying cookies');
+      const cookies = document.cookie.split(';');
+      const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+      if (authCookie) {
+        token = authCookie.split('=')[1];
+        console.log('Found token in cookies');
+      }
+    }
+    
+    // Try to get user data from sessionStorage if not in localStorage
+    if (!userStr) {
+      console.log('User data not found in localStorage, trying sessionStorage');
+      userStr = sessionStorage.getItem('user');
+    }
+    
+    // If we don't have token or user data, go back to login
     if (!token || !userStr) {
-      console.error('Token or user data not found after OTP verification');
+      console.error('Token or user data not found after OTP verification from any source');
       localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
       setRegistrationStep('login');
       return;
     }
+    
+    // Ensure token is properly set in localStorage and axios for future use
+    localStorage.setItem('token', token);
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
     try {
       // Parse the user data
