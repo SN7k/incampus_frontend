@@ -51,7 +51,14 @@ function AppContent() {
   
   const { isAuthenticated, loading, user, logout, authenticateWithToken } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(() => {
-    // Check if we're completing onboarding
+    // First check if we're in the registration flow
+    const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
+    if (inRegistrationFlow === 'true') {
+      console.log('Detected registration flow, starting at login');
+      return 'login';
+    }
+    
+    // Then check if we're completing onboarding
     const completingOnboarding = localStorage.getItem('completingOnboarding');
     if (completingOnboarding === 'true') {
       console.log('Detected onboarding completion flag, setting registration step to completed');
@@ -59,6 +66,7 @@ function AppContent() {
       localStorage.removeItem('completingOnboarding');
       return 'completed';
     }
+    
     return 'login';
   });
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
@@ -205,26 +213,16 @@ function AppContent() {
       console.log('Setting pendingUserData:', userData);
       setPendingUserData(userData);
       
-      // We're still in registration flow, keep the flag
-      console.log('Still in registration flow, maintaining flag');
+      // Authenticate the user with the token
+      await authenticateWithToken(token, user);
       
-      // CRITICAL: Set the registration step BEFORE trying to authenticate
-      // This ensures we don't lose the flow even if authentication is delayed
-      console.log('Moving to profile setup');
-      setRegistrationStep('profile-setup');
-      
-      // Use try-catch to handle any errors during authentication
-      try {
-        // Authenticate the user with the token - prevent redirects
-        console.log('Authenticating with token...');
-        await authenticateWithToken(token, user);
-        console.log('Authentication successful, isAuthenticated:', isAuthenticated);
-        
-      } catch (authError) {
-        console.error('Authentication failed during OTP verification:', authError);
-        // Don't redirect to login with forceLogout parameter
-        // We've already set the registration step to profile-setup, so just log the error
-        console.log('Continuing to profile setup despite authentication error');
+      // Only proceed to profile setup if we're still in registration flow
+      if (localStorage.getItem('inRegistrationFlow') === 'true') {
+        console.log('Moving to profile setup');
+        setRegistrationStep('profile-setup');
+      } else {
+        console.log('No longer in registration flow, redirecting to feed');
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Error in OTP verification completion:', error);
