@@ -76,6 +76,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         return;
       }
       
+      // Ensure the token is set in axios headers
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       // Prepare profile data
       const profileData = {
         name: userInfo.fullName,
@@ -98,8 +101,19 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }
         
-        // Set a flag to indicate we're completing onboarding
+        // Make sure to preserve the token
+        if (response.data.data?.token) {
+          localStorage.setItem('token', response.data.data.token);
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
+        } else {
+          // Ensure the existing token is set in axios headers
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Set flags to indicate we're in the registration flow and completing onboarding
+        localStorage.setItem('inRegistrationFlow', 'true');
         localStorage.setItem('completingOnboarding', 'true');
+        localStorage.setItem('registrationStep', 'friend-suggestions');
         
         // Call the completion handler
         onProfileComplete(profileData);
@@ -134,6 +148,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         return;
       }
       
+      // Ensure the token is set in axios headers
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       // Prepare minimal profile data
       const profileData = {
         name: userInfo.fullName,
@@ -153,8 +170,19 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }
         
-        // Set a flag to indicate we're completing onboarding
+        // Make sure to preserve the token
+        if (response.data.data?.token) {
+          localStorage.setItem('token', response.data.data.token);
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
+        } else {
+          // Ensure the existing token is set in axios headers
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Set flags to indicate we're in the registration flow and completing onboarding
+        localStorage.setItem('inRegistrationFlow', 'true');
         localStorage.setItem('completingOnboarding', 'true');
+        localStorage.setItem('registrationStep', 'friend-suggestions');
         
         // Call the skip handler
         onSkip();

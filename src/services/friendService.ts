@@ -8,6 +8,11 @@ interface ApiResponse<T> {
 }
 
 export const friendService = {
+  // Set auth token in axios instance
+  setAuthToken: (token: string): void => {
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  },
+
   // Get friend suggestions
   getSuggestions: async (): Promise<User[]> => {
     const response = await axiosInstance.get<ApiResponse<User[]>>('/api/friends/suggestions');

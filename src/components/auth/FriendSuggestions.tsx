@@ -53,10 +53,29 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
   const handleComplete = async () => {
     setLoading(true);
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      if (!token || !userStr) {
+        console.error('Missing authentication data during friend suggestions completion');
+        setError('Authentication error. Please try logging in again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Ensure the token is set in the friendService
+      friendService.setAuthToken(token);
+      
       // Send friend requests to selected users
       await Promise.all(
         selectedUsers.map(userId => friendService.sendFriendRequest(userId))
       );
+      
+      // Set flags to indicate we're completing onboarding but clearing registration flow
+      localStorage.setItem('completingOnboarding', 'true');
+      
+      // Call the completion handler
       onComplete(selectedUsers);
     } catch (error) {
       setError('Failed to send friend requests');
@@ -99,11 +118,23 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         return;
       }
       
-      // Set a flag in localStorage to indicate we're in the middle of a transition
+      // Ensure the token is set in the friendService
+      friendService.setAuthToken(token);
+      
+      // Set flags to indicate we're completing onboarding but clearing registration flow
       localStorage.setItem('completingOnboarding', 'true');
       
       // Call onComplete with empty array to indicate skip
       onComplete([]);
+      
+      // Log the current state to help with debugging
+      console.log('Skipping friend suggestions, current state:', {
+        token: !!token,
+        user: !!user,
+        completingOnboarding: localStorage.getItem('completingOnboarding'),
+        inRegistrationFlow: localStorage.getItem('inRegistrationFlow'),
+        registrationStep: localStorage.getItem('registrationStep')
+      });
       
       // Direct approach - bypass the App.tsx handler and go straight to the feed
       setTimeout(() => {
