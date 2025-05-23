@@ -180,12 +180,15 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           onVerificationComplete();
         }, 100);
       } else {
-        localStorage.removeItem('inRegistrationFlow');
+        // Don't remove inRegistrationFlow flag on verification failure
+        // This allows users to retry without losing their place in the flow
+        console.error('OTP verification failed:', response.data.message);
         setError(response.data.message || 'Verification failed. Please try again.');
       }
     } catch (error: any) {
       console.error('OTP verification error:', error);
-      localStorage.removeItem('inRegistrationFlow');
+      // Don't remove inRegistrationFlow flag on error
+      // This allows users to retry without losing their place in the flow
       setError(error.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);

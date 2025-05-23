@@ -52,10 +52,22 @@ function AppContent() {
   const { isAuthenticated, loading, user, logout, authenticateWithToken } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(() => {
     const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
+    const currentStep = localStorage.getItem('registrationStep');
+    
     if (inRegistrationFlow === 'true') {
-      console.log('Detected registration flow');
-      return 'login';
+      console.log('Detected registration flow, current step:', currentStep);
+      
+      // If we have a saved step, use it
+      if (currentStep === 'otp') {
+        return 'otp';
+      } else if (currentStep === 'profile-setup') {
+        return 'profile-setup';
+      } else if (currentStep === 'friend-suggestions') {
+        return 'friend-suggestions';
+      }
     }
+    
+    // Default to login
     return 'login';
   });
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
@@ -156,8 +168,9 @@ function AppContent() {
 
   const handleSignupSuccess = (userData: PendingUserData) => {
     console.log('Signup success, user data:', userData);
-    // Set a flag to indicate we're in the registration flow
+    // Set flags to indicate we're in the registration flow and save current step
     localStorage.setItem('inRegistrationFlow', 'true');
+    localStorage.setItem('registrationStep', 'otp');
     setPendingUserData(userData);
     setRegistrationStep('otp');
   };
@@ -204,13 +217,23 @@ function AppContent() {
       // Set the pending user data first
       setPendingUserData(userData);
       
-      // Ensure we're still in registration flow
+      // CRITICAL: First set the registration step to profile-setup
+      // This must happen before any async operations
+      localStorage.setItem('registrationStep', 'profile-setup');
+      setRegistrationStep('profile-setup');
+      
+      // Then ensure we're still in registration flow
       localStorage.setItem('inRegistrationFlow', 'true');
       localStorage.setItem('completingOnboarding', 'true');
       
-      // IMPORTANT: Set registration step to profile-setup BEFORE authenticating
-      // This ensures the UI shows the profile setup even if authentication changes state
-      setRegistrationStep('profile-setup');
+      // Force a re-render to ensure the UI updates immediately
+      setTimeout(() => {
+        // Double-check that we're still in the right state
+        if (localStorage.getItem('registrationStep') === 'profile-setup') {
+          console.log('Confirming profile setup is active');
+          setRegistrationStep('profile-setup');
+        }
+      }, 0);
       
       // Log the current state to help with debugging
       console.log('Set registration step to profile-setup, current state:', {
@@ -218,7 +241,8 @@ function AppContent() {
         isAuthenticated,
         pendingUserData: userData,
         inRegistrationFlow: localStorage.getItem('inRegistrationFlow'),
-        completingOnboarding: localStorage.getItem('completingOnboarding')
+        completingOnboarding: localStorage.getItem('completingOnboarding'),
+        registrationStepInStorage: localStorage.getItem('registrationStep')
       });
       
       // Authenticate the user with the token in the background
@@ -240,11 +264,13 @@ function AppContent() {
   const handleProfileComplete = (profileData: PendingProfileData) => {
     console.log('Profile setup complete, profile data:', profileData);
     setPendingProfileData(profileData);
+    localStorage.setItem('registrationStep', 'friend-suggestions');
     setRegistrationStep('friend-suggestions');
   };
 
   const handleSkipProfile = () => {
     console.log('Profile setup skipped, moving to friend suggestions');
+    localStorage.setItem('registrationStep', 'friend-suggestions');
     setRegistrationStep('friend-suggestions');
   };
 
@@ -286,6 +312,7 @@ function AppContent() {
           // Clear the registration flow flags since we're done with onboarding
           localStorage.removeItem('inRegistrationFlow');
           localStorage.removeItem('completingOnboarding');
+          localStorage.removeItem('registrationStep');
           
           // Refresh the authentication state before redirecting
           const refreshAuth = async () => {
