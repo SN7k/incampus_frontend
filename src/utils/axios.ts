@@ -56,16 +56,33 @@ axiosInstance.interceptors.response.use(
     });
 
     if (error.response?.status === 401) {
-      // Check if we're in the registration flow or just completed it
+      // Check for ALL possible registration flags
       const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
       const completingOnboarding = localStorage.getItem('completingOnboarding');
       const justCompletedRegistration = localStorage.getItem('justCompletedRegistration');
       const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration');
+      const bypassTokenVerification = localStorage.getItem('bypassTokenVerification');
+      const comingFromRegistration = localStorage.getItem('comingFromRegistration');
       
-      if (inRegistrationFlow === 'true' || completingOnboarding === 'true' || 
-          justCompletedRegistration === 'true' || redirectAfterRegistration === 'true') {
-        console.log('In registration flow or just completed it, ignoring 401 error');
-        // Don't clear auth data or redirect if we're in the registration flow
+      // Check if any registration flags are set
+      const hasRegistrationFlags = 
+        inRegistrationFlow === 'true' || 
+        completingOnboarding === 'true' || 
+        justCompletedRegistration === 'true' || 
+        redirectAfterRegistration === 'true' || 
+        bypassTokenVerification === 'true' || 
+        comingFromRegistration === 'true';
+      
+      if (hasRegistrationFlags) {
+        console.log('Registration flags detected, ignoring 401 error:', {
+          inRegistrationFlow,
+          completingOnboarding,
+          justCompletedRegistration,
+          redirectAfterRegistration,
+          bypassTokenVerification,
+          comingFromRegistration
+        });
+        // Don't clear auth data or redirect if we have any registration flags
         return Promise.reject(error);
       }
       
@@ -73,6 +90,8 @@ axiosInstance.interceptors.response.use(
       console.log('401 error outside of registration flow, clearing auth data');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       window.location.href = '/';
     } else if (!error.response) {
       // Network error or server not responding

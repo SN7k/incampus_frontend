@@ -488,10 +488,16 @@ function AppContent() {
       
       const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
       
-      // Set flags to indicate we just completed registration
+      // Set ALL possible flags to indicate we just completed registration
       // These will be used to force authentication in the AppContent component
       localStorage.setItem('justCompletedRegistration', 'true');
       sessionStorage.setItem('redirectAfterRegistration', 'true');
+      localStorage.setItem('bypassTokenVerification', 'true');
+      localStorage.setItem('comingFromRegistration', 'true');
+      
+      // Ensure we're still in registration flow until we successfully transition
+      localStorage.setItem('inRegistrationFlow', 'true');
+      localStorage.setItem('completingOnboarding', 'true');
       
       // Ensure token is saved in all storage mechanisms
       if (token) {
