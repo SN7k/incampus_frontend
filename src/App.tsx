@@ -51,22 +51,11 @@ function AppContent() {
   
   const { isAuthenticated, loading, user, logout, authenticateWithToken } = useAuth();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(() => {
-    // First check if we're in the registration flow
     const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
     if (inRegistrationFlow === 'true') {
-      console.log('Detected registration flow, starting at login');
+      console.log('Detected registration flow');
       return 'login';
     }
-    
-    // Then check if we're completing onboarding
-    const completingOnboarding = localStorage.getItem('completingOnboarding');
-    if (completingOnboarding === 'true') {
-      console.log('Detected onboarding completion flag, setting registration step to completed');
-      // Remove the flag
-      localStorage.removeItem('completingOnboarding');
-      return 'completed';
-    }
-    
     return 'login';
   });
   const [pendingUserData, setPendingUserData] = useState<PendingUserData | null>(null);
@@ -181,7 +170,7 @@ function AppContent() {
     // If we don't have token or user in localStorage, go back to login
     if (!token || !userStr) {
       console.error('Token or user data not found after OTP verification');
-      localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
+      localStorage.removeItem('inRegistrationFlow');
       setRegistrationStep('login');
       return;
     }
@@ -203,7 +192,7 @@ function AppContent() {
       const userData: PendingUserData = {
         fullName: user.name,
         email: user.email,
-        role: user.role || 'student',
+        role: (user.role as 'student' | 'faculty') || 'student',
         universityId: user.universityId || user.collegeId || '',
         department: user.department || '',
         batch: user.batch || '',
@@ -213,20 +202,19 @@ function AppContent() {
       console.log('Setting pendingUserData:', userData);
       setPendingUserData(userData);
       
+      // Ensure we're in registration flow
+      localStorage.setItem('inRegistrationFlow', 'true');
+      
       // Authenticate the user with the token
       await authenticateWithToken(token, user);
       
-      // Only proceed to profile setup if we're still in registration flow
-      if (localStorage.getItem('inRegistrationFlow') === 'true') {
-        console.log('Moving to profile setup');
-        setRegistrationStep('profile-setup');
-      } else {
-        console.log('No longer in registration flow, redirecting to feed');
-        window.location.href = '/';
-      }
+      // Move to profile setup
+      console.log('Moving to profile setup');
+      setRegistrationStep('profile-setup');
+      
     } catch (error) {
       console.error('Error in OTP verification completion:', error);
-      localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
+      localStorage.removeItem('inRegistrationFlow');
       setRegistrationStep('login');
     }
   };

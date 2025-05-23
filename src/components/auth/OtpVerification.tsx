@@ -1,8 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
 import axiosInstance from '../../utils/axios';
-// useAuth import removed as it's not needed
-import { User } from '../../types';
+
+// Define User interface to match AuthContext
+interface User {
+  _id: string;
+  id?: string;
+  name: string;
+  email: string;
+  universityId: string;
+  role: 'student' | 'teacher' | 'admin' | 'faculty';
+  avatar: string;
+  department?: string;
+  batch?: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+  bio?: string;
+  coverPhoto?: string;
+  relevance?: string[];
+  // For backward compatibility
+  collegeId?: string;
+  program?: string;
+}
 
 interface ApiResponse<T> {
   status: string;
@@ -131,20 +151,27 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           // Ensure email exists
           email: user.email || email,
           // Ensure role exists
-          role: user.role || 'student'
+          role: user.role || 'student',
+          // Ensure other required fields have default values
+          universityId: user.universityId || user.collegeId || '',
+          avatar: user.avatar || '/default-avatar.png',
+          // These fields are required by the User interface
+          createdAt: (user as any).createdAt || new Date().toISOString(),
+          updatedAt: (user as any).updatedAt || new Date().toISOString()
         };
         
         console.log('Processed user data:', processedUser);
         
-        // Set flag to ensure we stay in the registration flow
-        localStorage.setItem('completingOnboarding', 'true');
-        
-        // Store token and processed user data
+        // Store token and processed user data first
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(processedUser));
         
         // Set the token in axios instance
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Set flags to ensure we stay in the registration flow
+        localStorage.setItem('inRegistrationFlow', 'true');
+        localStorage.setItem('completingOnboarding', 'true');
         
         // Use a small timeout to ensure state is updated properly
         setTimeout(() => {

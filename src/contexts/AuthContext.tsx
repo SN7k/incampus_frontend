@@ -73,39 +73,44 @@ export const useAuth = () => useContext(AuthContext);
 const checkAndFixAuthIssues = () => {
   // Always remove the forceLogout parameter from URL, regardless of whether we clear auth data
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('forceLogout')) {
-    // Remove the parameter from URL without causing a refresh
-    const newUrl = window.location.pathname + 
-      (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
-    window.history.replaceState({}, document.title, newUrl);
-    console.log('Removed forceLogout parameter from URL');
-  }
-
+  
   // Check if we're in the middle of OTP verification or registration flow
   const inRegistrationFlow = localStorage.getItem('inRegistrationFlow');
-  if (inRegistrationFlow === 'true') {
-    console.log('In registration flow, preserving authentication data regardless of URL parameters');
-    return false;
+  const completingOnboarding = localStorage.getItem('completingOnboarding');
+  
+  if (urlParams.has('forceLogout')) {
+    // If we're in registration or onboarding flow, preserve the state
+    if (inRegistrationFlow !== 'true' && completingOnboarding !== 'true') {
+      // Remove the parameter from URL without causing a refresh
+      const newUrl = window.location.pathname + 
+        (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+      window.history.replaceState({}, document.title, newUrl);
+      console.log('Removed forceLogout parameter from URL');
+      
+      // Check if we should actually force logout (only if not in registration/onboarding)
+      const forceLogout = urlParams.get('forceLogout');
+      if (forceLogout === 'true') {
+        console.log('Force logout parameter detected, clearing authentication data');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        return true;
+      }
+    } else {
+      console.log('In registration/onboarding flow, ignoring forceLogout parameter');
+      // Still remove the parameter but don't log out
+      const newUrl = window.location.pathname + 
+        (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }
 
-  // Check if we're completing onboarding - in this case, do NOT force logout
-  const completingOnboarding = localStorage.getItem('completingOnboarding');
-  if (completingOnboarding === 'true') {
-    console.log('Detected onboarding completion flag in AuthContext, preserving authentication');
+  // If we're in registration or onboarding flow, preserve authentication state
+  if (inRegistrationFlow === 'true' || completingOnboarding === 'true') {
+    console.log('In registration/onboarding flow, preserving authentication data');
     return false;
   }
   
-  // Check if there's a URL parameter indicating we should force logout
-  // But only check AFTER we've already removed it from the URL
-  const forceLogout = urlParams.get('forceLogout');
-  if (forceLogout === 'true') {
-    console.log('Force logout parameter detected, but NOT clearing authentication data');
-    // NOTE: We're no longer clearing authentication data here
-    // This change allows login to proceed normally
-    return false;
-  }
-  
-  // Check for previous errors
+  // Check for previous errors (only if not in registration/onboarding flow)
   const hasAuthError = localStorage.getItem('authError');
   if (hasAuthError) {
     console.log('Previous authentication error detected, clearing authentication data');
