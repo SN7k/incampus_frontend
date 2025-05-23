@@ -4,6 +4,8 @@ import { User } from '../../types';
 import { Search } from 'lucide-react';
 import { friendService } from '../../services/friendService';
 import { setRegistrationFlags, saveToken, handleRegistrationStepComplete, navigateWithoutForceLogout } from '../../utils/authFlowHelpers';
+import { forceAuthenticationState } from '../../utils/preventAuthCycle';
+import axiosInstance from '../../utils/axios';
 
 interface FriendSuggestionsProps {
   currentUser: Partial<User>;
@@ -81,7 +83,11 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
     setLoading(true);
     try {
       // Set all registration flags to ensure we don't get logged out during the process
-      setRegistrationFlags();
+      localStorage.setItem('justCompletedRegistration', 'true');
+      sessionStorage.setItem('redirectAfterRegistration', 'true');
+      localStorage.setItem('completedFriendSuggestions', 'true');
+      localStorage.setItem('forceAuthenticated', 'true');
+      localStorage.setItem('authBypassTimestamp', Date.now().toString());
       
       // Get token from localStorage or sessionStorage
       let token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -101,8 +107,15 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         return;
       }
       
-      // Save token to all storage mechanisms using our utility
-      saveToken(token);
+      // Save token to all storage mechanisms for redundancy
+      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+      
+      // Ensure the token is set in axios headers
+      if (typeof axiosInstance !== 'undefined') {
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
       
       // Ensure the token is set in the friendService
       friendService.setAuthToken(token);
@@ -114,37 +127,14 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         );
         
         console.log(`Successfully followed ${selectedUsers.length} users`);
+        
+        // Call the onComplete handler with the selected users
+        // This will trigger the App.tsx handler which will navigate to the feed
+        onComplete(selectedUsers);
       } catch (err) {
         console.error('Error following users:', err);
-        // Continue even if following fails
-      }
-      
-      try {
-        // Parse the user data
-        const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-        
-        if (!userStr) {
-          console.error('No user data found during friend suggestions completion');
-          setError('User data missing. Please try logging in again.');
-          setLoading(false);
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        // Use handleRegistrationStepComplete to manage the transition to feed
-        // This sets all necessary registration flags and ensures auth state is preserved
-        handleRegistrationStepComplete('feed', token, user);
-        
-        // Call the completion handler with the selected users
+        // Continue even if following fails - still call onComplete
         onComplete(selectedUsers);
-        
-        // Use navigateWithoutForceLogout to ensure we navigate correctly
-        // (This part will be handled by the App.tsx onComplete handler)
-      } catch (err) {
-        console.error('Error completing onboarding:', err);
-        setError('Failed to complete onboarding');
-        setLoading(false);
       }
     } catch (error) {
       setError('Failed to send friend requests');

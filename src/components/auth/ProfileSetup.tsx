@@ -284,11 +284,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         console.log('Skip profile setup response:', response.data);
         
         if (response.data.status === 'success') {
-          // Update user data in localStorage if returned
-          if (response.data.data?.user) {
-            localStorage.setItem('user', JSON.stringify(response.data.data.user));
-          }
-          
+        // Update user data in localStorage if returned
+        if (response.data.data?.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        }
+        
           // Make sure to preserve the token
           if (response.data.data?.token) {
             const newToken = response.data.data.token;
@@ -341,7 +341,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
             
             // Call the skip handler
             onSkip();
-          } else {
+      } else {
             // If all else fails, just proceed to the next step
             console.log('API requests failed, proceeding anyway');
             localStorage.setItem('inRegistrationFlow', 'true');

@@ -9,6 +9,7 @@ import { User } from '../types';
 import { Post } from '../types/post';
 import axiosInstance from '../utils/axios';
 import { hasRegistrationFlags, clearRegistrationFlags } from '../utils/authFlowHelpers';
+// We're directly handling auth state in this component now
 
 interface ApiResponse<T> {
   status: 'success' | 'error';
@@ -25,6 +26,30 @@ const Feed: React.FC = () => {
   useEffect(() => {
     // Check for the specific error that's causing problems
     const handleError = (event: ErrorEvent) => {
+      // Check if we're coming from friend suggestions or registration
+      const isFromRegistrationFlow = 
+        localStorage.getItem('completedFriendSuggestions') === 'true' ||
+        localStorage.getItem('justCompletedRegistration') === 'true' ||
+        sessionStorage.getItem('redirectAfterRegistration') === 'true';
+      
+      // If we're coming from registration, don't force logout on error
+      if (isFromRegistrationFlow) {
+        console.log('Error detected but coming from registration, preserving auth state');
+        
+        // Force token into axios headers
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          console.log('Forced token into axios headers after error');
+        }
+        
+        // Prevent the error from propagating
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      
+      // Only force logout for specific errors and when not in registration flow
       if (event.error && event.error.toString().includes('is not a function')) {
         console.error('Critical error detected in Feed component, forcing logout');
         localStorage.setItem('authError', 'true');
@@ -38,50 +63,89 @@ const Feed: React.FC = () => {
   
   // Handle special case when coming from friend suggestions
   useEffect(() => {
+    console.log('Feed component mounted, checking authentication state');
+    
+    // Check for token in multiple places
+    const token = localStorage.getItem('token') || 
+                 sessionStorage.getItem('token') || 
+                 document.cookie.split(';').find(c => c.trim().startsWith('authToken='))?.split('=')[1];
+    
+    // Check for registration flags
+    const isFromRegistrationFlow = 
+      localStorage.getItem('completedFriendSuggestions') === 'true' ||
+      localStorage.getItem('justCompletedRegistration') === 'true' ||
+      sessionStorage.getItem('redirectAfterRegistration') === 'true' ||
+      localStorage.getItem('forceAuthenticated') === 'true';
+    
+    // If we're coming from registration, force authentication state
+    if (isFromRegistrationFlow) {
+      console.log('Feed: Coming from registration flow, forcing authentication state');
+      
+      // Set timestamp to allow bypassing auth checks temporarily
+      localStorage.setItem('authBypassTimestamp', Date.now().toString());
+      
+      // Force token into axios headers
+      if (token) {
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('Feed: Forced token into axios headers');
+        
+        // Also set a cookie with the token for extra redundancy
+        document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+      }
+    } else if (token) {
+      console.log('Feed: Found authentication token, ensuring it is set in axios headers');
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.log('Feed: No authentication token found, this could cause issues');
+    }
+    
     // Check for special parameters that indicate we're coming from registration
     const urlParams = new URLSearchParams(window.location.search);
     const fromRegistration = urlParams.get('fromRegistration') === 'true';
     const preserveAuth = urlParams.get('preserveAuth') === 'true';
+    
+    // Check for registration flags
+    const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+    const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
     const completedFriendSuggestions = localStorage.getItem('completedFriendSuggestions') === 'true';
     
-    // If we're coming from registration, clean up the URL but preserve auth state
-    if (fromRegistration || preserveAuth || completedFriendSuggestions) {
-      console.log('Detected navigation from registration flow, ensuring authentication is preserved');
+    if (fromRegistration || preserveAuth || justCompletedRegistration || 
+        redirectAfterRegistration || completedFriendSuggestions) {
+      console.log('Feed: Coming from registration flow, special handling applied');
       
       // Clean up URL parameters without triggering a page reload
-      window.history.replaceState({}, document.title, window.location.pathname);
+      if (fromRegistration || preserveAuth) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
       
-      // Keep registration flags active for a while to ensure auth state is preserved
-      // Only clear them after a delay to ensure all components have loaded
-      const timeout = setTimeout(() => {
-        console.log('Clearing registration flags after successful navigation to feed');
+      // Don't clear flags immediately to ensure they're used by any pending requests
+      const clearFlagsTimeout = setTimeout(() => {
+        console.log('Feed: Delayed clearing of registration flags');
         // Clear registration flags but keep the authentication state
         clearRegistrationFlags();
         // Also clear the special flags we set for this transition
-        localStorage.removeItem('forceAuthenticated');
         localStorage.removeItem('completedFriendSuggestions');
         localStorage.removeItem('skipAuthCheck');
+        localStorage.removeItem('forceAuthenticated');
         localStorage.removeItem('authBypassTimestamp');
-        
-        // Log the successful completion of the registration flow
-        console.log('Registration flow completed successfully');
-      }, 5000); // 5 second delay to ensure all components have loaded
+      }, 10000); // 10 second delay to ensure all requests complete
       
-      return () => clearTimeout(timeout);
+      return () => clearTimeout(clearFlagsTimeout);
     } else if (hasRegistrationFlags()) {
       // Handle the case where we have registration flags but no special parameters
       console.log('Registration flags detected in Feed component, user has completed registration');
       
       // Use a timeout to ensure all components have loaded and used the flags if needed
-      const timeout = setTimeout(() => {
+      const regularFlagsTimeout = setTimeout(() => {
         console.log('Clearing registration flags after successful navigation to feed');
         clearRegistrationFlags();
         
         // Log the successful completion of the registration flow
         console.log('Registration flow completed successfully');
-      }, 3000); // 3 second delay
+      }, 5000); // 5 second delay to ensure all components have loaded
       
-      return () => clearTimeout(timeout);
+      // Clean up the timeout when component unmounts
+      return () => clearTimeout(regularFlagsTimeout);
     }
   }, []);
   

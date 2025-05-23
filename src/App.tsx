@@ -16,6 +16,7 @@ import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import axiosInstance from './utils/axios';
 import { hasRegistrationFlags, clearRegistrationFlags, navigateWithoutForceLogout, setRegistrationFlags, saveToken, handleFriendSuggestionsToFeedTransition } from './utils/authFlowHelpers';
+import { forceAuthenticationState, getAuthPreservingPath } from './utils/authBypass';
 // Import types as needed
 
 // Friend request data is now handled by the Friends component
@@ -293,7 +294,7 @@ function AppContent() {
         // Double-check that we're still in the right state
         if (localStorage.getItem('registrationStep') === 'profile-setup') {
           console.log('Confirming profile setup is active');
-          setRegistrationStep('profile-setup');
+    setRegistrationStep('profile-setup');
         }
       }, 0);
       
@@ -395,7 +396,7 @@ function AppContent() {
         console.error('API error during profile setup:', apiError);
         // Try to proceed anyway to avoid blocking the user
         console.log('Attempting to proceed to friend suggestions despite error');
-        setPendingProfileData(profileData);
+    setPendingProfileData(profileData);
         localStorage.setItem('registrationStep', 'friend-suggestions');
         setRegistrationStep('friend-suggestions');
       }
@@ -405,7 +406,7 @@ function AppContent() {
       console.log('Attempting to proceed to friend suggestions despite error');
       setPendingProfileData({} as PendingProfileData); // Use empty object as fallback
       localStorage.setItem('registrationStep', 'friend-suggestions');
-      setRegistrationStep('friend-suggestions');
+    setRegistrationStep('friend-suggestions');
     }
   };
 
@@ -487,10 +488,10 @@ function AppContent() {
       // Proceed anyway to avoid blocking the user
       console.log('Proceeding to friend suggestions despite error');
       localStorage.setItem('registrationStep', 'friend-suggestions');
-      setRegistrationStep('friend-suggestions');
+    setRegistrationStep('friend-suggestions');
     }
   };
-
+  
   const handleFriendSuggestionsComplete = async (followedUsers: string[]) => {
     try {
       console.log('Friend suggestions complete, followed users:', followedUsers);
@@ -502,164 +503,69 @@ function AppContent() {
       // Set registration step to completed
       setRegistrationStep('completed');
       
-      // Use our utility function to check for registration flags
-      // This ensures we're still in the registration flow
-      if (!hasRegistrationFlags()) {
-        console.log('No registration flags found, setting them to ensure successful transition');
-        // Set the registration flags if they're not already set
-        setRegistrationFlags();
-      }
-      
-      // Ensure we have valid authentication data
-      let token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      if (!token) {
-        // Try to get from cookies
-        const cookies = document.cookie.split(';');
-        const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
-        if (authCookie) {
-          token = authCookie.split('=')[1];
-          // Use our utility to save the token to all storage mechanisms
-          saveToken(token);
-        }
-      }
-      
-      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-      
-      // Set ALL possible flags to indicate we just completed registration
-      // These will be used to force authentication in the AppContent component
+      // Set ALL possible flags to ensure we don't get logged out during the process
       localStorage.setItem('justCompletedRegistration', 'true');
       sessionStorage.setItem('redirectAfterRegistration', 'true');
+      localStorage.setItem('completedFriendSuggestions', 'true');
+      localStorage.setItem('forceAuthenticated', 'true');
+      localStorage.setItem('authBypassTimestamp', Date.now().toString());
       localStorage.setItem('bypassTokenVerification', 'true');
       localStorage.setItem('comingFromRegistration', 'true');
       
-      // Ensure we're still in registration flow until we successfully transition
-      localStorage.setItem('inRegistrationFlow', 'true');
-      localStorage.setItem('completingOnboarding', 'true');
+      // Get the current token
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       
-      // Ensure token is saved in all storage mechanisms
-      if (token) {
-        localStorage.setItem('token', token);
-        sessionStorage.setItem('token', token);
-        document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
-        
-        // Set the token in axios headers
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      }
-      
-      if (!token || !userStr) {
-        console.error('Missing authentication data during friend suggestions completion');
-        // Clean up any registration flags
-        localStorage.removeItem('inRegistrationFlow');
-        localStorage.removeItem('completingOnboarding');
-        // Redirect to login page if authentication data is missing
-        window.location.href = '/?forceLogout=true';
+      if (!token || !user) {
+        console.error('No token or user data found during friend suggestions completion');
+        window.location.href = '/login';
         return;
       }
       
-      // Validate the user object
-      try {
-        const user = JSON.parse(userStr);
-        console.log('Valid user data available for transition:', user);
+      // Ensure the token is set in axios headers
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Also set a cookie with the token for extra redundancy
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+      
+      // Ensure the user object has all required fields
+      const validUser = {
+        _id: user._id,
+        id: user._id, // For backward compatibility
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || 'student',
+        avatar: user.avatar || '/default-avatar.png',
+        hasCompletedRegistration: true
+      };
+      
+      // Save the valid user data to localStorage and sessionStorage
+      localStorage.setItem('user', JSON.stringify(validUser));
+      sessionStorage.setItem('user', JSON.stringify(validUser));
+      
+      console.log('Authentication refreshed, redirecting to feed');
+      
+      // Use a direct approach to transition to the feed page
+      setTimeout(() => {
+        console.log('Redirecting to feed page after authentication refresh');
         
-        // Ensure the auth header is set for the next page load
-        if (token) {
-          console.log('Setting auth header for transition');
-          // Set the authorization header for axios
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Clear the registration flow flags since we're done with onboarding
-          localStorage.removeItem('inRegistrationFlow');
-          localStorage.removeItem('completingOnboarding');
-          localStorage.removeItem('registrationStep');
-          
-          // Set a flag to indicate we just completed registration
-          // This will be used by AuthContext to prevent clearing auth data
-          localStorage.setItem('justCompletedRegistration', 'true');
-          
-          // Refresh the authentication state before redirecting
-          const refreshAuth = async () => {
-            try {
-              // Ensure the user object has all required fields
-              const validUser = {
-                _id: user._id,
-                id: user._id, // For backward compatibility
-                name: user.name || user.collegeId || 'User',
-                email: user.email || '',
-                universityId: user.universityId || user.collegeId || '',
-                role: user.role || 'student',
-                avatar: user.avatar || '/default-avatar.png',
-                createdAt: user.createdAt || new Date().toISOString(),
-                updatedAt: user.updatedAt || new Date().toISOString(),
-                hasCompletedRegistration: true
-              };
-              
-              // Save the valid user data to localStorage and sessionStorage
-              localStorage.setItem('user', JSON.stringify(validUser));
-              sessionStorage.setItem('user', JSON.stringify(validUser));
-              
-              // Ensure the token is set in axios headers
-              axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-              
-              // Call authenticateWithToken to update the auth context
-              await authenticateWithToken(token, validUser);
-              
-              console.log('Authentication refreshed, redirecting to feed');
-              // Use a direct approach to transition to the feed page
-              setTimeout(() => {
-                console.log('Redirecting to feed page after authentication refresh');
-                
-                // Set multiple flags to ensure we don't lose authentication during transition
-                localStorage.setItem('justCompletedRegistration', 'true');
-                sessionStorage.setItem('redirectAfterRegistration', 'true');
-                
-                // Set a flag to bypass token verification
-                localStorage.setItem('bypassTokenVerification', 'true');
-                
-                // Ensure we're not redirecting with any query parameters
-                const cleanUrl = window.location.origin + '/';
-                console.log('Redirecting to clean URL:', cleanUrl);
-                
-                // Set a special flag in localStorage to indicate we're coming from registration
-                localStorage.setItem('comingFromRegistration', 'true');
-                
-                // Use replaceState to avoid adding to browser history
-                window.history.replaceState(null, '', cleanUrl);
-                
-                // Force a full page reload to ensure a clean state
-                window.location.replace(cleanUrl);
-              }, 500); // Reduced timeout since we're doing a full page reload
-            } catch (err) {
-              console.error('Error refreshing authentication:', err);
-              // Try a direct redirect as a fallback
-              window.location.href = '/';
-            }
-          };
-          refreshAuth();
-          return;
-        }
-      } catch (e) {
-        console.error('Invalid user data during friend suggestions completion:', e);
-        // Clean up any registration flags
-        localStorage.removeItem('inRegistrationFlow');
-        localStorage.removeItem('completingOnboarding');
-        window.location.href = '/?forceLogout=true';
-        return;
-      }
-      
-      // Use our specialized function to handle this critical transition
-      console.log('Using specialized function to handle transition to feed...');
-      
-      // This function handles all the necessary flags and navigation
-      // to ensure authentication is maintained during this critical transition
-      handleFriendSuggestionsToFeedTransition();
+        // Ensure we're not redirecting with any query parameters
+        const cleanUrl = window.location.origin + '/';
+        console.log('Redirecting to clean URL:', cleanUrl);
+        
+        // Use replaceState to avoid adding to browser history
+        window.history.replaceState(null, '', cleanUrl);
+        
+        // Force a full page reload to ensure a clean state
+        window.location.replace(cleanUrl);
+      }, 500); // Reduced timeout since we're doing a full page reload
     } catch (error) {
-      console.error('Error completing friend suggestions:', error);
+      console.error('Error during friend suggestions completion:', error);
+      // Clean up any registration flags
+      localStorage.removeItem('inRegistrationFlow');
+      localStorage.removeItem('completingOnboarding');
       
-      // Clean up registration flags properly using our utility function
-      clearRegistrationFlags();
-      
-      // Fallback to login page on error
-      window.location.href = '/?forceLogout=true';
+      // Try a direct redirect as a fallback
+      window.location.href = '/';
     }
   };
 
@@ -851,15 +757,15 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <ThemeProvider>
-        <AuthProvider>
-          <SearchProvider>
-            <NotificationProvider>
-              <AppContent />
-            </NotificationProvider>
-          </SearchProvider>
-        </AuthProvider>
-      </ThemeProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SearchProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </SearchProvider>
+      </AuthProvider>
+    </ThemeProvider>
     </Router>
   );
 }
