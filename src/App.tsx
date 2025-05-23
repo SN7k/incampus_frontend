@@ -195,13 +195,23 @@ function AppContent() {
       const userData: PendingUserData = {
         fullName: user.name,
         email: user.email,
-        role: user.role || 'student'
+        role: user.role || 'student',
+        universityId: user.universityId || user.collegeId || '',
+        department: user.department || '',
+        batch: user.batch || '',
+        program: user.program || ''
       };
       
+      console.log('Setting pendingUserData:', userData);
       setPendingUserData(userData);
       
       // We're still in registration flow, keep the flag
       console.log('Still in registration flow, maintaining flag');
+      
+      // CRITICAL: Set the registration step BEFORE trying to authenticate
+      // This ensures we don't lose the flow even if authentication is delayed
+      console.log('Moving to profile setup');
+      setRegistrationStep('profile-setup');
       
       // Use try-catch to handle any errors during authentication
       try {
@@ -210,16 +220,11 @@ function AppContent() {
         await authenticateWithToken(token, user);
         console.log('Authentication successful, isAuthenticated:', isAuthenticated);
         
-        // Simply move to profile setup regardless of isAuthenticated state
-        // since we just authenticated and the state may not have updated yet
-        console.log('Moving to profile setup');
-        setRegistrationStep('profile-setup');
       } catch (authError) {
         console.error('Authentication failed during OTP verification:', authError);
         // Don't redirect to login with forceLogout parameter
-        // Just update the registration step
-        localStorage.removeItem('inRegistrationFlow'); // Clean up the flag
-        setRegistrationStep('login');
+        // We've already set the registration step to profile-setup, so just log the error
+        console.log('Continuing to profile setup despite authentication error');
       }
     } catch (error) {
       console.error('Error in OTP verification completion:', error);

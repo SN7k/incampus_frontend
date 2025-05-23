@@ -105,6 +105,10 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
 
     try {
       console.log('Sending OTP verification request:', { email, otp: otpString });
+      
+      // Ensure we're still in registration flow
+      localStorage.setItem('inRegistrationFlow', 'true');
+      
       const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/verify-otp', {
         email,
         otp: otpString
@@ -132,6 +136,9 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
         
         console.log('Processed user data:', processedUser);
         
+        // Set flag to ensure we stay in the registration flow
+        localStorage.setItem('completingOnboarding', 'true');
+        
         // Store token and processed user data
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(processedUser));
@@ -139,13 +146,19 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
         // Set the token in axios instance
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // Call the completion handler
-        onVerificationComplete();
+        // Use a small timeout to ensure state is updated properly
+        setTimeout(() => {
+          console.log('OTP verification successful, calling completion handler');
+          // Call the completion handler
+          onVerificationComplete();
+        }, 100);
       } else {
+        localStorage.removeItem('inRegistrationFlow');
         setError(response.data.message || 'Verification failed. Please try again.');
       }
     } catch (error: any) {
       console.error('OTP verification error:', error);
+      localStorage.removeItem('inRegistrationFlow');
       setError(error.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
