@@ -191,20 +191,21 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       sessionStorage.setItem('token', token);
       document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
       
+      let userData = null;
+      
       try {
-        user = JSON.parse(userStr);
+        userData = JSON.parse(userStr);
+        console.log('User data parsed successfully:', userData);
       } catch (e) {
         console.error('Error parsing user data:', e);
       }
-        registrationStep: localStorage.getItem('registrationStep')
-      });
       
-      // Direct approach - bypass the App.tsx handler and go straight to the feed
+      // Use our utility function to navigate without the forceLogout parameter
       setTimeout(() => {
-        console.log('Direct navigation to feed page');
-        // Force a complete page reload to ensure fresh state
-        window.location.replace('/');
-      }, 500);
+        console.log('Using navigateWithoutForceLogout to go to feed page');
+        // This ensures we navigate without losing authentication state
+        navigateWithoutForceLogout('/');
+      }, 100);
     } catch (error) {
       console.error('Error in handleSkip:', error);
       setError('Failed to complete onboarding');
