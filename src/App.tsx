@@ -488,6 +488,11 @@ function AppContent() {
       
       const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
       
+      // Set flags to indicate we just completed registration
+      // These will be used to force authentication in the AppContent component
+      localStorage.setItem('justCompletedRegistration', 'true');
+      sessionStorage.setItem('redirectAfterRegistration', 'true');
+      
       // Ensure token is saved in all storage mechanisms
       if (token) {
         localStorage.setItem('token', token);
@@ -636,9 +641,18 @@ function AppContent() {
 
   console.log('AppContent: loading state is false, checking authentication status.');
 
+  // Check if we just completed registration or are redirecting after registration
+  const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+  const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+  
+  // If we just completed registration or are redirecting after registration, force authentication to true
+  const forceAuthenticated = justCompletedRegistration || redirectAfterRegistration;
+  
   // Check if we're in the registration flow (OTP verification, profile setup, or friend suggestions)
   const inRegistrationProcess = ['otp', 'profile-setup', 'friend-suggestions'].includes(registrationStep);
-  const showAuthForms = !isAuthenticated || inRegistrationProcess;
+  
+  // Only show auth forms if not authenticated and not in special cases
+  const showAuthForms = (!isAuthenticated && !forceAuthenticated) || inRegistrationProcess;
   
   console.log('AppContent: Registration state:', { 
     registrationStep, 
@@ -646,8 +660,45 @@ function AppContent() {
     inRegistrationProcess, 
     showAuthForms,
     inRegistrationFlow: localStorage.getItem('inRegistrationFlow'),
-    completingOnboarding: localStorage.getItem('completingOnboarding')
+    completingOnboarding: localStorage.getItem('completingOnboarding'),
+    justCompletedRegistration,
+    redirectAfterRegistration,
+    forceAuthenticated
   });
+  
+  // If we just completed registration or are redirecting after registration, but we're not authenticated,
+  // try to restore the authentication state from localStorage
+  if (forceAuthenticated && !isAuthenticated) {
+    console.log('Detected completed registration but not authenticated, attempting to restore auth state');
+    
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    
+    if (token && userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        console.log('Found valid user data, setting up auth state manually:', userData);
+        
+        // Set axios headers
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Manually authenticate with the token and user data
+        authenticateWithToken(token, userData);
+        
+        // Force a page reload to ensure the authentication state is properly updated
+        setTimeout(() => {
+          console.log('Forcing page reload to update authentication state');
+          window.location.reload();
+        }, 500);
+        
+        // Clear the flags after using them
+        if (justCompletedRegistration) localStorage.removeItem('justCompletedRegistration');
+        if (redirectAfterRegistration) sessionStorage.removeItem('redirectAfterRegistration');
+      } catch (e) {
+        console.error('Error parsing user data during auth restoration:', e);
+      }
+    }
+  }
   
   // If not authenticated or still in registration flow, show auth forms or registration steps
   if (showAuthForms) {
