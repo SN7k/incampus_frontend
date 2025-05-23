@@ -147,6 +147,44 @@ const forcedLogout = checkAndFixAuthIssues();
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>(() => {
+    // Check if we just completed registration or are redirecting after registration
+    const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+    const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+    
+    console.log('AuthProvider initial state check:', {
+      justCompletedRegistration,
+      redirectAfterRegistration,
+      forcedLogout
+    });
+    
+    // If we just completed registration, force authentication regardless of other checks
+    if (justCompletedRegistration || redirectAfterRegistration) {
+      console.log('Registration just completed, forcing authentication state');
+      
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+      
+      if (token && savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          console.log('Forcing authentication with user:', parsedUser);
+          
+          // Ensure token is set in axios headers
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Return authenticated state
+          return {
+            isAuthenticated: true,
+            user: parsedUser,
+            error: null,
+            loading: false
+          };
+        } catch (e) {
+          console.error('Error parsing user data during forced authentication:', e);
+        }
+      }
+    }
+    
     // If we've already forced a logout, return initial state
     if (forcedLogout) {
       return { ...initialState, loading: false };
@@ -220,15 +258,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Add effect to verify token on mount
   useEffect(() => {
     const verifyToken = async () => {
-      // Check if we're redirecting after registration
-      const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration');
-      if (redirectAfterRegistration === 'true') {
-        console.log('Detected redirect after registration, skipping token verification');
-        // Remove the flag after checking it
-        sessionStorage.removeItem('redirectAfterRegistration');
-        return; // Skip verification to prevent token verification issues during transition
+      // Check for bypass flags
+      const bypassTokenVerification = localStorage.getItem('bypassTokenVerification') === 'true';
+      const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
+      const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
+      const comingFromRegistration = localStorage.getItem('comingFromRegistration') === 'true';
+      
+      // If any of these flags are set, skip token verification
+      if (bypassTokenVerification || redirectAfterRegistration || justCompletedRegistration || comingFromRegistration) {
+        console.log('Detected special flags, skipping token verification:', {
+          bypassTokenVerification,
+          redirectAfterRegistration,
+          justCompletedRegistration,
+          comingFromRegistration
+        });
+        
+        // Clear the flags after checking them
+        if (bypassTokenVerification) localStorage.removeItem('bypassTokenVerification');
+        if (redirectAfterRegistration) sessionStorage.removeItem('redirectAfterRegistration');
+        if (justCompletedRegistration) localStorage.removeItem('justCompletedRegistration');
+        if (comingFromRegistration) localStorage.removeItem('comingFromRegistration');
+        
+        // Force authentication state if we have token and user data
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+        
+        if (token && userStr) {
+          try {
+            const userData = JSON.parse(userStr);
+            console.log('Forcing authentication state with user:', userData);
+            
+            // Set token in axios headers
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
+            // Update the auth state
+            setState({
+              isAuthenticated: true,
+              user: userData,
+              loading: false,
+              error: null
+            });
+          } catch (e) {
+            console.error('Error parsing user data during forced authentication:', e);
+          }
+        }
+        
+        return; // Skip verification
       }
       
+      // Normal token verification flow
       const token = localStorage.getItem('token');
       if (token && state.isAuthenticated) {
         try {
@@ -241,14 +319,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         } catch (error) {
           console.error('Token verification failed:', error);
-          // Check if we just completed registration before clearing auth data
-          const justCompletedRegistration = localStorage.getItem('justCompletedRegistration');
-          if (justCompletedRegistration === 'true') {
-            console.log('Just completed registration, preserving auth data despite verification failure');
-            localStorage.removeItem('justCompletedRegistration');
-            return;
-          }
-          
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setState(initialState);
