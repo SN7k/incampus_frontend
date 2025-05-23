@@ -527,14 +527,38 @@ function AppContent() {
           // Refresh the authentication state before redirecting
           const refreshAuth = async () => {
             try {
-              await authenticateWithToken(token, user);
+              // Ensure the user object has all required fields
+              const validUser = {
+                _id: user._id,
+                id: user._id, // For backward compatibility
+                name: user.name || user.collegeId || 'User',
+                email: user.email || '',
+                universityId: user.universityId || user.collegeId || '',
+                role: user.role || 'student',
+                avatar: user.avatar || '/default-avatar.png',
+                createdAt: user.createdAt || new Date().toISOString(),
+                updatedAt: user.updatedAt || new Date().toISOString(),
+                hasCompletedRegistration: true
+              };
+              
+              // Save the valid user data to localStorage and sessionStorage
+              localStorage.setItem('user', JSON.stringify(validUser));
+              sessionStorage.setItem('user', JSON.stringify(validUser));
+              
+              // Ensure the token is set in axios headers
+              axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+              
+              // Call authenticateWithToken to update the auth context
+              await authenticateWithToken(token, validUser);
+              
               console.log('Authentication refreshed, redirecting to feed');
               // Use a small timeout to ensure state is updated
               setTimeout(() => {
                 window.location.href = '/';
-              }, 100);
+              }, 500); // Increased timeout to ensure state updates properly
             } catch (err) {
               console.error('Error refreshing authentication:', err);
+              // Try a direct redirect as a fallback
               window.location.href = '/';
             }
           };

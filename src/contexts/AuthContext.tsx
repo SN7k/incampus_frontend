@@ -370,8 +370,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const authenticateWithToken = (token: string, user: User) => {
     try {
+      console.log('Authenticating with token, user data:', { id: user._id, name: user.name });
+      
       // Validate required fields
-      if (!user || !user._id || !user.name || !user.email) {
+      if (!user || !user._id) {
         console.error('Invalid user data in authenticateWithToken:', user);
         setState({
           isAuthenticated: false,
@@ -382,30 +384,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       
-      // Ensure user object has all required fields
+      // Ensure user object has all required fields with fallbacks for everything
       const validUser: User = {
         _id: user._id,
         id: user._id, // For backward compatibility
-        name: user.name,
-        email: user.email,
+        name: user.name || user.universityId || 'User',
+        email: user.email || '',
         universityId: user.universityId || '',
         role: user.role || 'student',
         avatar: user.avatar || '/default-avatar.png',
         createdAt: user.createdAt || new Date().toISOString(),
-        updatedAt: user.updatedAt || new Date().toISOString()
+        updatedAt: user.updatedAt || new Date().toISOString(),
+        // Copy any additional fields
+        ...(user.department && { department: user.department }),
+        ...(user.batch && { batch: user.batch }),
+        ...(user.bio && { bio: user.bio }),
+        ...(user.coverPhoto && { coverPhoto: user.coverPhoto })
       };
       
+      // Ensure token is saved in all storage mechanisms
       localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(validUser));
+      sessionStorage.setItem('user', JSON.stringify(validUser));
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
       
+      // Set token in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log('Token set in axios headers');
       
+      // Update the auth state
       setState({
         isAuthenticated: true,
         user: validUser,
         loading: false,
         error: null
       });
+      console.log('Auth state updated, user is authenticated');
     } catch (error) {
       console.error('Error in authenticateWithToken:', error);
       setState({

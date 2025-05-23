@@ -98,13 +98,29 @@ const Feed: React.FC = () => {
           const token = localStorage.getItem('token') || sessionStorage.getItem('token');
           if (token) {
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            console.log('Auth token set in axios headers');
           }
         }
         
+        // Ensure we have valid user data
+        const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+        if (userStr) {
+          try {
+            const userData = JSON.parse(userStr);
+            console.log('User data available in Feed component:', userData);
+          } catch (e) {
+            console.error('Error parsing user data in Feed component:', e);
+          }
+        } else {
+          console.error('No user data found in storage');
+        }
+        
+        console.log('Fetching posts and suggested users...');
         await Promise.all([
           fetchPosts(),
           fetchSuggestedUsers()
         ]);
+        console.log('Successfully fetched posts and suggested users');
       } catch (error) {
         console.error('Failed to load data:', error);
         setError('Failed to load data');
@@ -114,7 +130,10 @@ const Feed: React.FC = () => {
     };
 
     if (user) {
+      console.log('User authenticated, loading data...');
       loadData();
+    } else {
+      console.error('No user object available in Feed component');
     }
   }, [user]);
 
