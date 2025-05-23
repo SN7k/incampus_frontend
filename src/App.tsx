@@ -15,9 +15,9 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import axiosInstance from './utils/axios';
-import { hasRegistrationFlags, clearRegistrationFlags, navigateWithoutForceLogout, setRegistrationFlags, saveToken, handleFriendSuggestionsToFeedTransition } from './utils/authFlowHelpers';
-import { forceAuthenticationState, getAuthPreservingPath } from './utils/authBypass';
-// Import types as needed
+import { hasRegistrationFlags, navigateWithoutForceLogout } from './utils/authFlowHelpers';
+// Authentication flow helpers
+
 
 // Friend request data is now handled by the Friends component
 
@@ -493,81 +493,120 @@ function AppContent() {
   };
   
   const handleFriendSuggestionsComplete = async (followedUsers: string[]) => {
-    try {
-      console.log('Friend suggestions complete, followed users:', followedUsers);
+  try {
+    console.log('Friend suggestions complete, followed users:', followedUsers);
+    
+    // First reset the registration state
+    setPendingUserData(null);
+    setPendingProfileData(null);
+    
+    // Set registration step to completed
+    setRegistrationStep('completed');
+    
+    // Set ALL possible flags to ensure we don't get logged out during the process
+    localStorage.setItem('justCompletedRegistration', 'true');
+    sessionStorage.setItem('redirectAfterRegistration', 'true');
+    localStorage.setItem('completedFriendSuggestions', 'true');
+    localStorage.setItem('forceAuthenticated', 'true');
+    localStorage.setItem('authBypassTimestamp', Date.now().toString());
+    localStorage.setItem('bypassTokenVerification', 'true');
+    localStorage.setItem('comingFromRegistration', 'true');
+    localStorage.setItem('inRegistrationFlow', 'true');
+    
+    // Remove any forceLogout parameters from URL if present
+    if (window.location.search.includes('forceLogout')) {
+      const newUrl = window.location.pathname + 
+        (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+      window.history.replaceState({}, document.title, newUrl);
+      console.log('Removed forceLogout parameter from URL');
+    }
+    
+    // Get the current token
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    
+    if (!token || !user) {
+      console.error('No token or user data found during friend suggestions completion');
       
-      // First reset the registration state
-      setPendingUserData(null);
-      setPendingProfileData(null);
-      
-      // Set registration step to completed
-      setRegistrationStep('completed');
-      
-      // Set ALL possible flags to ensure we don't get logged out during the process
-      localStorage.setItem('justCompletedRegistration', 'true');
-      sessionStorage.setItem('redirectAfterRegistration', 'true');
-      localStorage.setItem('completedFriendSuggestions', 'true');
-      localStorage.setItem('forceAuthenticated', 'true');
-      localStorage.setItem('authBypassTimestamp', Date.now().toString());
-      localStorage.setItem('bypassTokenVerification', 'true');
-      localStorage.setItem('comingFromRegistration', 'true');
-      
-      // Get the current token
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      
-      if (!token || !user) {
-        console.error('No token or user data found during friend suggestions completion');
+      // Try to recover token from cookies as a last resort
+      const cookies = document.cookie.split(';');
+      const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+      if (authCookie) {
+        const cookieToken = authCookie.split('=')[1];
+        if (cookieToken && user) {
+          console.log('Recovered token from cookies, proceeding with authentication');
+          // Continue with the token from cookies
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${cookieToken}`;
+          localStorage.setItem('token', cookieToken);
+          sessionStorage.setItem('token', cookieToken);
+        } else {
+          window.location.href = '/login';
+          return;
+        }
+      } else {
         window.location.href = '/login';
         return;
       }
-      
-      // Ensure the token is set in axios headers
-      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      // Also set a cookie with the token for extra redundancy
-      document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
-      
-      // Ensure the user object has all required fields
-      const validUser = {
-        _id: user._id,
-        id: user._id, // For backward compatibility
-        name: user.name || '',
-        email: user.email || '',
-        role: user.role || 'student',
-        avatar: user.avatar || '/default-avatar.png',
-        hasCompletedRegistration: true
-      };
-      
-      // Save the valid user data to localStorage and sessionStorage
-      localStorage.setItem('user', JSON.stringify(validUser));
-      sessionStorage.setItem('user', JSON.stringify(validUser));
-      
-      console.log('Authentication refreshed, redirecting to feed');
-      
-      // Use a direct approach to transition to the feed page
-      setTimeout(() => {
-        console.log('Redirecting to feed page after authentication refresh');
-        
-        // Ensure we're not redirecting with any query parameters
-        const cleanUrl = window.location.origin + '/';
-        console.log('Redirecting to clean URL:', cleanUrl);
-        
-        // Use replaceState to avoid adding to browser history
-        window.history.replaceState(null, '', cleanUrl);
-        
-        // Force a full page reload to ensure a clean state
-        window.location.replace(cleanUrl);
-      }, 500); // Reduced timeout since we're doing a full page reload
-    } catch (error) {
-      console.error('Error during friend suggestions completion:', error);
-      // Clean up any registration flags
-      localStorage.removeItem('inRegistrationFlow');
-      localStorage.removeItem('completingOnboarding');
-      
-      // Try a direct redirect as a fallback
-      window.location.href = '/';
     }
-  };
+    
+    // Ensure the token is set in axios headers
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    // Also set a cookie with the token for extra redundancy
+    document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+    
+    // Ensure the user object has all required fields
+    const validUser = {
+      _id: user._id,
+      id: user._id, // For backward compatibility
+      name: user.name || '',
+      email: user.email || '',
+      role: user.role || 'student',
+      avatar: user.avatar || '/default-avatar.png',
+      hasCompletedRegistration: true
+    };
+    
+    // Save the valid user data to localStorage and sessionStorage
+    localStorage.setItem('user', JSON.stringify(validUser));
+    sessionStorage.setItem('user', JSON.stringify(validUser));
+    
+    console.log('Authentication refreshed, preparing to redirect to feed');
+    
+    // Verify authentication state before redirecting
+    const verifyAndRedirect = () => {
+      // Double-check all authentication flags are still set
+      if (!localStorage.getItem('justCompletedRegistration')) {
+        localStorage.setItem('justCompletedRegistration', 'true');
+      }
+      if (!sessionStorage.getItem('redirectAfterRegistration')) {
+        sessionStorage.setItem('redirectAfterRegistration', 'true');
+      }
+      if (!localStorage.getItem('token') && token) {
+        localStorage.setItem('token', token);
+      }
+      
+      console.log('Redirecting to feed page after authentication refresh');
+      
+      // Ensure we're not redirecting with any query parameters
+      const cleanUrl = window.location.origin + '/';
+      console.log('Redirecting to clean URL:', cleanUrl);
+      
+      // Use replaceState to avoid adding to browser history
+      window.history.replaceState(null, '', cleanUrl);
+      
+      // Force a full page reload to ensure a clean state
+      window.location.replace(cleanUrl);
+    };
+    
+    // Use a direct approach to transition to the feed page
+    setTimeout(verifyAndRedirect, 300);
+  } catch (error) {
+    console.error('Error during friend suggestions completion:', error);
+    // Don't clean up registration flags on error - keep them for recovery
+    
+    // Try a direct redirect as a fallback
+    window.location.href = '/';
+  }
+};
 
   const handleResendOtp = async () => {
     if (!pendingUserData?.email) return;

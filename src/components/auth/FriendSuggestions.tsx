@@ -88,6 +88,9 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       localStorage.setItem('completedFriendSuggestions', 'true');
       localStorage.setItem('forceAuthenticated', 'true');
       localStorage.setItem('authBypassTimestamp', Date.now().toString());
+      localStorage.setItem('bypassTokenVerification', 'true');
+      localStorage.setItem('comingFromRegistration', 'true');
+      localStorage.setItem('inRegistrationFlow', 'true');
       
       // Get token from localStorage or sessionStorage
       let token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -112,6 +115,21 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       sessionStorage.setItem('token', token);
       document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
       
+      // Get current user data
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          // Add hasCompletedRegistration flag to user data
+          parsedUser.hasCompletedRegistration = true;
+          // Save updated user data
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+          sessionStorage.setItem('user', JSON.stringify(parsedUser));
+        } catch (e) {
+          console.error('Error updating user data:', e);
+        }
+      }
+      
       // Ensure the token is set in axios headers
       if (typeof axiosInstance !== 'undefined') {
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -128,9 +146,20 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         
         console.log(`Successfully followed ${selectedUsers.length} users`);
         
-        // Call the onComplete handler with the selected users
-        // This will trigger the App.tsx handler which will navigate to the feed
-        onComplete(selectedUsers);
+        // Delay slightly before calling onComplete to ensure all flags are set
+        setTimeout(() => {
+          // Double-check that flags are still set
+          if (!localStorage.getItem('justCompletedRegistration')) {
+            localStorage.setItem('justCompletedRegistration', 'true');
+          }
+          if (!sessionStorage.getItem('redirectAfterRegistration')) {
+            sessionStorage.setItem('redirectAfterRegistration', 'true');
+          }
+          
+          // Call the onComplete handler with the selected users
+          // This will trigger the App.tsx handler which will navigate to the feed
+          onComplete(selectedUsers);
+        }, 100);
       } catch (err) {
         console.error('Error following users:', err);
         // Continue even if following fails - still call onComplete
