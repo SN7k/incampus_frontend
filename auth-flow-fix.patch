@@ -1,0 +1,41 @@
+// Apply these changes to fix the authentication flow issues
+
+// 1. In OtpVerification.tsx, add these flags before calling the API:
+localStorage.setItem('inRegistrationFlow', 'true');
+localStorage.setItem('completingOnboarding', 'true');
+localStorage.setItem('justCompletedRegistration', 'true');
+sessionStorage.setItem('redirectAfterRegistration', 'true');
+localStorage.setItem('bypassTokenVerification', 'true');
+localStorage.setItem('comingFromRegistration', 'true');
+
+// 2. In ProfileSetup.tsx, add these flags after successfully setting up the profile:
+localStorage.setItem('inRegistrationFlow', 'true');
+localStorage.setItem('completingOnboarding', 'true');
+localStorage.setItem('justCompletedRegistration', 'true');
+sessionStorage.setItem('redirectAfterRegistration', 'true');
+localStorage.setItem('bypassTokenVerification', 'true');
+localStorage.setItem('comingFromRegistration', 'true');
+localStorage.setItem('fromProfileSetup', 'true');
+
+// 3. In FriendSuggestions.tsx, add these flags before redirecting to the feed:
+localStorage.setItem('inRegistrationFlow', 'true');
+localStorage.setItem('completingOnboarding', 'true');
+localStorage.setItem('justCompletedRegistration', 'true');
+sessionStorage.setItem('redirectAfterRegistration', 'true');
+localStorage.setItem('bypassTokenVerification', 'true');
+localStorage.setItem('comingFromRegistration', 'true');
+
+// 4. In AuthContext.tsx, ensure forceLogout check is not executed if any of these flags are present:
+const hasRegistrationFlags = 
+  localStorage.getItem('justCompletedRegistration') === 'true' ||
+  sessionStorage.getItem('redirectAfterRegistration') === 'true' ||
+  localStorage.getItem('bypassTokenVerification') === 'true' ||
+  localStorage.getItem('comingFromRegistration') === 'true' ||
+  localStorage.getItem('inRegistrationFlow') === 'true' ||
+  localStorage.getItem('completingOnboarding') === 'true' ||
+  localStorage.getItem('fromProfileSetup') === 'true';
+
+if (hasRegistrationFlags) {
+  console.log('Registration flags detected, preserving authentication data');
+  return false; // Don't force logout
+}

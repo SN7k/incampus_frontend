@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
 import axiosInstance from '../../utils/axios';
+import { setRegistrationFlags, saveToken, saveUserData, handleRegistrationStepComplete } from '../../utils/authFlowHelpers';
 
 // Define User interface to match AuthContext
 interface User {
@@ -126,8 +127,8 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
     try {
       console.log('Sending OTP verification request:', { email, otp: otpString });
       
-      // Ensure we're still in registration flow
-      localStorage.setItem('inRegistrationFlow', 'true');
+      // Set all registration flags to ensure we don't get logged out
+      setRegistrationFlags();
       
       const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/verify-otp', {
         email,
@@ -168,56 +169,54 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           localStorage.setItem('token', token);
           sessionStorage.setItem('token', token); // Backup in session storage
           
-          // Store the user data
-          localStorage.setItem('user', JSON.stringify(processedUser));
-          sessionStorage.setItem('user', JSON.stringify(processedUser)); // Backup in session storage
+          // Save the token and user data using our utility functions
+          saveToken(token);
+          saveUserData(processedUser);
           
-          // Store individual user fields for easier access and as additional backup
-          localStorage.setItem('fullName', processedUser.name);
-          sessionStorage.setItem('fullName', processedUser.name);
-          localStorage.setItem('email', processedUser.email);
-          sessionStorage.setItem('email', processedUser.email);
-          localStorage.setItem('role', processedUser.role);
-          sessionStorage.setItem('role', processedUser.role);
-          if (processedUser.universityId) {
-            localStorage.setItem('universityId', processedUser.universityId);
-            sessionStorage.setItem('universityId', processedUser.universityId);
-          }
+          // Set a special flag to indicate we're coming directly from OTP verification
+          localStorage.setItem('fromOtpVerification', 'true');
           
-          // Set the token in axios instance
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Double-check that token was properly saved
+          // Double-check that the token was properly saved
           const savedToken = localStorage.getItem('token');
-          if (!savedToken) {
-            console.error('Failed to save token to localStorage, trying again');
-            // Try again with a small delay
-            setTimeout(() => {
-              localStorage.setItem('token', token);
-              axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            }, 100);
-          } else {
-            console.log('Token successfully saved to localStorage:', savedToken.substring(0, 10) + '...');
-          }
+          const sessionToken = sessionStorage.getItem('token');
           
-          // Store token in cookie as well for maximum compatibility
-          document.cookie = `authToken=${token};path=/;max-age=86400`; // 1 day
+          console.log('Token storage check:', {
+            localStorageToken: savedToken ? 'present' : 'missing',
+            sessionStorageToken: sessionToken ? 'present' : 'missing',
+            axiosHeader: axiosInstance.defaults.headers.common['Authorization'] ? 'set' : 'missing'
+          });
+          
+          // If neither storage mechanism worked, show an error
+          if (!savedToken && !sessionToken) {
+            console.error('Failed to save token to any storage mechanism');
+            setError('Failed to save authentication data. Please try again.');
+            return;
+          }
         } catch (storageError) {
           console.error('Error saving to storage:', storageError);
-          // Try again with a different approach if there's an error
-          document.cookie = `authToken=${token};path=/;max-age=86400`; // 1 day
+          
+          // Try one more approach directly
+          try {
+            document.cookie = `authToken=${token};path=/;max-age=86400`; // 1 day
+            // Create a global variable as last resort
+            (window as any).authToken = token;
+            (window as any).userData = processedUser;
+          } catch (e) {
+            console.error('Final fallback storage attempt failed:', e);
+            setError('Failed to save authentication data. Please try again.');
+            return;
+          }
         }
         
-        // Set flags to ensure we stay in the registration flow
-        localStorage.setItem('inRegistrationFlow', 'true');
-        localStorage.setItem('completingOnboarding', 'true');
+        // Handle this registration step completion using our utility function
+        console.log('OTP verification successful, handling registration step completion');
         
-        // Use a small timeout to ensure state is updated properly
-        setTimeout(() => {
-          console.log('OTP verification successful, calling completion handler');
-          // Call the completion handler
-          onVerificationComplete();
-        }, 100);
+        // Use the handleRegistrationStepComplete utility to manage the transition
+        // Save the token and user data, set the registration flags, and move to the next step
+        handleRegistrationStepComplete('profile-setup', token, processedUser);
+        
+        // Call the completion handler
+        onVerificationComplete();
       } else {
         // Don't remove inRegistrationFlow flag on verification failure
         // This allows users to retry without losing their place in the flow

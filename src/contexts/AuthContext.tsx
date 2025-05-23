@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import axiosInstance from '../utils/axios';
+import { hasRegistrationFlags } from '../utils/authFlowHelpers';
 
 // Define the User interface directly in this file to avoid import issues
 interface User {
@@ -270,11 +271,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           response => response,
           error => {
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-              console.error('Authentication error detected, clearing credentials');
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-              setState(initialState);
-              window.location.href = '/';
+              // Check for registration flags before logging out
+              if (hasRegistrationFlags()) {
+                console.log('Authentication error detected but registration flags are present, preserving credentials');
+                // Don't clear credentials or redirect if we're in the registration flow
+                // This is critical to prevent unwanted logouts during registration
+              } else {
+                console.error('Authentication error detected, clearing credentials');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setState(initialState);
+                window.location.href = '/';
+              }
             }
             return Promise.reject(error);
           }

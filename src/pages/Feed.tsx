@@ -8,6 +8,7 @@ import { Sparkles, Users, BookOpen, Bookmark, Settings, HelpCircle, Heart } from
 import { User } from '../types';
 import { Post } from '../types/post';
 import axiosInstance from '../utils/axios';
+import { hasRegistrationFlags, clearRegistrationFlags } from '../utils/authFlowHelpers';
 
 interface ApiResponse<T> {
   status: 'success' | 'error';
@@ -33,6 +34,25 @@ const Feed: React.FC = () => {
     
     window.addEventListener('error', handleError);
     return () => window.removeEventListener('error', handleError);
+  }, []);
+  
+  // Check for and clear registration flags
+  useEffect(() => {
+    // Check if we have registration flags, which would indicate the user just completed registration
+    if (hasRegistrationFlags()) {
+      console.log('Registration flags detected in Feed component, user has completed registration');
+      
+      // Use a timeout to ensure all components have loaded and used the flags if needed
+      const timeout = setTimeout(() => {
+        console.log('Clearing registration flags after successful navigation to feed');
+        clearRegistrationFlags();
+        
+        // Log the successful completion of the registration flow
+        console.log('Registration flow completed successfully');
+      }, 3000); // 3 second delay
+      
+      return () => clearTimeout(timeout);
+    }
   }, []);
   
   const { user } = useAuth();

@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import axiosInstance from './utils/axios';
+import { hasRegistrationFlags, clearRegistrationFlags, navigateWithoutForceLogout, setRegistrationFlags, saveToken } from './utils/authFlowHelpers';
 // Import types as needed
 
 // Friend request data is now handled by the Friends component
@@ -52,39 +53,22 @@ function AppContent() {
     if (registrationFlagsChecked.current) return;
     registrationFlagsChecked.current = true;
     
-    // Check for all possible registration flags
-    const justCompletedRegistration = localStorage.getItem('justCompletedRegistration') === 'true';
-    const redirectAfterRegistration = sessionStorage.getItem('redirectAfterRegistration') === 'true';
-    const bypassTokenVerification = localStorage.getItem('bypassTokenVerification') === 'true';
-    const comingFromRegistration = localStorage.getItem('comingFromRegistration') === 'true';
-    const inRegistrationFlow = localStorage.getItem('inRegistrationFlow') === 'true';
-    const completingOnboarding = localStorage.getItem('completingOnboarding') === 'true';
-    
-    const hasRegistrationFlags = justCompletedRegistration || redirectAfterRegistration || 
-                               bypassTokenVerification || comingFromRegistration || 
-                               inRegistrationFlow || completingOnboarding;
+    // Use our utility function to check for registration flags
+    const registrationFlagsPresent = hasRegistrationFlags();
     
     console.log('Initial check for registration flags:', {
-      justCompletedRegistration,
-      redirectAfterRegistration,
-      bypassTokenVerification,
-      comingFromRegistration,
-      inRegistrationFlow,
-      completingOnboarding,
-      hasRegistrationFlags
+      hasRegistrationFlags: registrationFlagsPresent
     });
     
     // If we have registration flags, ensure we don't have forceLogout parameter
-    if (hasRegistrationFlags) {
+    if (registrationFlagsPresent) {
       // Remove the forceLogout parameter if present
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('forceLogout')) {
         console.log('Removing forceLogout parameter while preserving registration flags');
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
         
-        // Force a reload without the forceLogout parameter
-        window.location.reload();
+        // Use our utility to navigate without the forceLogout parameter
+        navigateWithoutForceLogout(window.location.pathname);
       }
     } else {
       // Normal URL cleanup if no registration flags
@@ -518,6 +502,14 @@ function AppContent() {
       // Set registration step to completed
       setRegistrationStep('completed');
       
+      // Use our utility function to check for registration flags
+      // This ensures we're still in the registration flow
+      if (!hasRegistrationFlags()) {
+        console.log('No registration flags found, setting them to ensure successful transition');
+        // Set the registration flags if they're not already set
+        setRegistrationFlags();
+      }
+      
       // Ensure we have valid authentication data
       let token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
@@ -526,6 +518,8 @@ function AppContent() {
         const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
         if (authCookie) {
           token = authCookie.split('=')[1];
+          // Use our utility to save the token to all storage mechanisms
+          saveToken(token);
         }
       }
       
@@ -654,6 +648,11 @@ function AppContent() {
       
       // Fallback redirect if something went wrong
       console.log('Redirecting to main application...');
+      
+      // Clean up registration flags properly using our utility function
+      clearRegistrationFlags();
+      
+      // Navigate to the main feed
       window.location.href = '/';
     } catch (error) {
       console.error('Error completing friend suggestions:', error);

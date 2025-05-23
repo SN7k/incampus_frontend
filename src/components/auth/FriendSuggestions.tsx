@@ -3,6 +3,7 @@ import Button from '../ui/Button';
 import { User } from '../../types';
 import { Search } from 'lucide-react';
 import { friendService } from '../../services/friendService';
+import { setRegistrationFlags, saveToken, handleRegistrationStepComplete, navigateWithoutForceLogout } from '../../utils/authFlowHelpers';
 
 interface FriendSuggestionsProps {
   currentUser: Partial<User>;
@@ -20,7 +21,10 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
-        // Get token from multiple sources
+        // Set registration flags to ensure we don't get logged out during the process
+        setRegistrationFlags();
+        
+        // Get token from localStorage or sessionStorage
         let token = localStorage.getItem('token') || sessionStorage.getItem('token');
         if (!token) {
           // Try to get from cookies
@@ -28,6 +32,8 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
           const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
           if (authCookie) {
             token = authCookie.split('=')[1];
+            // Save the token to all storage mechanisms
+            saveToken(token);
           }
         }
         
@@ -74,7 +80,10 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
   const handleComplete = async () => {
     setLoading(true);
     try {
-      // Get token from multiple sources
+      // Set all registration flags to ensure we don't get logged out during the process
+      setRegistrationFlags();
+      
+      // Get token from localStorage or sessionStorage
       let token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
         // Try to get from cookies
@@ -85,21 +94,17 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         }
       }
       
-      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-      
-      if (!token || !userStr) {
-        console.error('Missing authentication data during friend suggestions completion');
+      if (!token) {
+        console.error('No authentication token found during friend suggestions completion');
         setError('Authentication error. Please try logging in again.');
         setLoading(false);
         return;
       }
       
-      // Ensure token is saved in all storage mechanisms
-      localStorage.setItem('token', token);
-      sessionStorage.setItem('token', token);
-      document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
+      // Save token to all storage mechanisms using our utility
+      saveToken(token);
       
-      // Ensure the token is set in the friendService and axios headers
+      // Ensure the token is set in the friendService
       friendService.setAuthToken(token);
       
       try {
@@ -108,33 +113,38 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
           selectedUsers.map(userId => friendService.sendFriendRequest(userId))
         );
         
-        // Set flags to indicate we're completing onboarding but clearing registration flow
-        localStorage.setItem('completingOnboarding', 'true');
-        localStorage.removeItem('inRegistrationFlow');
-        localStorage.removeItem('registrationStep');
+        console.log(`Successfully followed ${selectedUsers.length} users`);
+      } catch (err) {
+        console.error('Error following users:', err);
+        // Continue even if following fails
+      }
+      
+      try {
+        // Parse the user data
+        const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
         
-        // Ensure user data is properly saved
-        if (userStr) {
-          try {
-            const userData = JSON.parse(userStr);
-            // Update the user data to indicate registration is complete
-            const updatedUserData = {
-              ...userData,
-              hasCompletedRegistration: true
-            };
-            localStorage.setItem('user', JSON.stringify(updatedUserData));
-            sessionStorage.setItem('user', JSON.stringify(updatedUserData));
-          } catch (e) {
-            console.error('Error parsing user data:', e);
-          }
+        if (!userStr) {
+          console.error('No user data found during friend suggestions completion');
+          setError('User data missing. Please try logging in again.');
+          setLoading(false);
+          return;
         }
         
-        // Call the completion handler
+        const user = JSON.parse(userStr);
+        
+        // Use handleRegistrationStepComplete to manage the transition to feed
+        // This sets all necessary registration flags and ensures auth state is preserved
+        handleRegistrationStepComplete('feed', token, user);
+        
+        // Call the completion handler with the selected users
         onComplete(selectedUsers);
-      } catch (apiError) {
-        console.error('API error during friend request sending:', apiError);
-        // Still call completion handler to avoid blocking the user
-        onComplete(selectedUsers);
+        
+        // Use navigateWithoutForceLogout to ensure we navigate correctly
+        // (This part will be handled by the App.tsx onComplete handler)
+      } catch (err) {
+        console.error('Error completing onboarding:', err);
+        setError('Failed to complete onboarding');
+        setLoading(false);
       }
     } catch (error) {
       setError('Failed to send friend requests');
@@ -181,33 +191,11 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       sessionStorage.setItem('token', token);
       document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
       
-      // Ensure the user object is valid
-      let user;
       try {
         user = JSON.parse(userStr);
-        console.log('User data available during skip:', user);
       } catch (e) {
-        console.error('Invalid user data during friend suggestions skip');
-        setError('Invalid user data. Please try logging in again.');
-        setLoading(false);
-        return;
+        console.error('Error parsing user data:', e);
       }
-      
-      // Ensure the token is set in the friendService
-      friendService.setAuthToken(token);
-      
-      // Set flags to indicate we're completing onboarding but clearing registration flow
-      localStorage.setItem('completingOnboarding', 'true');
-      
-      // Call onComplete with empty array to indicate skip
-      onComplete([]);
-      
-      // Log the current state to help with debugging
-      console.log('Skipping friend suggestions, current state:', {
-        token: !!token,
-        user: !!user,
-        completingOnboarding: localStorage.getItem('completingOnboarding'),
-        inRegistrationFlow: localStorage.getItem('inRegistrationFlow'),
         registrationStep: localStorage.getItem('registrationStep')
       });
       

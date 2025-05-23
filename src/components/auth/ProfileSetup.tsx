@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
 import axiosInstance from '../../utils/axios';
+import { setRegistrationFlags, saveToken, saveUserData, handleRegistrationStepComplete } from '../../utils/authFlowHelpers';
 
 interface ApiResponse {
   status: string;
@@ -67,18 +68,15 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setError('');
     
     try {
+      // Set all registration flags to ensure we don't get logged out during the process
+      setRegistrationFlags();
+      
       // Try to get token from multiple sources
-      let token = localStorage.getItem('token');
+      let token = localStorage.getItem('token') || sessionStorage.getItem('token');
       
-      // If not in localStorage, try sessionStorage as fallback
+      // If not in storage, try cookies as fallback
       if (!token) {
-        console.log('Token not found in localStorage, trying sessionStorage');
-        token = sessionStorage.getItem('token');
-      }
-      
-      // If not in sessionStorage, try cookies as fallback
-      if (!token) {
-        console.log('Token not found in sessionStorage, trying cookies');
+        console.log('Token not found in storage, trying cookies');
         const cookies = document.cookie.split(';');
         const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
         if (authCookie) {
@@ -93,10 +91,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         return;
       }
       
-      // Ensure token is saved in localStorage for future use
-      localStorage.setItem('token', token);
-      sessionStorage.setItem('token', token);
-      document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
+      // Ensure token is saved in all storage mechanisms
+      saveToken(token);
       
       // Ensure the token is set in axios headers
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -133,27 +129,25 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         console.log('Profile setup response:', response.data);
         
         if (response.data.status === 'success') {
-          // Update user data in localStorage if returned
+          // Update user data using our utility function
           if (response.data.data?.user) {
-            localStorage.setItem('user', JSON.stringify(response.data.data.user));
+            saveUserData(response.data.data.user);
           }
           
           // Make sure to preserve the token
           if (response.data.data?.token) {
-            const newToken = response.data.data.token;
-            localStorage.setItem('token', newToken);
-            sessionStorage.setItem('token', newToken);
-            document.cookie = `authToken=${newToken}; path=/; max-age=86400`;
-            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+            // Save the new token using our utility function
+            saveToken(response.data.data.token);
           } else {
             // Ensure the existing token is set in axios headers
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           }
           
-          // Set flags to indicate we're in the registration flow and completing onboarding
-          localStorage.setItem('inRegistrationFlow', 'true');
-          localStorage.setItem('completingOnboarding', 'true');
-          localStorage.setItem('registrationStep', 'friend-suggestions');
+          // Use handleRegistrationStepComplete to manage the transition
+          // This will set all necessary flags and save the current step
+          handleRegistrationStepComplete('friend-suggestions', 
+            response.data.data?.token || token,
+            response.data.data?.user || userData);
           
           // Call the completion handler
           onProfileComplete(profileData);
