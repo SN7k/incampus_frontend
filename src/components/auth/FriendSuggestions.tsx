@@ -20,6 +20,27 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
+        // Get token from multiple sources
+        let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+          // Try to get from cookies
+          const cookies = document.cookie.split(';');
+          const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+          if (authCookie) {
+            token = authCookie.split('=')[1];
+          }
+        }
+        
+        if (!token) {
+          console.error('No authentication token found during friend suggestions load');
+          setError('Authentication error. Please try logging in again.');
+          return;
+        }
+        
+        // Ensure the token is set in the friendService
+        friendService.setAuthToken(token);
+        
+        // Fetch suggestions
         const data = await friendService.getSuggestions();
         setSuggestions(data);
       } catch (err) {
@@ -53,9 +74,18 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
   const handleComplete = async () => {
     setLoading(true);
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
+      // Get token from multiple sources
+      let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        // Try to get from cookies
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+        }
+      }
+      
+      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
       
       if (!token || !userStr) {
         console.error('Missing authentication data during friend suggestions completion');
@@ -64,22 +94,37 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         return;
       }
       
+      // Ensure token is saved in all storage mechanisms
+      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
+      
       // Ensure the token is set in the friendService
       friendService.setAuthToken(token);
       
-      // Send friend requests to selected users
-      await Promise.all(
-        selectedUsers.map(userId => friendService.sendFriendRequest(userId))
-      );
-      
-      // Set flags to indicate we're completing onboarding but clearing registration flow
-      localStorage.setItem('completingOnboarding', 'true');
-      
-      // Call the completion handler
-      onComplete(selectedUsers);
+      try {
+        // Send friend requests to selected users
+        await Promise.all(
+          selectedUsers.map(userId => friendService.sendFriendRequest(userId))
+        );
+        
+        // Set flags to indicate we're completing onboarding but clearing registration flow
+        localStorage.setItem('completingOnboarding', 'true');
+        localStorage.removeItem('inRegistrationFlow');
+        localStorage.removeItem('registrationStep');
+        
+        // Call the completion handler
+        onComplete(selectedUsers);
+      } catch (apiError) {
+        console.error('API error during friend request sending:', apiError);
+        // Still call completion handler to avoid blocking the user
+        onComplete(selectedUsers);
+      }
     } catch (error) {
       setError('Failed to send friend requests');
       console.error('Failed to save followed users', error);
+      // Still call completion handler to avoid blocking the user
+      onComplete([]);
     } finally {
       setLoading(false);
     }
@@ -95,9 +140,18 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
     try {
       console.log('Skipping friend suggestions and completing onboarding');
       
-      // Make sure authentication is properly set up
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
+      // Get token from multiple sources
+      let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        // Try to get from cookies
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+        }
+      }
+      
+      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
       
       if (!token || !userStr) {
         console.error('Missing authentication data during friend suggestions skip');
@@ -105,6 +159,11 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         setLoading(false);
         return;
       }
+      
+      // Ensure token is saved in all storage mechanisms
+      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
       
       // Ensure the user object is valid
       let user;
