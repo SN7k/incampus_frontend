@@ -99,7 +99,7 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       sessionStorage.setItem('token', token);
       document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
       
-      // Ensure the token is set in the friendService
+      // Ensure the token is set in the friendService and axios headers
       friendService.setAuthToken(token);
       
       try {
@@ -112,6 +112,22 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
         localStorage.setItem('completingOnboarding', 'true');
         localStorage.removeItem('inRegistrationFlow');
         localStorage.removeItem('registrationStep');
+        
+        // Ensure user data is properly saved
+        if (userStr) {
+          try {
+            const userData = JSON.parse(userStr);
+            // Update the user data to indicate registration is complete
+            const updatedUserData = {
+              ...userData,
+              hasCompletedRegistration: true
+            };
+            localStorage.setItem('user', JSON.stringify(updatedUserData));
+            sessionStorage.setItem('user', JSON.stringify(updatedUserData));
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
         
         // Call the completion handler
         onComplete(selectedUsers);

@@ -466,6 +466,8 @@ function AppContent() {
 
   const handleFriendSuggestionsComplete = async (followedUsers: string[]) => {
     try {
+      console.log('Friend suggestions complete, followed users:', followedUsers);
+      
       // First reset the registration state
       setPendingUserData(null);
       setPendingProfileData(null);
@@ -474,8 +476,27 @@ function AppContent() {
       setRegistrationStep('completed');
       
       // Ensure we have valid authentication data
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
+      let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        // Try to get from cookies
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+        }
+      }
+      
+      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+      
+      // Ensure token is saved in all storage mechanisms
+      if (token) {
+        localStorage.setItem('token', token);
+        sessionStorage.setItem('token', token);
+        document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
+        
+        // Set the token in axios headers
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
       
       if (!token || !userStr) {
         console.error('Missing authentication data during friend suggestions completion');

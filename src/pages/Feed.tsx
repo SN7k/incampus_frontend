@@ -45,7 +45,16 @@ const Feed: React.FC = () => {
   const fetchPosts = async () => {
     if (!user) return;
     try {
+      // Ensure token is set in axios headers
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (token) {
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      
+      console.log('Fetching posts with token:', token ? 'Token exists' : 'No token');
       const response = await axiosInstance.get<ApiResponse<Post[]>>('/api/posts/feed');
+      console.log('Posts response:', response.data);
+      
       if (response.data.status === 'success') {
         setPosts(response.data.data);
       }
@@ -78,6 +87,20 @@ const Feed: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
+        // Check if we just completed registration
+        const completingOnboarding = localStorage.getItem('completingOnboarding') === 'true';
+        if (completingOnboarding) {
+          console.log('Just completed onboarding, ensuring auth token is set');
+          // Clear the flag
+          localStorage.removeItem('completingOnboarding');
+          
+          // Ensure token is set in axios headers
+          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+          if (token) {
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          }
+        }
+        
         await Promise.all([
           fetchPosts(),
           fetchSuggestedUsers()
