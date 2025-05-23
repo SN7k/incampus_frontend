@@ -65,16 +65,53 @@ const Feed: React.FC = () => {
   useEffect(() => {
     console.log('Feed component mounted, checking authentication state');
     
-    // Check for token in multiple places
-    const token = localStorage.getItem('token') || 
-                 sessionStorage.getItem('token') || 
-                 document.cookie.split(';').find(c => c.trim().startsWith('authToken='))?.split('=')[1];
+    // Check for token in multiple places with more robust extraction
+    let token = localStorage.getItem('token');
+    
+    if (!token) {
+      token = sessionStorage.getItem('token');
+    }
+    
+    if (!token) {
+      // Try to extract from cookies with better error handling
+      try {
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(c => c.trim().startsWith('authToken='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+          console.log('Feed: Recovered token from cookies');
+        }
+      } catch (e) {
+        console.error('Error extracting token from cookies:', e);
+      }
+    }
+    
+    // If we still don't have a token, try to get user data and extract token from there
+    if (!token) {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user && user.token) {
+            token = user.token;
+            console.log('Feed: Recovered token from user data');
+            // Save the token to localStorage for future use (with null check)
+            if (token) {
+              localStorage.setItem('token', token);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error extracting token from user data:', e);
+      }
+    }
     
     // Check for registration flags
     const isFromRegistrationFlow = 
       localStorage.getItem('completedFriendSuggestions') === 'true' ||
       localStorage.getItem('justCompletedRegistration') === 'true' ||
       sessionStorage.getItem('redirectAfterRegistration') === 'true' ||
+      localStorage.getItem('inRegistrationFlow') === 'true' ||
       localStorage.getItem('forceAuthenticated') === 'true';
     
     // If we're coming from registration, force authentication state
@@ -86,15 +123,48 @@ const Feed: React.FC = () => {
       
       // Force token into axios headers
       if (token) {
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        console.log('Feed: Forced token into axios headers');
+        // Ensure the token is properly formatted (with null check)
+        const formattedToken = token && token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         
-        // Also set a cookie with the token for extra redundancy
+        // Set token in axios headers
+        axiosInstance.defaults.headers.common['Authorization'] = formattedToken;
+        console.log('Feed: Forced token into axios headers:', formattedToken);
+        
+        // Also save token to all storage mechanisms for redundancy
+        localStorage.setItem('token', token);
+        sessionStorage.setItem('token', token);
         document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+        
+        // Force a reload of the user data from API
+        setTimeout(() => {
+          try {
+            // Make a direct request to get user data
+            axiosInstance.get('/api/user/me')
+              .then(response => {
+                // Type assertion to handle the response data properly
+                const responseData = response.data as { status: string; data: any };
+                if (responseData && responseData.data) {
+                  const userData = responseData.data;
+                  console.log('Feed: Successfully retrieved user data:', userData);
+                  localStorage.setItem('user', JSON.stringify(userData));
+                  sessionStorage.setItem('user', JSON.stringify(userData));
+                }
+              })
+              .catch(err => {
+                console.error('Error fetching user data:', err);
+              });
+          } catch (e) {
+            console.error('Error making user data request:', e);
+          }
+        }, 1000);
+      } else {
+        console.error('Feed: No token available despite registration flags');
       }
     } else if (token) {
       console.log('Feed: Found authentication token, ensuring it is set in axios headers');
-      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Ensure the token is properly formatted (with null check)
+      const formattedToken = token && token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      axiosInstance.defaults.headers.common['Authorization'] = formattedToken;
     } else {
       console.log('Feed: No authentication token found, this could cause issues');
     }

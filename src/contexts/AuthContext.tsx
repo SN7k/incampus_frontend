@@ -213,14 +213,61 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Check for registration flags before handling auth errors
         const registrationStatus = checkForRegistrationFlags();
         
-        // If we're in registration flow, preserve auth state
-        if (registrationStatus.hasFlags && error.response && (error.response.status === 401 || error.response.status === 403)) {
-          console.log('Auth error during registration flow, preserving auth state:', registrationStatus);
+        // Also check for additional registration flags that might not be in the helper function
+        const completedFriendSuggestions = localStorage.getItem('completedFriendSuggestions') === 'true';
+        const forceAuthenticated = localStorage.getItem('forceAuthenticated') === 'true';
+        const feedLoaded = localStorage.getItem('feedLoaded') === 'true';
+        
+        const inRegistrationProcess = registrationStatus.hasFlags || completedFriendSuggestions || forceAuthenticated;
+        
+        // Log the registration status for debugging
+        console.log('Registration flags detected in interceptor:', {
+          ...registrationStatus,
+          completedFriendSuggestions,
+          forceAuthenticated,
+          feedLoaded,
+          inRegistrationProcess
+        });
+        
+        // If we're in registration flow or have completed friend suggestions, preserve auth state
+        if (inRegistrationProcess && error.response && (error.response.status === 401 || error.response.status === 403)) {
+          console.log('Auth error during registration flow, preserving auth state');
           
-          // Don't log out if we're in registration flow
-          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+          // Try to recover token from multiple sources
+          let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+          
+          // If no token in storage, try to extract from cookies
+          if (!token) {
+            try {
+              const cookies = document.cookie.split(';');
+              const authCookie = cookies.find(c => c.trim().startsWith('authToken='));
+              if (authCookie) {
+                token = authCookie.split('=')[1];
+                console.log('Recovered token from cookies in interceptor');
+                
+                // Save the recovered token to storage
+                localStorage.setItem('token', token);
+                sessionStorage.setItem('token', token);
+              }
+            } catch (e) {
+              console.error('Error extracting token from cookies in interceptor:', e);
+            }
+          }
+          
           if (token) {
-            console.log('Token exists, preserving auth state');
+            console.log('Token exists, preserving auth state and setting in axios headers');
+            
+            // Ensure token is set in axios headers for future requests
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
+            // For GET requests, we can retry with the token
+            if (error.config && error.config.method === 'get') {
+              console.log('Retrying GET request with token');
+              error.config.headers['Authorization'] = `Bearer ${token}`;
+              return axiosInstance(error.config);
+            }
+            
+            // For other requests, resolve with a success response
             return Promise.resolve({ 
               data: { 
                 status: 'success', 
@@ -233,8 +280,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // For normal 401/403 errors outside of registration flow
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-          // Double-check for registration flags before logging out
-          if (registrationStatus.hasFlags) {
+          // Check for ANY registration flags before logging out
+          if (inRegistrationProcess || feedLoaded) {
             console.log('Auth error but preserving session due to registration flags');
             return Promise.reject(error);
           }
