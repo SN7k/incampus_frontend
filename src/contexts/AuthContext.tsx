@@ -70,7 +70,10 @@ const checkForRegistrationFlags = () => {
 
 // Helper function to check and fix authentication issues
 const checkAndFixAuthIssues = () => {
-  // Always remove the forceLogout parameter from URL if present
+  // Check if we're on the login page
+  const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/' && document.querySelector('.login-form, .signup-form');
+  
+  // Always check URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   
   // Check for registration flags first
@@ -91,7 +94,26 @@ const checkAndFixAuthIssues = () => {
     return false; // Don't force logout
   }
   
-  // Handle regular forceLogout parameter
+  // If we're on the login page, just remove the forceLogout parameter but don't clear auth data
+  // This allows users to log in even if there's a forceLogout parameter
+  if (isLoginPage) {
+    console.log('On login page, preserving any existing auth data for login attempt');
+    
+    // Just remove the parameter from URL without clearing auth data
+    if (urlParams.has('forceLogout')) {
+      const newUrl = window.location.pathname + 
+        (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+      window.history.replaceState({}, document.title, newUrl);
+      console.log('Removed forceLogout parameter on login page without clearing auth data');
+    }
+    
+    // Clear any previous auth errors to allow fresh login attempts
+    localStorage.removeItem('authError');
+    
+    return false; // Don't force logout on login page
+  }
+  
+  // Handle regular forceLogout parameter for non-login pages
   if (urlParams.has('forceLogout')) {
     console.log('forceLogout parameter detected, clearing authentication data');
     localStorage.removeItem('token');
@@ -321,10 +343,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prevState => ({ ...prevState, loading: true, error: null }));
     
     try {
+      // First, remove any forceLogout parameter from URL if present
+      if (window.location.search.includes('forceLogout')) {
+        console.log('Removing forceLogout parameter before login attempt');
+        const newUrl = window.location.pathname + 
+          (window.location.search ? '?' + window.location.search.substring(1).replace(/[&?]forceLogout=true/, '') : '');
+        window.history.replaceState({}, document.title, newUrl);
+      }
+      
+      // Clear any previous authError flag
+      localStorage.removeItem('authError');
+      
+      console.log('Login attempt with payload:', { ...payload, password: '[REDACTED]' });
       const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', payload);
       
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
+        
+        console.log('Login successful, storing auth data');
         
         // Store token and user data
         localStorage.setItem('token', token);
@@ -337,13 +373,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Set token in axios headers
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
+        // Also set a cookie with the token for extra redundancy
+        document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+        
         setState({
           isAuthenticated: true,
           user,
           error: null,
           loading: false
         });
+        
+        console.log('Auth state updated after successful login');
       } else {
+        console.error('Login response indicates failure:', response.data.message);
         setState({
           isAuthenticated: false,
           user: null,
@@ -352,6 +394,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
     } catch (error: any) {
+      console.error('Login error caught:', error);
       setState({
         isAuthenticated: false,
         user: null,
