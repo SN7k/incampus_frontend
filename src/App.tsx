@@ -208,25 +208,28 @@ function AppContent() {
       localStorage.setItem('inRegistrationFlow', 'true');
       localStorage.setItem('completingOnboarding', 'true');
       
-      // Use a small timeout to ensure state updates are processed
-      setTimeout(async () => {
-        try {
-          // Authenticate the user with the token
-          await authenticateWithToken(token, user);
-          
-          // Check if we're still in registration flow after authentication
-          if (localStorage.getItem('inRegistrationFlow') === 'true') {
-            console.log('Moving to profile setup');
-            setRegistrationStep('profile-setup');
-          } else {
-            console.log('No longer in registration flow, redirecting to feed');
-            window.location.href = '/';
-          }
-        } catch (error) {
-          console.error('Error during authentication after OTP verification:', error);
-          setRegistrationStep('login');
-        }
-      }, 100);
+      // IMPORTANT: Set registration step to profile-setup BEFORE authenticating
+      // This ensures the UI shows the profile setup even if authentication changes state
+      setRegistrationStep('profile-setup');
+      
+      // Log the current state to help with debugging
+      console.log('Set registration step to profile-setup, current state:', {
+        registrationStep: 'profile-setup',
+        isAuthenticated,
+        pendingUserData: userData,
+        inRegistrationFlow: localStorage.getItem('inRegistrationFlow'),
+        completingOnboarding: localStorage.getItem('completingOnboarding')
+      });
+      
+      // Authenticate the user with the token in the background
+      // We don't need to wait for this to complete since we've already set the registration step
+      try {
+        // Call authenticateWithToken but don't wait for it to complete
+        authenticateWithToken(token, user);
+      } catch (error: any) {
+        console.error('Error during authentication after OTP verification:', error);
+        // Don't change registration step on error, as we're already showing profile setup
+      }
     } catch (error) {
       console.error('Error in OTP verification completion:', error);
       localStorage.removeItem('inRegistrationFlow');
@@ -356,9 +359,22 @@ function AppContent() {
 
   console.log('AppContent: loading state is false, checking authentication status.');
 
-  // If not authenticated, show auth forms
-  if (!isAuthenticated) {
-    console.log('AppContent: Not authenticated, rendering auth forms. Current step:', registrationStep);
+  // Check if we're in the registration flow (OTP verification, profile setup, or friend suggestions)
+  const inRegistrationProcess = ['otp', 'profile-setup', 'friend-suggestions'].includes(registrationStep);
+  const showAuthForms = !isAuthenticated || inRegistrationProcess;
+  
+  console.log('AppContent: Registration state:', { 
+    registrationStep, 
+    isAuthenticated, 
+    inRegistrationProcess, 
+    showAuthForms,
+    inRegistrationFlow: localStorage.getItem('inRegistrationFlow'),
+    completingOnboarding: localStorage.getItem('completingOnboarding')
+  });
+  
+  // If not authenticated or still in registration flow, show auth forms or registration steps
+  if (showAuthForms) {
+    console.log('AppContent: Showing auth forms or registration steps. Current step:', registrationStep);
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
         {registrationStep === 'signup' && (
@@ -384,24 +400,28 @@ function AppContent() {
           />
         )}
         
-        {registrationStep === 'profile-setup' && pendingUserData && (
+        {registrationStep === 'profile-setup' && (
           <ProfileSetup 
             userInfo={{
-              fullName: pendingUserData.fullName,
-              email: pendingUserData.email,
-              role: pendingUserData.role
+              fullName: pendingUserData?.fullName || (user?.name || ''),
+              email: pendingUserData?.email || (user?.email || ''),
+              role: (pendingUserData?.role || user?.role || 'student') as 'student' | 'faculty'
             }}
             onProfileComplete={handleProfileComplete}
             onSkip={handleSkipProfile}
           />
         )}
         
-        {registrationStep === 'friend-suggestions' && pendingUserData && pendingProfileData && (
+        {registrationStep === 'friend-suggestions' && (
           <FriendSuggestions
             currentUser={{
-              ...pendingUserData,
-              ...pendingProfileData
-            }}
+              ...(pendingUserData || {}),
+              ...(pendingProfileData || {}),
+              // Use type assertion to avoid TypeScript errors
+              name: pendingUserData?.fullName || user?.name || '',
+              email: pendingUserData?.email || user?.email || '',
+              role: (pendingUserData?.role || user?.role || 'student') as 'student' | 'faculty'
+            } as any}
             onComplete={handleFriendSuggestionsComplete}
           />
         )}
@@ -409,7 +429,7 @@ function AppContent() {
     );
   }
 
-  // If authenticated, show protected routes
+  // If authenticated and not in registration flow, show protected routes
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <Navbar />
