@@ -37,6 +37,12 @@ interface PendingProfileData {
   bio?: string;
 }
 
+interface ApiResponse {
+  status: 'success' | 'error';
+  message?: string;
+  data?: any;
+}
+
 function AppContent() {
   // Clean up URL parameters on first render to prevent force logout
   useEffect(() => {
@@ -290,17 +296,88 @@ function AppContent() {
     }
   };
 
-  const handleProfileComplete = (profileData: PendingProfileData) => {
+  const handleProfileComplete = async (profileData: PendingProfileData) => {
     console.log('Profile setup complete, profile data:', profileData);
-    setPendingProfileData(profileData);
-    localStorage.setItem('registrationStep', 'friend-suggestions');
-    setRegistrationStep('friend-suggestions');
+    try {
+      // Get the current user data
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User data not found');
+      }
+      const user = JSON.parse(userStr);
+      
+      // Prepare the profile data
+      const setupData = {
+        name: user.name || user.collegeId,
+        role: user.role,
+        email: user.email,
+        bio: profileData.bio || '',
+        // Only include avatar if it's a URL (not base64)
+        ...(profileData.avatar && !profileData.avatar.startsWith('data:') && {
+          avatar: profileData.avatar
+        }),
+        // Only include coverPhoto if it's a URL (not base64)
+        ...(profileData.coverPhoto && !profileData.coverPhoto.startsWith('data:') && {
+          coverPhoto: profileData.coverPhoto
+        })
+      };
+
+      console.log('Sending profile setup request:', setupData);
+      
+      // Make the API request
+      const response = await axiosInstance.post<ApiResponse>('/api/profile/setup', setupData);
+      
+      if (response.data.status === 'success') {
+        console.log('Profile setup successful');
+        setPendingProfileData(profileData);
+        localStorage.setItem('registrationStep', 'friend-suggestions');
+        setRegistrationStep('friend-suggestions');
+      } else {
+        throw new Error(response.data.message || 'Profile setup failed');
+      }
+    } catch (error) {
+      console.error('Profile setup error:', error);
+      // Show error to user but don't redirect
+      // You might want to add a toast notification here
+    }
   };
 
-  const handleSkipProfile = () => {
+  const handleSkipProfile = async () => {
     console.log('Profile setup skipped, moving to friend suggestions');
-    localStorage.setItem('registrationStep', 'friend-suggestions');
-    setRegistrationStep('friend-suggestions');
+    try {
+      // Get the current user data
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User data not found');
+      }
+      const user = JSON.parse(userStr);
+      
+      // Prepare minimal profile data
+      const setupData = {
+        name: user.name || user.collegeId,
+        role: user.role,
+        email: user.email,
+        bio: '',
+        avatar: '/default-avatar.png' // Use default avatar
+      };
+
+      console.log('Sending skip profile setup request:', setupData);
+      
+      // Make the API request
+      const response = await axiosInstance.post<ApiResponse>('/api/profile/setup', setupData);
+      
+      if (response.data.status === 'success') {
+        console.log('Skip profile setup successful');
+        localStorage.setItem('registrationStep', 'friend-suggestions');
+        setRegistrationStep('friend-suggestions');
+      } else {
+        throw new Error(response.data.message || 'Skip profile setup failed');
+      }
+    } catch (error) {
+      console.error('Skip profile setup error:', error);
+      // Show error to user but don't redirect
+      // You might want to add a toast notification here
+    }
   };
 
   const handleFriendSuggestionsComplete = () => {
