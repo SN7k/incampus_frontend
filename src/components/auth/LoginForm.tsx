@@ -16,7 +16,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login, loading: authLoading, error } = useAuth(); // Use the login function from AuthContext
+  const { login } = useAuth(); // Use the login function from AuthContext
 
   // If login function is not available from context, maybe render a fallback or null
   if (!login) {
@@ -29,10 +29,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     setFormError('');
     setLoading(true);
     
-    // Clear any existing auth data to ensure a fresh login
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('authError');
+    console.log('Login form submission initiated');
+    
+    // Do NOT clear existing auth data during login - that should happen in the login function if needed
+    // This was causing issues with maintaining authentication state
     
     if (!identifier) {
       setFormError(role === 'student' ? 'Student ID or email is required' : 'Email is required');
@@ -48,6 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     
     // Check if the identifier is an email
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+    console.log('Identifier is email:', isEmail);
     
     // If it's a student and not an email, validate the university ID format
     if (role === 'student' && !isEmail) {
@@ -60,11 +61,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     }
     
     try {
-      // Create a simple login payload
-      const loginPayload: any = {
+      // Create the login payload - match exactly what backend expects
+      const loginPayload = {
         password,
-        role
-      };
+        role, // Role is required by the LoginPayload interface
+      } as any; // Use 'as any' temporarily to avoid TypeScript errors during property assignment
       
       // Add the appropriate identifier field
       if (isEmail) {
@@ -73,15 +74,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         loginPayload.universityId = identifier;
       }
       
-      console.log('Login attempt with payload:', loginPayload);
+      // Convert to properly typed payload for the login function
+      const typedPayload = loginPayload as import('../../contexts/AuthContext').LoginPayload;
       
-      // Use the login function from AuthContext with the correct payload
-      await login(loginPayload);
+      console.log('Login attempt with payload:', typedPayload);
+      
+      // Use the login function from AuthContext with the typed payload
+      await login(typedPayload);
+      console.log('Login function called successfully');
       
       // If login is successful, the AuthContext will handle the state update
       // and the page will be redirected
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login error caught in LoginForm:', error);
       setFormError(error.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
