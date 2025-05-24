@@ -7,33 +7,27 @@ import { setRegistrationFlags, saveToken } from '../../utils/authFlowHelpers';
 import axiosInstance from '../../utils/axios';
 
 interface FriendSuggestionsProps {
-  currentUser: Partial<User>;
-  onComplete: (followedUsers: string[]) => void;
+  currentUser?: Partial<User>;
 }
 
-const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: Removed onComplete to fix 'r is not a function' error */ }) => {
+const FriendSuggestions: React.FC<FriendSuggestionsProps> = () => {
   const [suggestions, setSuggestions] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch suggestions on component mount
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
-        // Set registration flags to ensure we don't get logged out during the process
         setRegistrationFlags();
         
-        // Get token from localStorage or sessionStorage
         let token = localStorage.getItem('token') || sessionStorage.getItem('token');
         if (!token) {
-          // Try to get from cookies
           const cookies = document.cookie.split(';');
           const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
           if (authCookie) {
             token = authCookie.split('=')[1];
-            // Save the token to all storage mechanisms
             saveToken(token);
           }
         }
@@ -44,10 +38,8 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
           return;
         }
         
-        // Ensure the token is set in the friendService
         friendService.setAuthToken(token);
         
-        // Fetch suggestions
         const data = await friendService.getSuggestions();
         setSuggestions(data);
       } catch (err) {
@@ -58,7 +50,6 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
     fetchSuggestions();
   }, []);
   
-  // Filter suggestions based on search query
   const filteredSuggestions = useMemo(() => {
     if (!searchQuery.trim()) return suggestions;
     
@@ -81,24 +72,18 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
   const handleComplete = async () => {
     setLoading(true);
     try {
-      // Set all registration flags to ensure we don't get logged out during the process
       localStorage.setItem('justCompletedRegistration', 'true');
-      sessionStorage.setItem('redirectAfterRegistration', 'true');
       localStorage.setItem('completedFriendSuggestions', 'true');
-      localStorage.setItem('forceAuthenticated', 'true');
-      localStorage.setItem('authBypassTimestamp', Date.now().toString());
-      localStorage.setItem('bypassTokenVerification', 'true');
-      localStorage.setItem('comingFromRegistration', 'true');
-      localStorage.setItem('inRegistrationFlow', 'true');
+      localStorage.setItem('registrationStep', 'completed');
+      localStorage.setItem('registrationCompleted', 'true');
       
-      // Get token from localStorage or sessionStorage
       let token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
-        // Try to get from cookies
         const cookies = document.cookie.split(';');
         const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
         if (authCookie) {
           token = authCookie.split('=')[1];
+          saveToken(token);
         }
       }
       
@@ -109,19 +94,15 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
         return;
       }
       
-      // Save token to all storage mechanisms for redundancy
       localStorage.setItem('token', token);
       sessionStorage.setItem('token', token);
-      document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; 
       
-      // Get current user data
       const userData = localStorage.getItem('user');
       if (userData) {
         try {
           const parsedUser = JSON.parse(userData);
-          // Add hasCompletedRegistration flag to user data
           parsedUser.hasCompletedRegistration = true;
-          // Save updated user data
           localStorage.setItem('user', JSON.stringify(parsedUser));
           sessionStorage.setItem('user', JSON.stringify(parsedUser));
         } catch (e) {
@@ -129,89 +110,59 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
         }
       }
       
-      // Ensure the token is set in axios headers
       if (typeof axiosInstance !== 'undefined') {
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
       
-      // Ensure the token is set in the friendService
       friendService.setAuthToken(token);
       
-      try {
-        // Send friend requests to selected users
-        await Promise.all(
-          selectedUsers.map(userId => friendService.sendFriendRequest(userId))
-        );
-        
-        console.log(`Successfully followed ${selectedUsers.length} users`);
-        
-        // Instead of using the callback which might be causing the error,
-        // let's implement a more direct navigation approach
+      if (selectedUsers.length > 0) {
         try {
-          // Double-check that flags are still set
-          if (!localStorage.getItem('justCompletedRegistration')) {
-            localStorage.setItem('justCompletedRegistration', 'true');
-          }
-          if (!sessionStorage.getItem('redirectAfterRegistration')) {
-            sessionStorage.setItem('redirectAfterRegistration', 'true');
-          }
-          
-          console.log('Friend suggestions complete, navigating directly to feed');
-          
-          // CRITICAL FIX: Completely bypass the onComplete callback which is causing the 'r is not a function' error
-          console.log('CRITICAL FIX: Bypassing onComplete callback to avoid "r is not a function" error');
-          // Do not call onComplete at all
-          
-          // Add a small delay before navigation to ensure state updates are processed
-          setTimeout(() => {
-            // Use a direct approach to navigate to the feed
-            const cleanUrl = window.location.origin + '/';
-            console.log('Directly navigating to:', cleanUrl);
-            
-            // Use replaceState to avoid adding to browser history
-            window.history.replaceState(null, '', cleanUrl);
-            
-            // Force a full page reload to ensure a clean state
-            window.location.replace(cleanUrl);
-          }, 300);
-        } catch (navError) {
-          console.error('Navigation error:', navError);
-          // If all else fails, try a simple redirect
-          window.location.href = '/';
+          await Promise.all(
+            selectedUsers.map(userId => friendService.sendFriendRequest(userId))
+          );
+          console.log(`Successfully followed ${selectedUsers.length} users`);
+        } catch (followError) {
+          console.error('Error following users:', followError);
         }
-      } catch (err) {
-        console.error('Error following users:', err);
-        // CRITICAL FIX: Bypass onComplete to prevent 'r is not a function' error
-        console.log('CRITICAL FIX: Bypassing onComplete in error handler');
       }
+      
+      console.log('Friend suggestions complete, redirecting to feed');
+      
+      setTimeout(() => {
+        try {
+          window.location.href = '/';
+        } catch (error) {
+          console.error('Navigation error:', error);
+          window.location.replace('/');
+        }
+      }, 500);
     } catch (error) {
       setError('Failed to send friend requests');
       console.error('Failed to save followed users', error);
-      // CRITICAL FIX: Bypass onComplete to prevent 'r is not a function' error
-      console.log('CRITICAL FIX: Bypassing final onComplete call');
-      // Use direct navigation instead
+      
       setTimeout(() => {
-        window.location.href = '/';
-      }, 300);
+        try {
+          window.location.href = '/';
+        } catch (navError) {
+          console.error('Navigation error after handling error:', navError);
+        }
+      }, 1000);
     } finally {
       setLoading(false);
     }
   };
   
   const handleSkip = () => {
-    // Set loading state
     setLoading(true);
     
-    // Clear any pending state
     setSelectedUsers([]);
     
     try {
       console.log('Skipping friend suggestions and completing onboarding');
       
-      // Get token from multiple sources
       let token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
-        // Try to get from cookies
         const cookies = document.cookie.split(';');
         const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
         if (authCookie) {
@@ -228,10 +179,9 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
         return;
       }
       
-      // Ensure token is saved in all storage mechanisms
       localStorage.setItem('token', token);
       sessionStorage.setItem('token', token);
-      document.cookie = `authToken=${token}; path=/; max-age=86400`; // Also save in cookies for 24 hours
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; 
       
       let userData = null;
       
@@ -242,16 +192,22 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ /* CRITICAL FIX: 
         console.error('Error parsing user data:', e);
       }
       
-      // CRITICAL FIX: Use direct navigation instead of the utility function
       setTimeout(() => {
         console.log('CRITICAL FIX: Using direct navigation to go to feed page');
-        // Navigate directly to the feed page
         window.location.href = '/';
       }, 100);
     } catch (error) {
       console.error('Error in handleSkip:', error);
       setError('Failed to complete onboarding');
       setLoading(false);
+      
+      setTimeout(() => {
+        try {
+          window.location.href = '/';
+        } catch (navError) {
+          console.error('Navigation error after handling error:', navError);
+        }
+      }, 1000);
     }
   };
   
