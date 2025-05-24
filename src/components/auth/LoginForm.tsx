@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import Input from '../ui/Input';
 import Button from '../ui/Button';
+import Input from '../ui/Input';
+import axiosInstance from '../../utils/axios';
 
 type UserRole = 'student' | 'faculty';
 
@@ -61,30 +62,64 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
     }
     
     try {
-      // Create the login payload - match exactly what backend expects
-      const loginPayload = {
-        password,
-        role, // Role is required by the LoginPayload interface
-      } as any; // Use 'as any' temporarily to avoid TypeScript errors during property assignment
+    // Clear any URL parameters that might interfere with login
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    // Clear any previous auth errors
+    localStorage.removeItem('authError');
+    
+    // Create the login payload - match exactly what backend expects
+    const loginPayload = {
+      password,
+      role, // Role is required by the LoginPayload interface
+    } as any; // Use 'as any' temporarily to avoid TypeScript errors during property assignment
+    
+    // Add the appropriate identifier field
+    if (isEmail) {
+      loginPayload.email = identifier;
+    } else {
+      loginPayload.universityId = identifier;
+    }
+    
+    // Convert to properly typed payload for the login function
+    const typedPayload = loginPayload as import('../../contexts/AuthContext').LoginPayload;
+    
+    console.log('Login attempt with payload:', typedPayload);
+    
+    // Make a direct API call instead of using the context login function
+    const response = await axiosInstance.post<{status: string; message: string; data: {token: string; user: any}}>('/api/auth/login', typedPayload);
+    
+    if (response.data.status === 'success') {
+      const { token, user } = response.data.data;
       
-      // Add the appropriate identifier field
-      if (isEmail) {
-        loginPayload.email = identifier;
-      } else {
-        loginPayload.universityId = identifier;
-      }
+      console.log('Login successful, storing auth data directly');
       
-      // Convert to properly typed payload for the login function
-      const typedPayload = loginPayload as import('../../contexts/AuthContext').LoginPayload;
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
       
-      console.log('Login attempt with payload:', typedPayload);
+      // Also store in sessionStorage for redundancy
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
       
-      // Use the login function from AuthContext with the typed payload
-      await login(typedPayload);
-      console.log('Login function called successfully');
+      // Set token in axios headers
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // If login is successful, the AuthContext will handle the state update
-      // and the page will be redirected
+      // Also set a cookie with the token for extra redundancy
+      document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
+      
+      // Set a flag to indicate we just logged in
+      localStorage.setItem('justLoggedIn', 'true');
+      
+      console.log('Auth data stored successfully, redirecting to feed');
+      
+      // Force a page reload to the feed page
+      window.location.href = '/';
+    } else {
+      throw new Error(response.data.message || 'Login failed. Please try again.');
+    }
+    
+    // If we get here, login was successful
     } catch (error: any) {
       console.error('Login error caught in LoginForm:', error);
       setFormError(error.message || 'Login failed. Please try again.');
