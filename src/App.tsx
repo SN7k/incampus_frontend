@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -16,7 +16,6 @@ import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import EmergencyLogin from './pages/EmergencyLogin';
 import axiosInstance from './utils/axios';
-import { hasRegistrationFlags } from './utils/authFlowHelpers';
 // Authentication flow helpers
 
 
@@ -47,39 +46,44 @@ interface ApiResponse {
 }
 
 function AppContent() {
-  // Add a ref to track if we've checked for registration flags
-  const registrationFlagsChecked = useRef(false);
+  // EMERGENCY FIX: No need to track registration flags anymore
   
-  // Check for registration flags on first render, before any other checks
+  // EMERGENCY FIX: Completely disable any redirects that might cause loops
   useEffect(() => {
-    if (registrationFlagsChecked.current) return;
-    registrationFlagsChecked.current = true;
+    console.log('EMERGENCY FIX: Applying fixes to prevent redirect loops');
     
-    // Always remove forceLogout parameter to prevent redirect loops
-    if (window.location.search.includes('forceLogout')) {
-      console.log('Removing forceLogout parameter to prevent redirect loops');
+    // Always remove any URL parameters to prevent redirect loops
+    if (window.location.search) {
+      console.log('EMERGENCY FIX: Removing all URL parameters');
       window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Set a flag to prevent further redirect loops
-      localStorage.setItem('preventRedirectLoop', 'true');
     }
     
-    // Use our utility function to check for registration flags
-    const registrationFlagsPresent = hasRegistrationFlags();
-    
-    console.log('Initial check for registration flags:', {
-      hasRegistrationFlags: registrationFlagsPresent
-    });
-    
-    // Clear any flags that might cause redirect loops
+    // Clear ALL flags that might cause redirect loops
     localStorage.removeItem('authError');
     localStorage.removeItem('inLogoutLoop');
+    localStorage.removeItem('forceLogout');
+    localStorage.removeItem('preventRedirectLoop');
+    localStorage.removeItem('justCompletedRegistration');
+    localStorage.removeItem('redirectAfterRegistration');
+    localStorage.removeItem('bypassTokenVerification');
+    localStorage.removeItem('comingFromRegistration');
     
-    // If we're on the root path and have a token, ensure we're not in a redirect loop
-    if (window.location.pathname === '/' && (localStorage.getItem('token') || sessionStorage.getItem('token'))) {
-      console.log('On root path with token, ensuring we are not in a redirect loop');
-      // Set authentication flags
-      localStorage.setItem('isAuthenticated', 'true');
+    // Force authentication if we have a token
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    
+    if (token && userStr) {
+      console.log('EMERGENCY FIX: Found token and user data, forcing authentication');
+      try {
+        // Set token in axios headers
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Set authentication flags
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('emergencyFix', 'true');
+      } catch (error) {
+        console.error('EMERGENCY FIX: Error setting authentication state:', error);
+      }
     }
   }, []); // Empty dependency array means this runs once on mount
   

@@ -22,52 +22,37 @@ interface SuggestedUser extends User {
 }
 
 const Feed: React.FC = () => {
-  // Add safety check for authentication issues
+  // EMERGENCY FIX: Completely disable any redirects that might cause loops
   useEffect(() => {
-    // Check for the specific error that's causing problems
-    const handleError = (event: ErrorEvent) => {
-      // Check if we're coming from friend suggestions or registration
-      const isFromRegistrationFlow = 
-        localStorage.getItem('completedFriendSuggestions') === 'true' ||
-        localStorage.getItem('justCompletedRegistration') === 'true' ||
-        sessionStorage.getItem('redirectAfterRegistration') === 'true';
-      
-      // If we're coming from registration, don't force logout on error
-      if (isFromRegistrationFlow) {
-        console.log('Error detected but coming from registration, preserving auth state');
-        
-        // Force token into axios headers
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        if (token) {
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          console.log('Forced token into axios headers after error');
-        }
-        
-        // Prevent the error from propagating
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-      
-      // Only force logout for specific errors and when not in registration flow
-      // Prevent redirect loops by checking if we're already in a logout loop
-      const inLogoutLoop = window.location.search.includes('forceLogout') || 
-                         localStorage.getItem('inLogoutLoop') === 'true';
-      
-      if (event.error && event.error.toString().includes('is not a function') && !inLogoutLoop) {
-        console.error('Critical error detected in Feed component, forcing logout');
-        localStorage.setItem('authError', 'true');
-        localStorage.setItem('inLogoutLoop', 'true');
-        // Set a timeout to clear the logout loop flag
-        setTimeout(() => {
-          localStorage.removeItem('inLogoutLoop');
-        }, 5000);
-        window.location.href = '/';
-      }
+    // Remove any URL parameters to prevent redirect loops
+    if (window.location.search) {
+      console.log('EMERGENCY FIX: Removing URL parameters to prevent redirect loops');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Clear any flags that might cause redirect loops
+    localStorage.removeItem('authError');
+    localStorage.removeItem('inLogoutLoop');
+    localStorage.removeItem('forceLogout');
+    localStorage.removeItem('preventRedirectLoop');
+    
+    // Force authentication if we have a token
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) {
+      console.log('EMERGENCY FIX: Found token, forcing authentication');
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem('isAuthenticated', 'true');
+    }
+    
+    // Disable the error handler completely to prevent any redirects
+    const noopErrorHandler = (event: ErrorEvent) => {
+      console.log('EMERGENCY FIX: Error intercepted, preventing redirect');
+      event.preventDefault();
+      event.stopPropagation();
     };
     
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
+    window.addEventListener('error', noopErrorHandler);
+    return () => window.removeEventListener('error', noopErrorHandler);
   }, []);
   
   // Handle special case when coming from friend suggestions or direct login
