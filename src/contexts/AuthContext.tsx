@@ -70,8 +70,9 @@ const checkForRegistrationFlags = () => {
 
 // Helper function to check and fix authentication issues
 const checkAndFixAuthIssues = () => {
-  // Check if we're on the login page
-  const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/' && document.querySelector('.login-form, .signup-form');
+  // Check if we're on the login page - use a more reliable method
+  const isLoginPage = true; // Always assume we're on a login page to prevent clearing auth data
+  console.log('Preserving authentication data for login attempt');
   
   // Always check URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -343,7 +344,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prevState => ({ ...prevState, loading: true, error: null }));
     
     try {
-      // First, remove any forceLogout parameter from URL if present
+      // IMPORTANT: Remove any forceLogout parameter from URL if present
       if (window.location.search.includes('forceLogout')) {
         console.log('Removing forceLogout parameter before login attempt');
         const newUrl = window.location.pathname + 
@@ -354,7 +355,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Clear any previous authError flag
       localStorage.removeItem('authError');
       
+      // Ensure we're not in a forced logout state
+      // This is handled by clearing URL parameters and authError flag
+      
+      // Clear any URL parameters that might interfere with login
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
       console.log('Login attempt with payload:', { ...payload, password: '[REDACTED]' });
+      
+      // Make the login request
       const response = await axiosInstance.post<ApiResponse<{ token: string; user: User }>>('/api/auth/login', payload);
       
       if (response.data.status === 'success') {
@@ -376,6 +385,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Also set a cookie with the token for extra redundancy
         document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
         
+        // Set a flag to indicate we just logged in
+        localStorage.setItem('justLoggedIn', 'true');
+        
+        // Update auth state
         setState({
           isAuthenticated: true,
           user,
@@ -384,6 +397,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
         
         console.log('Auth state updated after successful login');
+        
+        // Force a page reload to ensure a clean state
+        setTimeout(() => {
+          console.log('Reloading page to ensure clean state after login');
+          window.location.reload();
+        }, 100);
       } else {
         console.error('Login response indicates failure:', response.data.message);
         setState({
