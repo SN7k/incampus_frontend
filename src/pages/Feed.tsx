@@ -61,9 +61,15 @@ const Feed: React.FC = () => {
     return () => window.removeEventListener('error', handleError);
   }, []);
   
-  // Handle special case when coming from friend suggestions
+  // Handle special case when coming from friend suggestions or direct login
   useEffect(() => {
     console.log('Feed component mounted, checking authentication state');
+    
+    // Check if we have a direct login success flag
+    const directLoginSuccess = localStorage.getItem('directLoginSuccess') === 'true';
+    if (directLoginSuccess) {
+      console.log('Direct login detected, ensuring auth state is properly set');
+    }
     
     // Check for token in multiple places with more robust extraction
     let token = localStorage.getItem('token');
@@ -84,6 +90,14 @@ const Feed: React.FC = () => {
       } catch (e) {
         console.error('Error extracting token from cookies:', e);
       }
+    }
+    
+    // If we have a token and direct login success, force authentication state
+    if (token && directLoginSuccess) {
+      console.log('Setting axios auth header from direct login token');
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Clear the direct login flag after handling it
+      localStorage.removeItem('directLoginSuccess');
     }
     
     // If we still don't have a token, try to get user data and extract token from there

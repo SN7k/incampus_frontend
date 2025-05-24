@@ -1,4 +1,5 @@
 import axios from 'axios';
+import axiosInstance from './axios';
 
 // Direct login utility that bypasses the existing authentication system
 export const directLogin = async (
@@ -7,11 +8,11 @@ export const directLogin = async (
   role: 'student' | 'faculty'
 ): Promise<boolean> => {
   try {
+    console.log('Starting direct login process...');
+    
     // Clear any existing auth data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('authError');
+    localStorage.removeItem('forceLogout');
     
     // Clear any URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -63,17 +64,33 @@ export const directLogin = async (
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('user', JSON.stringify(user));
       
+      // Set token in axios headers for future requests
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       // Set a cookie with the token
       document.cookie = `authToken=${token}; path=/; max-age=86400`; // 24 hours
       
-      // Set a flag to indicate successful login
+      // Set flags to indicate successful login and bypass registration flow checks
       localStorage.setItem('directLoginSuccess', 'true');
+      localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('loginTimestamp', Date.now().toString());
+      localStorage.setItem('bypassTokenVerification', 'true');
+      
+      // Set flags to indicate we're not in registration flow
+      localStorage.removeItem('inRegistrationFlow');
+      localStorage.removeItem('registrationStep');
+      localStorage.removeItem('pendingUserData');
+      localStorage.removeItem('pendingProfileData');
+      
+      console.log('All authentication data stored successfully');
       
       // Refresh the page to apply the new authentication state
+      console.log('Redirecting to feed page...');
+      
+      // Use a small delay to ensure all storage operations complete
       setTimeout(() => {
         window.location.href = '/';
-      }, 500);
+      }, 1000);
       
       return true;
     } else {

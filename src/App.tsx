@@ -744,8 +744,19 @@ function AppContent() {
     }
   }
   
+  // Check for direct login success and update state accordingly
+  const [forceShowFeed] = useState(() => {
+    const directLoginSuccess = localStorage.getItem('directLoginSuccess') === 'true';
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    return directLoginSuccess && isAuthenticated;
+  });
+  
+  // Update showAuthForms based on direct login success
+  const showAuthFormsWithDirectLogin = showAuthForms && !forceShowFeed;
+  
   // If not authenticated or still in registration flow, show auth forms or registration steps
-  if (showAuthForms) {
+  // Also check for direct login success
+  if (showAuthFormsWithDirectLogin) {
     console.log('AppContent: Showing auth forms or registration steps. Current step:', registrationStep);
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
