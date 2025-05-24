@@ -87,9 +87,16 @@ export const directLogin = async (
       // Refresh the page to apply the new authentication state
       console.log('Redirecting to feed page...');
       
+      // Remove any forceLogout parameters from the URL
+      if (window.location.search.includes('forceLogout')) {
+        localStorage.setItem('preventRedirectLoop', 'true');
+      }
+      
       // Use a small delay to ensure all storage operations complete
       setTimeout(() => {
-        window.location.href = '/';
+        // Use replaceState to avoid adding to browser history
+        window.history.replaceState({}, document.title, '/');
+        window.location.reload();
       }, 1000);
       
       return true;

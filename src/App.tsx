@@ -15,7 +15,7 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import axiosInstance from './utils/axios';
-import { hasRegistrationFlags, navigateWithoutForceLogout } from './utils/authFlowHelpers';
+import { hasRegistrationFlags } from './utils/authFlowHelpers';
 // Authentication flow helpers
 
 
@@ -54,6 +54,15 @@ function AppContent() {
     if (registrationFlagsChecked.current) return;
     registrationFlagsChecked.current = true;
     
+    // Always remove forceLogout parameter to prevent redirect loops
+    if (window.location.search.includes('forceLogout')) {
+      console.log('Removing forceLogout parameter to prevent redirect loops');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Set a flag to prevent further redirect loops
+      localStorage.setItem('preventRedirectLoop', 'true');
+    }
+    
     // Use our utility function to check for registration flags
     const registrationFlagsPresent = hasRegistrationFlags();
     
@@ -61,25 +70,15 @@ function AppContent() {
       hasRegistrationFlags: registrationFlagsPresent
     });
     
-    // If we have registration flags, ensure we don't have forceLogout parameter
-    if (registrationFlagsPresent) {
-      // Remove the forceLogout parameter if present
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('forceLogout')) {
-        console.log('Removing forceLogout parameter while preserving registration flags');
-        
-        // Use our utility to navigate without the forceLogout parameter
-        navigateWithoutForceLogout(window.location.pathname);
-      }
-    } else {
-      // Normal URL cleanup if no registration flags
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('forceLogout')) {
-        console.log('Removing forceLogout parameter from URL');
-        // Create a new URL without the forceLogout parameter
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
-      }
+    // Clear any flags that might cause redirect loops
+    localStorage.removeItem('authError');
+    localStorage.removeItem('inLogoutLoop');
+    
+    // If we're on the root path and have a token, ensure we're not in a redirect loop
+    if (window.location.pathname === '/' && (localStorage.getItem('token') || sessionStorage.getItem('token'))) {
+      console.log('On root path with token, ensuring we are not in a redirect loop');
+      // Set authentication flags
+      localStorage.setItem('isAuthenticated', 'true');
     }
   }, []); // Empty dependency array means this runs once on mount
   

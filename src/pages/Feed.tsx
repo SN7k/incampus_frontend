@@ -50,10 +50,19 @@ const Feed: React.FC = () => {
       }
       
       // Only force logout for specific errors and when not in registration flow
-      if (event.error && event.error.toString().includes('is not a function')) {
+      // Prevent redirect loops by checking if we're already in a logout loop
+      const inLogoutLoop = window.location.search.includes('forceLogout') || 
+                         localStorage.getItem('inLogoutLoop') === 'true';
+      
+      if (event.error && event.error.toString().includes('is not a function') && !inLogoutLoop) {
         console.error('Critical error detected in Feed component, forcing logout');
         localStorage.setItem('authError', 'true');
-        window.location.href = '/?forceLogout=true';
+        localStorage.setItem('inLogoutLoop', 'true');
+        // Set a timeout to clear the logout loop flag
+        setTimeout(() => {
+          localStorage.removeItem('inLogoutLoop');
+        }, 5000);
+        window.location.href = '/';
       }
     };
     
