@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InCampus Simple Login</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(to bottom, #1e40af, #3b82f6);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .header h1 {
+      color: #1e40af;
+      margin-bottom: 0.5rem;
+      font-size: 1.5rem;
+    }
+    .header p {
+      color: #6b7280;
+      margin: 0;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #374151;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    .role-selector {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .role-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .role-btn.active {
+      background-color: #1e40af;
+      color: white;
+    }
+    .role-btn:not(.active) {
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #1e40af;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #1c3879;
+    }
+    .btn:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+    .error {
+      background-color: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .success {
+      background-color: #d1fae5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+      padding: 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>InCampus Simple Login</h1>
+      <p>Sign in with your university credentials</p>
+    </div>
+    
+    <div id="error" class="error"></div>
+    <div id="success" class="success"></div>
+    
+    <form id="login-form">
+      <div class="role-selector">
+        <button type="button" id="student-btn" class="role-btn active" onclick="setRole('student')">Student</button>
+        <button type="button" id="faculty-btn" class="role-btn" onclick="setRole('faculty')">Faculty</button>
+      </div>
+      
+      <div class="form-group">
+        <label for="identifier" id="identifier-label">Student ID or Email</label>
+        <input 
+          type="text" 
+          id="identifier" 
+          placeholder="BWU/ABC/00/000 or your email" 
+          required
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          placeholder="Enter your password" 
+          required
+        />
+      </div>
+      
+      <button type="submit" id="login-btn" class="btn">Login</button>
+    </form>
+    
+    <div class="footer">
+      This is a simple login page that bypasses the normal authentication flow.
+    </div>
+  </div>
+
+  <script>
+    // Initialize variables
+    let role = 'student';
+    
+    // Set the role (student or faculty)
+    function setRole(newRole) {
+      role = newRole;
+      
+      // Update UI
+      if (newRole === 'student') {
+        document.getElementById('student-btn').classList.add('active');
+        document.getElementById('faculty-btn').classList.remove('active');
+        document.getElementById('identifier-label').textContent = 'Student ID or Email';
+        document.getElementById('identifier').placeholder = 'BWU/ABC/00/000 or your email';
+      } else {
+        document.getElementById('student-btn').classList.remove('active');
+        document.getElementById('faculty-btn').classList.add('active');
+        document.getElementById('identifier-label').textContent = 'Email';
+        document.getElementById('identifier').placeholder = 'Enter your email';
+      }
+    }
+    
+    // Show error message
+    function showError(message) {
+      const errorElement = document.getElementById('error');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+      document.getElementById('success').style.display = 'none';
+    }
+    
+    // Show success message
+    function showSuccess(message) {
+      const successElement = document.getElementById('success');
+      successElement.textContent = message;
+      successElement.style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+    }
+    
+    // Clear all storage
+    function clearAllStorage() {
+      // Clear all localStorage
+      localStorage.clear();
+      
+      // Clear all sessionStorage
+      sessionStorage.clear();
+      
+      // Clear all cookies
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf('=');
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+      }
+    }
+    
+    // Handle form submission
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Get form values
+      const identifier = document.getElementById('identifier').value;
+      const password = document.getElementById('password').value;
+      
+      // Validate form
+      if (!identifier) {
+        showError(role === 'student' ? 'Student ID or email is required' : 'Email is required');
+        return;
+      }
+      
+      if (!password) {
+        showError('Password is required');
+        return;
+      }
+      
+      // Check if the identifier is an email
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+      
+      // If it's a student and not an email, validate the university ID format
+      if (role === 'student' && !isEmail) {
+        const idPattern = /^[A-Z]+\/[A-Z]+\/\d+\/\d+$|^[A-Z]+\/[A-Z]+\/[A-Z]+\/\d+$/;
+        if (!idPattern.test(identifier)) {
+          showError('Invalid university ID format. Example: BWU/BCA/20/123');
+          return;
+        }
+      }
+      
+      // Show loading state
+      const loginBtn = document.getElementById('login-btn');
+      loginBtn.textContent = 'Logging in...';
+      loginBtn.disabled = true;
+      
+      try {
+        // Clear all storage first
+        clearAllStorage();
+        
+        // Create the login payload
+        const loginPayload = {
+          password,
+          role
+        };
+        
+        // Add the appropriate identifier field
+        if (isEmail) {
+          loginPayload.email = identifier;
+        } else {
+          loginPayload.universityId = identifier;
+        }
+        
+        // Make a direct API call to the backend
+        const response = await fetch('https://incampus-backend.onrender.com/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(loginPayload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const { token, user } = data.data;
+          
+          // Store token and user data
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          sessionStorage.setItem('token', token);
+          sessionStorage.setItem('user', JSON.stringify(user));
+          
+          // Set flags to indicate successful login
+          localStorage.setItem('simpleLogin', 'true');
+          localStorage.setItem('isAuthenticated', 'true');
+          
+          // Show success message
+          showSuccess('Login successful! Redirecting...');
+          
+          // Redirect to the main site
+          setTimeout(() => {
+            // Create a new window
+            const mainWindow = window.open('', '_blank');
+            
+            if (mainWindow) {
+              // Create HTML content for the new window
+              const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>InCampus - Redirecting</title>
+                  <style>
+                    body {
+                      font-family: sans-serif;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      height: 100vh;
+                      margin: 0;
+                      background-color: #f3f4f6;
+                    }
+                    .container {
+                      text-align: center;
+                      padding: 2rem;
+                      background-color: white;
+                      border-radius: 8px;
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    }
+                    h1 {
+                      color: #1e40af;
+                      margin-bottom: 1rem;
+                    }
+                    p {
+                      margin-bottom: 1.5rem;
+                      color: #374151;
+                    }
+                    .btn {
+                      display: inline-block;
+                      padding: 0.75rem 1.5rem;
+                      background-color: #1e40af;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px;
+                      font-weight: 500;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <h1>InCampus Login Successful</h1>
+                    <p>You have successfully logged in. Click the button below to go to the InCampus app.</p>
+                    <a href="https://incampusbwu.netlify.app/" class="btn" id="redirect-btn">Go to InCampus</a>
+                  </div>
+                  
+                  <script>
+                    // Store the token and user data from the opener window
+                    localStorage.setItem('token', '${token}');
+                    localStorage.setItem('user', '${JSON.stringify(user).replace(/'/g, "\\'")}');
+                    sessionStorage.setItem('token', '${token}');
+                    sessionStorage.setItem('user', '${JSON.stringify(user).replace(/'/g, "\\'")}');
+                    localStorage.setItem('simpleLogin', 'true');
+                    localStorage.setItem('isAuthenticated', 'true');
+                    
+                    // Add click event to the redirect button
+                    document.getElementById('redirect-btn').addEventListener('click', function(e) {
+                      e.preventDefault();
+                      window.location.href = 'https://incampusbwu.netlify.app/';
+                    });
+                  </script>
+                </body>
+                </html>
+              `;
+              
+              // Write the HTML content to the new window
+              mainWindow.document.open();
+              mainWindow.document.write(html);
+              mainWindow.document.close();
+            } else {
+              // If popup is blocked, provide a direct link
+              showSuccess('Login successful! <a href="https://incampusbwu.netlify.app/" target="_blank" style="color: #047857; text-decoration: underline;">Click here to open InCampus</a>');
+            }
+          }, 1500);
+        } else {
+          showError(data.message || 'Login failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        showError('Login failed. Please try again.');
+      } finally {
+        // Reset button state
+        loginBtn.textContent = 'Login';
+        loginBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
