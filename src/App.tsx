@@ -14,6 +14,7 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
+import EmergencyLogin from './pages/EmergencyLogin';
 import axiosInstance from './utils/axios';
 import { hasRegistrationFlags } from './utils/authFlowHelpers';
 // Authentication flow helpers
@@ -836,7 +837,10 @@ function App() {
       <AuthProvider>
         <SearchProvider>
           <NotificationProvider>
-            <AppContent />
+            <Routes>
+              <Route path="/emergency-login" element={<EmergencyLogin />} />
+              <Route path="*" element={<AppContent />} />
+            </Routes>
           </NotificationProvider>
         </SearchProvider>
       </AuthProvider>
