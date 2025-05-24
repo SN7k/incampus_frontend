@@ -4,7 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import LoginForm from './components/auth/LoginForm';
+import DirectLoginForm from './components/auth/DirectLoginForm';
 import SignupForm from './components/auth/SignupForm';
 import OtpVerification from './components/auth/OtpVerification';
 import ProfileSetup from './components/auth/ProfileSetup';
@@ -761,7 +761,7 @@ function AppContent() {
         )}
         
         {registrationStep === 'login' && (
-          <LoginForm onShowSignup={() => setRegistrationStep('signup')} />
+          <DirectLoginForm onShowSignup={() => setRegistrationStep('signup')} />
         )}
         
         {registrationStep === 'otp' && pendingUserData && (
