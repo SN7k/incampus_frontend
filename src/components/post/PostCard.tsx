@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2 } from 'lucide-react';
+import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2, Loader } from 'lucide-react';
 import { Post } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { postsApi } from '../../services/postsApi';
+import { USE_MOCK_DATA } from '../../utils/mockDataTransition';
 
 interface PostCardProps {
   post: Post;
+  onPostDeleted?: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
   const { user: currentUser } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
@@ -16,6 +19,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Load likes from localStorage on component mount
   useEffect(() => {
@@ -30,57 +35,96 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }
   }, [currentUser, post.id]);
 
-  const toggleLike = () => {
+  const toggleLike = async () => {
     if (!currentUser) return; // Ensure user is logged in
     
-    // Update local state
-    const newIsLiked = !isLiked;
-    const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
+    setIsLoading(true);
+    setError(null);
     
-    setIsLiked(newIsLiked);
-    setLikesCount(newLikesCount);
-    
-    // Update localStorage for user's liked posts
-    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-    if (newIsLiked) {
-      likedPosts[post.id] = true;
-    } else {
-      delete likedPosts[post.id];
-    }
-    localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-    
-    // Update localStorage for post's likes
-    let postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
-    if (newIsLiked) {
-      // Add user to likes if not already present
-      if (!postLikes.includes(currentUser.id)) {
-        postLikes.push(currentUser.id);
+    try {
+      // Update local state immediately for better UX
+      const newIsLiked = !isLiked;
+      const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
+      
+      setIsLiked(newIsLiked);
+      setLikesCount(newLikesCount);
+      
+      if (USE_MOCK_DATA) {
+        // Update localStorage for user's liked posts
+        const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
+        if (newIsLiked) {
+          likedPosts[post.id] = true;
+        } else {
+          delete likedPosts[post.id];
+        }
+        localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+        
+        // Update localStorage for post's likes
+        let postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
+        if (newIsLiked) {
+          // Add user to likes if not already present
+          if (!postLikes.includes(currentUser.id)) {
+            postLikes.push(currentUser.id);
+          }
+        } else {
+          // Remove user from likes
+          postLikes = postLikes.filter((id: string) => id !== currentUser.id);
+        }
+        localStorage.setItem(`post_${post.id}_likes`, JSON.stringify(postLikes));
+        
+        // Dispatch a custom event to notify other components about the like change
+        window.dispatchEvent(new CustomEvent('postLikeChanged', { 
+          detail: { 
+            postId: post.id,
+            likesCount: newLikesCount,
+            isLiked: newIsLiked,
+            userId: currentUser.id
+          } 
+        }));
+        
+        // Dispatch event for notifications if the user liked the post (not when unliking)
+        if (newIsLiked) {
+          window.dispatchEvent(new CustomEvent('postLike', { 
+            detail: { 
+              fromUser: currentUser.id,
+              postId: post.id,
+              postAuthorId: post.user.id
+            } 
+          }));
+        }
+      } else {
+        // Use real API
+        try {
+          if (newIsLiked) {
+            // Like the post
+            await postsApi.likePost(post.id);
+          } else {
+            // Unlike the post
+            await postsApi.unlikePost(post.id);
+          }
+          
+          // Dispatch a custom event to notify other components about the like change
+          window.dispatchEvent(new CustomEvent('postLikeChanged', { 
+            detail: { 
+              postId: post.id,
+              likesCount: newLikesCount,
+              isLiked: newIsLiked,
+              userId: currentUser.id
+            } 
+          }));
+        } catch (apiError) {
+          console.error('Error toggling like:', apiError);
+          // Revert the state changes if the API call fails
+          setIsLiked(!newIsLiked);
+          setLikesCount(isLiked ? likesCount : likesCount - 1);
+          throw apiError; // Re-throw to be caught by the outer try-catch
+        }
       }
-    } else {
-      // Remove user from likes
-      postLikes = postLikes.filter((id: string) => id !== currentUser.id);
-    }
-    localStorage.setItem(`post_${post.id}_likes`, JSON.stringify(postLikes));
-    
-    // Dispatch a custom event to notify other components about the like change
-    window.dispatchEvent(new CustomEvent('postLikeChanged', { 
-      detail: { 
-        postId: post.id,
-        likesCount: newLikesCount,
-        isLiked: newIsLiked,
-        userId: currentUser.id
-      } 
-    }));
-    
-    // Dispatch event for notifications if the user liked the post (not when unliking)
-    if (newIsLiked) {
-      window.dispatchEvent(new CustomEvent('postLike', { 
-        detail: { 
-          fromUser: currentUser.id,
-          postId: post.id,
-          postAuthorId: post.user.id
-        } 
-      }));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      setError('Failed to update like status. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -195,10 +239,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   }, [post.id, currentUser]);
 
   // Handle delete post
-  const handleDeletePost = () => {
-    // In a real application, this would call an API to delete the post
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      try {
+  const handleDeletePost = async () => {
+    if (!currentUser || post.user.id !== currentUser.id) return; // Only allow post author to delete
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Close the menu
+      setShowMenu(false);
+      
+      if (USE_MOCK_DATA) {
         console.log('Deleting post:', post.id);
         
         // First, check if this is a user-created post (stored in userPosts)
@@ -232,39 +283,25 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           deletedPosts.push(post.id);
           localStorage.setItem('deletedPosts', JSON.stringify(deletedPosts));
         }
-        
-        // Remove any likes associated with this post
-        localStorage.removeItem(`post_${post.id}_likes`);
-        
-        // Update user's liked posts to remove this post if it was liked
-        const likedPostsStr = localStorage.getItem('likedPosts') || '{}';
-        const likedPosts = JSON.parse(likedPostsStr);
-        if (likedPosts[post.id]) {
-          delete likedPosts[post.id];
-          localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-        }
-        
-        // Dispatch a custom event to notify other components about the post deletion
-        window.dispatchEvent(new CustomEvent('postDeleted', { 
-          detail: { 
-            postId: post.id,
-            userId: post.user?.id || '',
-            isUserCreatedPost
-          } 
-        }));
-        
-        // Close the menu first to avoid UI glitches
-        setShowMenu(false);
-        
-        // Show success message
-        setTimeout(() => {
-          alert('Post deleted successfully!');
-        }, 100);
-        
-      } catch (error) {
-        console.error('Error deleting post:', error);
-        alert('Failed to delete post. Please try again.');
+      } else {
+        // Use real API
+        await postsApi.deletePost(post.id);
       }
+      
+      // Dispatch a custom event to notify other components about the deletion
+      window.dispatchEvent(new CustomEvent('postDeleted', { 
+        detail: { postId: post.id } 
+      }));
+      
+      // Call the onPostDeleted callback if provided
+      if (onPostDeleted) {
+        onPostDeleted(post.id);
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setError('Failed to delete post. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -334,30 +371,29 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       
       {/* Post content */}
       <div className="px-4 py-2">
-        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line break-words">{post.content}</p>
+        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{post.content}</p>
+        {/* Post media */}
+        {post.media && post.media.length > 0 && (
+          <div className="w-full">
+            {post.media[0].type === 'image' && (
+              <img 
+                src={post.media[0].url} 
+                alt="Post content" 
+                className="w-full h-auto object-cover max-h-[500px]"
+                loading="lazy"
+              />
+            )}
+            {post.media[0].type === 'video' && (
+              <video 
+                src={post.media[0].url} 
+                controls 
+                className="w-full h-auto max-h-[500px]"
+                preload="metadata"
+              />
+            )}
+          </div>
+        )}
       </div>
-      
-      {/* Post media */}
-      {post.media && post.media.length > 0 && (
-        <div className="w-full">
-          {post.media[0].type === 'image' && (
-            <img 
-              src={post.media[0].url} 
-              alt="Post content" 
-              className="w-full h-auto object-cover max-h-[500px]"
-              loading="lazy"
-            />
-          )}
-          {post.media[0].type === 'video' && (
-            <video 
-              src={post.media[0].url} 
-              controls 
-              className="w-full h-auto max-h-[500px]"
-              preload="metadata"
-            />
-          )}
-        </div>
-      )}
       
       {/* Post stats */}
       <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
@@ -370,31 +406,49 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       </div>
       
       {/* Post actions */}
-      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
+      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <button 
           onClick={toggleLike}
-          className={`flex items-center justify-center space-x-2 py-1.5 rounded-md ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'} hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+          className={`flex items-center space-x-1 px-2 py-1 rounded-md transition-colors ${
+            isLiked 
+              ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900' 
+              : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+          }`}
+          disabled={isLoading}
         >
-          <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
-          <span className="sm:inline">Like</span>
+          {isLoading ? (
+            <Loader size={20} className="animate-spin" />
+          ) : (
+            <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
+          )}
+          <span>Like</span>
         </button>
-        <button 
-          onClick={handleShare}
-          className="relative flex items-center justify-center space-x-2 py-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          {shareIcon === 'share' && <Share2 size={18} />}
-          {shareIcon === 'copy' && <Copy size={18} />}
-          {shareIcon === 'check' && <Check size={18} className="text-green-500" />}
-          <span className="sm:inline">{shareIcon === 'check' ? 'Copied!' : 'Share'}</span>
+        
+        <div className="relative">
+          <button 
+            onClick={handleShare}
+            className="flex items-center space-x-1 px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+          >
+            {shareIcon === 'share' && <Share2 size={20} />}
+            {shareIcon === 'copy' && <Copy size={20} />}
+            {shareIcon === 'check' && <Check size={20} className="text-green-500" />}
+            <span>Share</span>
+          </button>
           
           {showShareTooltip && (
-            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-              Link copied to clipboard!
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
+              Link copied!
             </div>
           )}
-        </button>
+        </div>
       </div>
-
+      
+      {/* Error message */}
+      {error && (
+        <div className="px-4 py-2 text-sm text-red-500 bg-red-50 dark:bg-red-900 dark:text-red-200">
+          {error}
+        </div>
+      )}
     </div>
   );
 };

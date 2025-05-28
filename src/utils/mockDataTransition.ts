@@ -4,8 +4,7 @@ import { mockUsers } from '../data/mockData';
 
 // Flag to control whether to use mock data or real API
 // This can be controlled by an environment variable
-// Default to false (use real API) when environment variable is not set
-export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || false;
+export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || true;
 
 // Function to get mock profile data for a user
 export const getMockProfileData = (userId: string): ProfileData => {

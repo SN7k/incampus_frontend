@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, UserPlus, UserCheck, MoreVertical, UserMinus, Check, X } from 'lucide-react';
+import { Users, UserPlus, UserCheck, MoreVertical, UserMinus, Check, X, Loader } from 'lucide-react';
 import { mockUsers } from '../data/mockData';
+import { friendsApi } from '../services/friendsApi';
+import { USE_MOCK_DATA } from '../utils/mockDataTransition';
+// User type is used in type annotations
 
 // Create mock data from mockUsers
 const createMockFriend = (user: any) => ({
@@ -52,12 +55,16 @@ const Friends: React.FC = () => {
   
   // State for tracking sent friend requests
   const [sentRequests, setSentRequests] = useState<Array<{
-    id: number;
+    id: number | string;
     name: string;
     avatar: string;
     department: string;
     status: 'pending' | 'accepted' | 'declined';
   }>>([]);
+  
+  // State for API loading and errors
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Helper function to extract year from university ID (e.g., 'BWU/BCA/20/001' -> '20')
   const extractYear = (universityId: string): string => {
@@ -71,60 +78,152 @@ const Friends: React.FC = () => {
     return parts.length >= 2 ? parts[1] : '';
   };
 
-  // Initialize mock data inside the component to filter out the current user
-  const [friends, setFriends] = useState(() => {
-    // Filter out the current user and create mock friends
-    return mockUsers
-      .filter(mockUser => user && mockUser.id !== user.id)
-      .slice(0, 2)
-      .map(mockUser => createMockFriend(mockUser));
-  });
+  // Initialize state for friends, requests, and suggestions
+  const [friends, setFriends] = useState<Array<{
+    id: number | string;
+    name: string;
+    avatar: string;
+    department: string;
+  }>>([]);
   
-  const [friendRequests, setFriendRequests] = useState(() => {
-    // Filter out the current user and create mock friend requests
-    return mockUsers
-      .filter(mockUser => user && mockUser.id !== user.id)
-      .slice(2, 3)
-      .map(mockUser => createMockSuggestion(mockUser));
-  });
+  const [friendRequests, setFriendRequests] = useState<Array<{
+    id: number | string;
+    name: string;
+    avatar: string;
+    department: string;
+    mutualFriends?: number;
+    relevance?: string[];
+  }>>([]);
   
-  const [suggestions, setSuggestions] = useState(() => {
-    // Get current user's year and department
-    const currentUserYear = user ? extractYear(user.universityId) : '';
-    const currentUserDept = user ? extractDepartment(user.universityId) : '';
+  const [suggestions, setSuggestions] = useState<Array<{
+    id: number | string;
+    name: string;
+    avatar: string;
+    department: string;
+    mutualFriends: number;
+    relevance: string[];
+  }>>([]);
+  
+  // Load friends data
+  useEffect(() => {
+    if (!user) return;
     
-    // Filter out the current user and sort suggestions by relevance
-    return mockUsers
-      .filter(mockUser => user && mockUser.id !== user.id)
-      .sort((a, b) => {
-        const aYear = extractYear(a.universityId);
-        const aDept = extractDepartment(a.universityId);
-        const bYear = extractYear(b.universityId);
-        const bDept = extractDepartment(b.universityId);
-        
-        // Calculate relevance score (higher is more relevant)
-        const aScore = (aYear === currentUserYear ? 2 : 0) + (aDept === currentUserDept ? 3 : 0);
-        const bScore = (bYear === currentUserYear ? 2 : 0) + (bDept === currentUserDept ? 3 : 0);
-        
-        // Sort by relevance score (descending)
-        return bScore - aScore;
-      })
-      .slice(0, 5) // Get top 5 most relevant suggestions
-      .map(mockUser => {
-        const suggestion = createMockSuggestion(mockUser);
-        // Add relevance indicators
-        const year = extractYear(mockUser.universityId);
-        const dept = extractDepartment(mockUser.universityId);
-        suggestion.relevance = [];
-        if (year === (user ? extractYear(user.universityId) : '')) {
-          suggestion.relevance.push('Same Year');
+    const loadFriendsData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        if (USE_MOCK_DATA) {
+          // Load mock data
+          // Friends
+          const mockFriends = mockUsers
+            .filter(mockUser => mockUser.id !== user.id)
+            .slice(0, 2)
+            .map(mockUser => createMockFriend(mockUser));
+          setFriends(mockFriends);
+          
+          // Friend requests
+          const mockRequests = mockUsers
+            .filter(mockUser => mockUser.id !== user.id)
+            .slice(2, 3)
+            .map(mockUser => createMockSuggestion(mockUser));
+          setFriendRequests(mockRequests);
+          
+          // Friend suggestions
+          const currentUserYear = extractYear(user.universityId);
+          const currentUserDept = extractDepartment(user.universityId);
+          
+          const mockSuggestions = mockUsers
+            .filter(mockUser => mockUser.id !== user.id)
+            .sort((a, b) => {
+              const aYear = extractYear(a.universityId);
+              const aDept = extractDepartment(a.universityId);
+              const bYear = extractYear(b.universityId);
+              const bDept = extractDepartment(b.universityId);
+              
+              // Calculate relevance score (higher is more relevant)
+              const aScore = (aYear === currentUserYear ? 2 : 0) + (aDept === currentUserDept ? 3 : 0);
+              const bScore = (bYear === currentUserYear ? 2 : 0) + (bDept === currentUserDept ? 3 : 0);
+              
+              // Sort by relevance score (descending)
+              return bScore - aScore;
+            })
+            .slice(0, 5) // Get top 5 most relevant suggestions
+            .map(mockUser => {
+              const suggestion = createMockSuggestion(mockUser);
+              // Add relevance indicators
+              const year = extractYear(mockUser.universityId);
+              const dept = extractDepartment(mockUser.universityId);
+              suggestion.relevance = [];
+              if (year === currentUserYear) {
+                suggestion.relevance.push('Same Year');
+              }
+              if (dept === currentUserDept) {
+                suggestion.relevance.push('Same Department');
+              }
+              return suggestion;
+            });
+          setSuggestions(mockSuggestions);
+        } else {
+          // Load data from API
+          // Get friends list
+          const friendsList = await friendsApi.getFriendsList();
+          const formattedFriends = friendsList.map(friend => ({
+            id: friend.id,
+            name: friend.name,
+            avatar: friend.avatar,
+            department: friend.role === 'faculty' ? 'Faculty' : 'Computer Science'
+          }));
+          setFriends(formattedFriends);
+          
+          // Get pending requests
+          const pendingRequests = await friendsApi.getPendingRequests();
+          const formattedRequests = pendingRequests
+            .filter(request => request.receiver.id === user.id) // Only show received requests
+            .map(request => ({
+              id: request.id,
+              name: request.sender.name,
+              avatar: request.sender.avatar,
+              department: request.sender.role === 'faculty' ? 'Faculty' : 'Computer Science',
+              mutualFriends: 0, // API doesn't provide this yet
+              relevance: []
+            }));
+          setFriendRequests(formattedRequests);
+          
+          // Get sent requests for tracking
+          const sentRequestsData = pendingRequests
+            .filter(request => request.sender.id === user.id)
+            .map(request => ({
+              id: request.receiver.id,
+              name: request.receiver.name,
+              avatar: request.receiver.avatar,
+              department: request.receiver.role === 'faculty' ? 'Faculty' : 'Computer Science',
+              status: 'pending' as const
+            }));
+          setSentRequests(sentRequestsData);
+          
+          // Get suggestions
+          const suggestionsData = await friendsApi.getFriendSuggestions();
+          const formattedSuggestions = suggestionsData.map(suggestion => ({
+            id: suggestion.user.id,
+            name: suggestion.user.name,
+            avatar: suggestion.user.avatar,
+            department: suggestion.user.role === 'faculty' ? 'Faculty' : 'Computer Science',
+            mutualFriends: suggestion.mutualFriends,
+            relevance: suggestion.relevance
+          }));
+          setSuggestions(formattedSuggestions);
         }
-        if (dept === (user ? extractDepartment(user.universityId) : '')) {
-          suggestion.relevance.push('Same Department');
-        }
-        return suggestion;
-      });
-  });
+      } catch (error) {
+        console.error('Error loading friends data:', error);
+        setError('Failed to load friends data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadFriendsData();
+  }, [user]);
   
   // Notify the app about friend requests changes
   useEffect(() => {
@@ -182,121 +281,239 @@ const Friends: React.FC = () => {
   };
   
   // Handle accepting a friend request
-  const handleAcceptRequest = (requestId: number) => {
-    // Find the request
-    const request = friendRequests.find(req => req.id === requestId);
-    if (!request) return;
+  const handleAcceptRequest = async (requestId: number | string) => {
+    setIsLoading(true);
+    setError(null);
     
-    // Check if user is already in friends list to avoid duplicates
-    const isAlreadyFriend = friends.some(friend => friend.id === requestId);
-    
-    if (!isAlreadyFriend) {
-      // Add to friends list
-      setFriends(prev => [...prev, {
-        id: request.id,
-        name: request.name,
-        avatar: request.avatar,
-        department: request.department
-      }]);
-      
-      // Dispatch event to create a notification for the sender
-      if (user) {
-        window.dispatchEvent(new CustomEvent('friendRequest', { 
-          detail: { 
-            fromUser: user.id,
-            toUser: request.id.toString(),
-            requestType: 'accepted'
-          } 
+    try {
+      if (USE_MOCK_DATA) {
+        // Mock implementation
+        // Find the request
+        const request = friendRequests.find(req => req.id === requestId);
+        if (!request) return;
+        
+        // Check if user is already in friends list to avoid duplicates
+        const isAlreadyFriend = friends.some(friend => friend.id === requestId);
+        
+        if (!isAlreadyFriend) {
+          // Add to friends list
+          setFriends(prev => [...prev, {
+            id: request.id,
+            name: request.name,
+            avatar: request.avatar,
+            department: request.department
+          }]);
+          
+          // Dispatch event to create a notification for the sender
+          if (user) {
+            window.dispatchEvent(new CustomEvent('friendRequest', { 
+              detail: { 
+                fromUser: user.id,
+                toUser: typeof request.id === 'number' ? request.id.toString() : request.id,
+                requestType: 'accepted'
+              } 
+            }));
+          }
+        }
+        
+        // Remove from requests
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+        
+        // Also remove from suggestions if present
+        setSuggestions(prev => prev.filter(sug => sug.id !== requestId));
+      } else {
+        // Real API implementation
+        // Accept the friend request
+        const requestIdStr = typeof requestId === 'number' ? requestId.toString() : requestId;
+        await friendsApi.acceptFriendRequest(requestIdStr);
+        
+        // Find the request to get user details
+        const request = friendRequests.find(req => req.id === requestId);
+        if (request) {
+          // Add to friends list
+          setFriends(prev => [...prev, {
+            id: request.id,
+            name: request.name,
+            avatar: request.avatar,
+            department: request.department
+          }]);
+        }
+        
+        // Remove from requests
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+        
+        // Refresh friends data to ensure consistency
+        const friendsList = await friendsApi.getFriendsList();
+        const formattedFriends = friendsList.map(friend => ({
+          id: friend.id,
+          name: friend.name,
+          avatar: friend.avatar,
+          department: friend.role === 'faculty' ? 'Faculty' : 'Computer Science'
         }));
+        setFriends(formattedFriends);
       }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      setError('Failed to accept friend request. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Remove from requests
-    setFriendRequests(prev => prev.filter(req => req.id !== requestId));
-    
-    // Also remove from suggestions if present
-    setSuggestions(prev => prev.filter(sug => sug.id !== requestId));
-    
-    // No toast notification as per user request
   };
   
   // Handle declining a friend request
-  const handleDeclineRequest = (requestId: number) => {
-    // Remove from requests
-    setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+  const handleDeclineRequest = async (requestId: number | string) => {
+    setIsLoading(true);
+    setError(null);
     
-    // No toast notification as per user request
+    try {
+      if (USE_MOCK_DATA) {
+        // Mock implementation
+        // Remove from requests
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+      } else {
+        // Real API implementation
+        // Decline the friend request
+        const requestIdStr = typeof requestId === 'number' ? requestId.toString() : requestId;
+        await friendsApi.declineFriendRequest(requestIdStr);
+        
+        // Remove from requests
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+      }
+    } catch (error) {
+      console.error('Error declining friend request:', error);
+      setError('Failed to decline friend request. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Handle adding a friend from suggestions - sends a request instead of immediately adding
-  const handleAddFriend = (suggestionId: number) => {
-    // Find the suggestion
-    const suggestion = suggestions.find(sug => sug.id === suggestionId);
-    if (!suggestion) return;
+  const handleAddFriend = async (suggestionId: number | string) => {
+    setIsLoading(true);
+    setError(null);
     
-    // Check if user is already in friends list or if a request is already sent
-    const isAlreadyFriend = friends.some(friend => friend.id === suggestionId);
-    const requestAlreadySent = sentRequests.some(req => req.id === suggestionId);
-    
-    if (!isAlreadyFriend && !requestAlreadySent) {
-      // Add to sent requests list
-      setSentRequests(prev => [...prev, {
-        id: suggestion.id,
-        name: suggestion.name,
-        avatar: suggestion.avatar,
-        department: suggestion.department,
-        status: 'pending'
-      }]);
-      
-      // Dispatch event to create a notification for the recipient
-      if (user) {
-        console.log('Sending friend request notification:', {
-          fromUser: user.id,
-          toUser: suggestion.id.toString(),
-          requestType: 'new'
-        });
+    try {
+      if (USE_MOCK_DATA) {
+        // Mock implementation
+        // Find the suggestion
+        const suggestion = suggestions.find(sug => sug.id === suggestionId);
+        if (!suggestion) return;
         
-        // Create a friend request for the current user (for demo purposes)
-        // This simulates the recipient getting a notification
-        window.dispatchEvent(new CustomEvent('friendRequest', { 
-          detail: { 
-            fromUser: suggestion.id.toString(), // From the suggestion user
-            toUser: user.id, // To the current user (for testing)
-            requestType: 'new'
-          } 
-        }));
+        // Check if user is already in friends list or if a request is already sent
+        const isAlreadyFriend = friends.some(friend => friend.id === suggestionId);
+        const requestAlreadySent = sentRequests.some(req => req.id === suggestionId);
         
-        // Also dispatch the original event (which would go to the recipient in a real app)
-        window.dispatchEvent(new CustomEvent('friendRequest', { 
-          detail: { 
-            fromUser: user.id,
-            toUser: suggestion.id.toString(),
-            requestType: 'new'
-          } 
-        }));
+        if (!isAlreadyFriend && !requestAlreadySent) {
+          // Add to sent requests list
+          setSentRequests(prev => [...prev, {
+            id: suggestion.id,
+            name: suggestion.name,
+            avatar: suggestion.avatar,
+            department: suggestion.department,
+            status: 'pending'
+          }]);
+          
+          // Dispatch event to create a notification for the recipient
+          if (user) {
+            console.log('Sending friend request notification:', {
+              fromUser: user.id,
+              toUser: typeof suggestion.id === 'number' ? suggestion.id.toString() : suggestion.id,
+              requestType: 'new'
+            });
+            
+            // Create a friend request for the current user (for demo purposes)
+            // This simulates the recipient getting a notification
+            window.dispatchEvent(new CustomEvent('friendRequest', { 
+              detail: { 
+                fromUser: typeof suggestion.id === 'number' ? suggestion.id.toString() : suggestion.id, // From the suggestion user
+                toUser: user.id, // To the current user (for testing)
+                requestType: 'new'
+              } 
+            }));
+            
+            // Also dispatch the original event (which would go to the recipient in a real app)
+            window.dispatchEvent(new CustomEvent('friendRequest', { 
+              detail: { 
+                fromUser: user.id,
+                toUser: typeof suggestion.id === 'number' ? suggestion.id.toString() : suggestion.id,
+                requestType: 'new'
+              } 
+            }));
+          }
+          
+          // In a real app, this would make an API call to send the request
+          console.log(`Friend request sent to ${suggestion.name}`);
+        }
+        
+        // Remove from suggestions
+        setSuggestions(prev => prev.filter(sug => sug.id !== suggestionId));
+      } else {
+        // Real API implementation
+        // Find the suggestion
+        const suggestion = suggestions.find(sug => sug.id === suggestionId);
+        if (!suggestion) return;
+        
+        // Send friend request via API
+        const receiverId = typeof suggestionId === 'number' ? suggestionId.toString() : suggestionId;
+        await friendsApi.sendFriendRequest(receiverId);
+        
+        // Add to sent requests list
+        setSentRequests(prev => [...prev, {
+          id: suggestion.id,
+          name: suggestion.name,
+          avatar: suggestion.avatar,
+          department: suggestion.department,
+          status: 'pending'
+        }]);
+        
+        // Remove from suggestions
+        setSuggestions(prev => prev.filter(sug => sug.id !== suggestionId));
       }
-      
-      // In a real app, this would make an API call to send the request
-      console.log(`Friend request sent to ${suggestion.name}`);
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      setError('Failed to send friend request. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Remove from suggestions
-    setSuggestions(prev => prev.filter(sug => sug.id !== suggestionId));
-    
-    // No toast notification as per user request
   };
   
   // Handle unfriending a user
-  const handleUnfriend = (friendId: number) => {
-    // Remove from friends list
-    setFriends(prev => prev.filter(friend => friend.id !== friendId));
+  const handleUnfriend = async (friendId: number | string) => {
+    setIsLoading(true);
+    setError(null);
     
-    // Close the dropdown
-    const newDropdownState = {...friendDropdowns};
-    newDropdownState[friendId] = false;
-    setFriendDropdowns(newDropdownState);
-    
-    // No toast notification as per user request
+    try {
+      if (USE_MOCK_DATA) {
+        // Mock implementation
+        // Remove from friends list
+        setFriends(prev => prev.filter(friend => friend.id !== friendId));
+        
+        // Close the dropdown
+        const friendIdKey = friendId.toString();
+        const newDropdownState = {...friendDropdowns};
+        newDropdownState[friendIdKey] = false;
+        setFriendDropdowns(newDropdownState);
+      } else {
+        // Real API implementation
+        // Unfriend via API
+        const friendIdStr = typeof friendId === 'number' ? friendId.toString() : friendId;
+        await friendsApi.unfriend(friendIdStr);
+        
+        // Remove from friends list
+        setFriends(prev => prev.filter(friend => friend.id !== friendId));
+        
+        // Close the dropdown
+        const friendIdKey = friendId.toString();
+        const newDropdownState = {...friendDropdowns};
+        newDropdownState[friendIdKey] = false;
+        setFriendDropdowns(newDropdownState);
+      }
+    } catch (error) {
+      console.error('Error unfriending user:', error);
+      setError('Failed to unfriend user. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Handle click outside to close dropdowns
@@ -328,43 +545,86 @@ const Friends: React.FC = () => {
   }, [friendDropdowns]);
   
   // Handle canceling a sent friend request
-  const handleCancelRequest = (requestId: number) => {
-    // Remove from sent requests list
-    setSentRequests(prev => prev.filter(req => req.id !== requestId));
+  const handleCancelRequest = async (requestId: number | string) => {
+    setIsLoading(true);
+    setError(null);
     
-    // Add back to suggestions
-    const canceledRequest = sentRequests.find(req => req.id === requestId);
-    if (canceledRequest) {
-      // Create a proper suggestion object with all required properties
-      const newSuggestion = {
-        id: canceledRequest.id,
-        name: canceledRequest.name,
-        avatar: canceledRequest.avatar,
-        department: canceledRequest.department,
-        mutualFriends: Math.floor(Math.random() * 5) + 1,
-        relevance: [] as string[] // Add the required relevance property
-      };
-      
-      // Add relevance indicators if user exists
-      if (user) {
-        // Find the original user in mockUsers
-        const originalUser = mockUsers.find(u => parseInt(u.id) === canceledRequest.id);
-        if (originalUser) {
-          const year = extractYear(originalUser.universityId);
-          const dept = extractDepartment(originalUser.universityId);
-          if (year === extractYear(user.universityId)) {
-            newSuggestion.relevance.push('Same Year');
+    try {
+      if (USE_MOCK_DATA) {
+        // Mock implementation
+        // Remove from sent requests list
+        setSentRequests(prev => prev.filter(req => req.id !== requestId));
+        
+        // Add back to suggestions
+        const canceledRequest = sentRequests.find(req => req.id === requestId);
+        if (canceledRequest) {
+          // Create a proper suggestion object with all required properties
+          const newSuggestion = {
+            id: canceledRequest.id,
+            name: canceledRequest.name,
+            avatar: canceledRequest.avatar,
+            department: canceledRequest.department,
+            mutualFriends: Math.floor(Math.random() * 5) + 1,
+            relevance: [] as string[] // Add the required relevance property
+          };
+          
+          // Add relevance indicators if user exists
+          if (user) {
+            // Find the original user in mockUsers
+            const originalUser = mockUsers.find(u => {
+              const userId = typeof canceledRequest.id === 'number' ? canceledRequest.id : parseInt(canceledRequest.id);
+              return parseInt(u.id) === userId;
+            });
+            if (originalUser) {
+              const year = extractYear(originalUser.universityId);
+              const dept = extractDepartment(originalUser.universityId);
+              if (year === extractYear(user.universityId)) {
+                newSuggestion.relevance.push('Same Year');
+              }
+              if (dept === extractDepartment(user.universityId)) {
+                newSuggestion.relevance.push('Same Department');
+              }
+            }
           }
-          if (dept === extractDepartment(user.universityId)) {
-            newSuggestion.relevance.push('Same Department');
-          }
+          
+          setSuggestions(prev => [...prev, newSuggestion]);
         }
+      } else {
+        // Real API implementation
+        // In a real API, we would need to find the friend request ID
+        // For now, we'll simulate by getting all pending requests and finding the matching one
+        const pendingRequests = await friendsApi.getPendingRequests();
+        const sentRequest = pendingRequests.find(req => 
+          req.sender.id === user?.id && 
+          req.receiver.id === (typeof requestId === 'number' ? requestId.toString() : requestId)
+        );
+        
+        if (sentRequest) {
+          // Decline the request (this is the same as canceling from the sender's perspective)
+          await friendsApi.declineFriendRequest(sentRequest.id);
+        }
+        
+        // Remove from sent requests list
+        setSentRequests(prev => prev.filter(req => req.id !== requestId));
+        
+        // Refresh suggestions to get the user back in suggestions
+        const suggestionsData = await friendsApi.getFriendSuggestions();
+        const formattedSuggestions = suggestionsData.map(suggestion => ({
+          id: suggestion.user.id,
+          name: suggestion.user.name,
+          avatar: suggestion.user.avatar,
+          department: suggestion.user.role === 'faculty' ? 'Faculty' : 'Computer Science',
+          mutualFriends: suggestion.mutualFriends,
+          relevance: suggestion.relevance
+        }));
+        setSuggestions(formattedSuggestions);
       }
-      
-      setSuggestions(prev => [...prev, newSuggestion]);
+    } catch (error) {
+      console.error('Error canceling friend request:', error);
+      setError('Failed to cancel friend request. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // No toast notification as per user request
   };
 
   // The navigateToProfile function is already defined below
@@ -453,7 +713,7 @@ const Friends: React.FC = () => {
               <div className="relative">
                 <Users size={18} className="mb-1 sm:mb-0 sm:mr-2" />
                 {validSuggestions.length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                     {validSuggestions.length}
                   </span>
                 )}
@@ -470,6 +730,20 @@ const Friends: React.FC = () => {
             animate="visible"
             key={activeTab} // This forces animation to restart when tab changes
           >
+            {isLoading && (
+              <div className="loading-overlay">
+                <Loader className="spinner" />
+                <p>Loading...</p>
+              </div>
+            )}
+            
+            {error && (
+              <div className="error-message">
+                <p>{error}</p>
+                <button onClick={() => setError(null)}>Dismiss</button>
+              </div>
+            )}
+            
             {activeTab === 'friends' && (
               <>
                 {filteredFriends.length > 0 ? (
