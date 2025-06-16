@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+<<<<<<< HEAD
 import { mockUsers, mockPosts } from '../data/mockData';
+=======
+import { userApi, postApi } from '../services/api';
+>>>>>>> a80153d (Update frontend)
 
 // Define search result types
 interface SearchResult {
@@ -47,7 +51,11 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const normalizedQuery = query.toLowerCase().trim();
     
     // Search users
+<<<<<<< HEAD
     const userResults = mockUsers
+=======
+    const userResults = userApi
+>>>>>>> a80153d (Update frontend)
       .filter(user => 
         user.name.toLowerCase().includes(normalizedQuery) || 
         user.universityId.toLowerCase().includes(normalizedQuery) ||
@@ -63,7 +71,11 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }));
     
     // Search posts
+<<<<<<< HEAD
     const postResults = mockPosts
+=======
+    const postResults = postApi
+>>>>>>> a80153d (Update frontend)
       .filter(post => 
         post.content.toLowerCase().includes(normalizedQuery)
       )
@@ -77,7 +89,11 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }));
     
     // Search comments
+<<<<<<< HEAD
     const commentResults = mockPosts
+=======
+    const commentResults = postApi
+>>>>>>> a80153d (Update frontend)
       .flatMap(post => 
         post.comments
           .filter(comment => comment.content.toLowerCase().includes(normalizedQuery))

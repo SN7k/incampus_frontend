@@ -3,28 +3,18 @@ import PullToRefresh from 'react-simple-pull-to-refresh';
 import { motion } from 'framer-motion';
 import PostForm from '../components/post/PostForm';
 import PostCard from '../components/post/PostCard';
-import { mockPosts, mockUsers } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
-import { Sparkles, Users, BookOpen, Bookmark, Settings, HelpCircle, Loader } from 'lucide-react';
+import { Sparkles, Users, BookOpen, Bookmark, Settings, HelpCircle, Heart } from 'lucide-react';
 import { User, Post } from '../types';
-import { postsApi } from '../services/postsApi';
-import { USE_MOCK_DATA } from '../utils/mockDataTransition';
+import { postApi, userApi, friendApi } from '../services/api';
 
 const Feed: React.FC = () => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Initialize mock friends data
-  const [friends] = useState<string[]>(() => {
-    // For demo purposes, we'll consider the first 2 users as friends
-    return mockUsers
-      .filter(mockUser => user && mockUser.id !== user.id)
-      .slice(0, 2)
-      .map(mockUser => mockUser.id);
-  });
+  const [friends, setFriends] = useState<string[]>([]);
 
   // Helper function to extract year from university ID (e.g., 'BWU/BCA/20/001' -> '20')
   const extractYear = (universityId: string): string => {
@@ -38,186 +28,74 @@ const Feed: React.FC = () => {
     return parts.length >= 2 ? parts[1] : '';
   };
 
-  // Generate personalized friend suggestions based on matching attributes
+  // Load friends list
   useEffect(() => {
-    if (!user) return;
-
-    // Get current user's year and department
-    const currentUserYear = extractYear(user.universityId);
-    const currentUserDept = extractDepartment(user.universityId);
-
-    // Filter out the current user and find users with matching attributes
-    const filteredUsers = mockUsers.filter(mockUser => {
-      // Skip current user
-      if (mockUser.id === user.id) return false;
-      
-      // Get potential match's year and department
-      const year = extractYear(mockUser.universityId);
-      const dept = extractDepartment(mockUser.universityId);
-      
-      // Calculate relevance score based on matching attributes
-      let relevanceScore = 0;
-      
-      // Same year is highly relevant
-      if (year === currentUserYear) relevanceScore += 3;
-      
-      // Same department is relevant
-      if (dept === currentUserDept) relevanceScore += 2;
-      
-      // Faculty members are always somewhat relevant
-      if (mockUser.role === 'faculty') relevanceScore += 1;
-      
-      // Only include users with some relevance
-      return relevanceScore > 0;
-    });
-
-    // Sort by relevance (most relevant first)
-    const sortedUsers = [...filteredUsers].sort((a, b) => {
-      const aYear = extractYear(a.universityId);
-      const aDept = extractDepartment(a.universityId);
-      const bYear = extractYear(b.universityId);
-      const bDept = extractDepartment(b.universityId);
-      
-      let aScore = 0;
-      let bScore = 0;
-      
-      // Calculate scores
-      if (aYear === currentUserYear) aScore += 3;
-      if (aDept === currentUserDept) aScore += 2;
-      if (a.role === 'faculty') aScore += 1;
-      
-      if (bYear === currentUserYear) bScore += 3;
-      if (bDept === currentUserDept) bScore += 2;
-      if (b.role === 'faculty') bScore += 1;
-      
-      // Sort by score (descending)
-      return bScore - aScore;
-    });
-
-    // Take the top 3 most relevant users
-    setSuggestedUsers(sortedUsers.slice(0, 3));
+    const loadFriends = async () => {
+      if (!user) return;
+      try {
+        const friendsList = await friendApi.getFriends();
+        setFriends(friendsList.map((friend: User) => friend.id));
+      } catch (err) {
+        console.error('Failed to load friends:', err);
+      }
+    };
+    loadFriends();
   }, [user]);
 
-  if (!user) return null;
-  
   // Function to filter out deleted posts
-  const filterDeletedPosts = (postsToFilter: Post[]): Post[] => {
+  const filterDeletedPosts = (postsToFilter: Post[]) => {
     try {
       const deletedPostsStr = localStorage.getItem('deletedPosts') || '[]';
-      const deletedPosts = JSON.parse(deletedPostsStr);
+      const deletedPosts: string[] = JSON.parse(deletedPostsStr);
       return postsToFilter.filter(post => !deletedPosts.includes(post.id));
     } catch (error) {
       console.error('Error filtering deleted posts:', error);
       return postsToFilter;
     }
   };
-  
-  // Function to navigate to different pages
-  const navigateTo = (page: string) => {
-    localStorage.setItem('currentPage', page);
-    
-    // Add timestamp to make the event unique
-    const timestamp = new Date().getTime();
-    
-    // Trigger a navigation event
-    window.dispatchEvent(new CustomEvent('navigate', { 
-      detail: { 
-        page: page,
-        scrollToTop: true,
-        timestamp: timestamp
-      } 
-    }));
-    
-    // Ensure the page scrolls to the top
-    window.scrollTo(0, 0);
-  };
-  
-  // Function to view a user's profile
-  const viewUserProfile = (userId: string) => {
-    localStorage.setItem('viewProfileUserId', userId);
-    navigateTo('profile');
-  };
-  
-  // Function to add a friend
-  const addFriend = (userId: string) => {
-    // This would normally call the friendsApi.sendFriendRequest
-    // For now, just show a demo message
-    alert(`Friend request sent to user ${userId}`);
-  };
-  
-  // Load posts from API or mock data
+
+  // Load feed data
   useEffect(() => {
-    if (!user) return;
-    
-    const loadPosts = async () => {
-      setIsLoading(true);
+    const fetchFeed = async () => {
+      if (!user) return;
+      setLoading(true);
       setError(null);
-      
       try {
-        if (USE_MOCK_DATA) {
-          // Get user-created posts from localStorage
-          const userCreatedPosts = JSON.parse(localStorage.getItem('userPosts') || '[]');
-          console.log('User created posts loaded:', userCreatedPosts.length);
-          
-          // Get posts from friends
-          const friendPosts = mockPosts.filter(post => friends.includes(post.userId));
-          
-          // Sort friend posts by date (newest first)
-          const sortedFriendPosts = [...friendPosts].sort((a, b) => {
-            const dateA = new Date(b.createdAt);
-            const dateB = new Date(a.createdAt);
-            return dateA.getTime() - dateB.getTime();
-          });
-          
-          // Get some random posts from non-friends (for discovery)
-          const nonFriendPosts = mockPosts.filter(post => 
-            post.userId !== user.id && !friends.includes(post.userId)
-          );
-          
-          // Randomly select some non-friend posts (up to 5)
-          const randomNonFriendPosts = nonFriendPosts
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 5);
-          
-          // Sort non-friend posts by date (newest first)
-          const sortedNonFriendPosts = [...randomNonFriendPosts].sort((a, b) => {
-            const dateA = new Date(b.createdAt);
-            const dateB = new Date(a.createdAt);
-            return dateA.getTime() - dateB.getTime();
-          });
-          
-          // Combine all posts with user-created posts first, then friend posts, then others
-          const combinedPosts = [...userCreatedPosts, ...sortedFriendPosts, ...sortedNonFriendPosts];
-          
-          // Filter out deleted posts
-          const filteredPosts = filterDeletedPosts(combinedPosts);
-          
-          setPosts(filteredPosts);
-        } else {
-          // Use real API
-          console.log('Fetching posts from API');
-          const feedPosts = await postsApi.getFeedPosts();
-          console.log('Posts loaded from API:', feedPosts.length);
-          
-          // Filter out deleted posts (we still maintain this for consistency)
-          const filteredPosts = filterDeletedPosts(feedPosts);
-          
-          setPosts(filteredPosts);
-        }
-      } catch (error) {
-        console.error('Error loading posts:', error);
-        setError('Failed to load posts. Please try again.');
+        const [feedPosts, suggestions] = await Promise.all([
+          postApi.getFeed(),
+          userApi.getSuggestions()
+        ]);
+        setPosts(filterDeletedPosts(feedPosts));
+        setSuggestedUsers(suggestions);
+      } catch (err) {
+        setError('Failed to load feed.');
+        console.error('Error loading feed:', err);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
-    loadPosts();
-  }, [user, friends]);
+    fetchFeed();
+  }, [user]);
+
+  // Handle refresh function
+  const handleRefresh = async () => {
+    if (!user) return;
+    try {
+      const [feedPosts, suggestions] = await Promise.all([
+        postApi.getFeed(),
+        userApi.getSuggestions()
+      ]);
+      setPosts(filterDeletedPosts(feedPosts));
+      setSuggestedUsers(suggestions);
+    } catch (err) {
+      console.error('Error refreshing feed:', err);
+      setError('Failed to refresh feed.');
+    }
+  };
 
   // Listen for post deletion events
   useEffect(() => {
-    const handlePostDeleted = (event: CustomEvent) => {
+    const handlePostDeleted = (event: CustomEvent<{ postId: string }>) => {
       const { postId } = event.detail;
       setPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
     };
@@ -227,14 +105,12 @@ const Feed: React.FC = () => {
       window.removeEventListener('postDeleted', handlePostDeleted as EventListener);
     };
   }, []);
-
+  
   // Listen for new post creation events
   useEffect(() => {
-    const handlePostCreated = (event: CustomEvent) => {
+    const handlePostCreated = (event: CustomEvent<{ post: Post }>) => {
       const { post } = event.detail;
       console.log('New post detected:', post);
-      
-      // Add the new post to the beginning of the feed
       setPosts(currentPosts => [post, ...currentPosts]);
     };
     
@@ -244,70 +120,7 @@ const Feed: React.FC = () => {
     };
   }, []);
 
-  // Handle refresh function
-  const handleRefresh = () => {
-    return new Promise<void>((resolve) => {
-      if (!user) {
-        resolve();
-        return;
-      }
-      
-      const refreshPosts = async () => {
-        setIsLoading(true);
-        setError(null);
-        
-        try {
-          if (USE_MOCK_DATA) {
-            // Simulate API call to refresh posts
-            setTimeout(() => {
-              // Get user-created posts from localStorage
-              const userCreatedPosts = JSON.parse(localStorage.getItem('userPosts') || '[]');
-              
-              // Get posts from friends with some randomness
-              const friendPosts = mockPosts
-                .filter(post => friends.includes(post.userId))
-                .sort(() => Math.random() - 0.3); // Add some randomness to the order
-              
-              // Get some random posts from non-friends (for discovery)
-              const nonFriendPosts = mockPosts
-                .filter(post => post.userId !== user.id && !friends.includes(post.userId))
-                .sort(() => Math.random() - 0.5) // Completely random order
-                .slice(0, 5);
-              
-              // Combine all posts
-              const combinedPosts = [...userCreatedPosts, ...friendPosts, ...nonFriendPosts];
-              
-              // Filter out deleted posts
-              const filteredPosts = filterDeletedPosts(combinedPosts);
-              
-              setPosts(filteredPosts);
-              setIsLoading(false);
-              resolve();
-            }, 1000); // Simulate network delay
-          } else {
-            // Use real API
-            console.log('Refreshing posts from API');
-            const feedPosts = await postsApi.getFeedPosts();
-            console.log('Posts refreshed from API:', feedPosts.length);
-            
-            // Filter out deleted posts
-            const filteredPosts = filterDeletedPosts(feedPosts);
-            
-            setPosts(filteredPosts);
-            setIsLoading(false);
-            resolve();
-          }
-        } catch (error) {
-          console.error('Error refreshing posts:', error);
-          setError('Failed to refresh posts. Please try again.');
-          setIsLoading(false);
-          resolve(); // Still resolve the promise to complete the pull-to-refresh action
-        }
-      };
-      
-      refreshPosts();
-    });
-  };
+  if (!user) return null;
 
   const container = {
     hidden: { opacity: 0 },
@@ -325,199 +138,251 @@ const Feed: React.FC = () => {
   };
 
   return (
-    <div className="feed-container">
-      {/* Loading and Error States */}
-      {isLoading && (
-        <div className="loading-overlay">
-          <Loader className="spinner" />
-          <p>Loading...</p>
-        </div>
-      )}
-      
-      {error && (
-        <div className="error-message">
-          <p>{error}</p>
-          <button onClick={() => setError(null)}>Dismiss</button>
-        </div>
-      )}
-      
-      <div className="feed-layout">
-        {/* Left sidebar */}
-        <div className="left-sidebar">
-          <div className="sidebar-section">
-            <h3>Quick Links</h3>
-            <ul>
-              <li onClick={() => navigateTo('profile')}>
-                <img src={user.avatar} alt={user.name} className="avatar" />
-                <span>{user.name}</span>
-              </li>
-              <li onClick={() => navigateTo('friends')}>
-                <Users size={20} />
-                <span>Friends</span>
-              </li>
-              <li onClick={() => navigateTo('courses')}>
-                <BookOpen size={20} />
-                <span>Courses</span>
-              </li>
-              <li onClick={() => navigateTo('saved')}>
-                <Bookmark size={20} />
-                <span>Saved</span>
-              </li>
-            </ul>
+    <div className="pt-20 pb-20 md:pb-10 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+          {/* Left Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-24 transition-colors duration-200"
+            >
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                <Sparkles size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
+                Quick Links
+              </h3>
+              <nav className="space-y-2">
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {
+                    // Clear any stored profile ID to ensure we show the user's own profile
+                    localStorage.removeItem('viewProfileUserId');
+                    
+                    // Navigate to Profile page and set memories tab as active
+                    localStorage.setItem('activeProfileTab', 'memories');
+                    localStorage.setItem('currentPage', 'profile');
+                    
+                    // Add timestamp to make the event unique
+                    window.dispatchEvent(new CustomEvent('navigate', { 
+                      detail: { 
+                        page: 'profile',
+                        timestamp: new Date().getTime() 
+                      } 
+                    }));
+                  }}
+                >
+                  <BookOpen size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Memories
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {
+                    // Clear any stored profile ID to ensure we show the user's own profile
+                    localStorage.removeItem('viewProfileUserId');
+                    
+                    // Navigate to Profile page and set collections tab as active
+                    localStorage.setItem('activeProfileTab', 'collections');
+                    localStorage.setItem('currentPage', 'profile');
+                    
+                    // Add timestamp to make the event unique
+                    window.dispatchEvent(new CustomEvent('navigate', { 
+                      detail: { 
+                        page: 'profile',
+                        timestamp: new Date().getTime() 
+                      } 
+                    }));
+                  }}
+                >
+                  <Bookmark size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Collections
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {
+                    // Navigate to Settings page (or keep in Feed for now)
+                    // For now, this stays in the Feed page
+                  }}
+                >
+                  <Settings size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Settings
+                </a>
+                <a
+                  href="mailto:connect.incampus@gmail.com?subject=InCampus%20Support%20Request&body=Hello%20InCampus%20Support%20Team,%0A%0AI%20need%20assistance%20with%20the%20following%20issue:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThank%20you,%0A[Your%20Name]"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                >
+                  <HelpCircle size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Help
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {
+                    // Navigate to Contribute page (or keep in Feed for now)
+                    // For now, this stays in the Feed page
+                  }}
+                >
+                  <Heart size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Contribute
+                </a>
+              </nav>
+            </motion.div>
           </div>
-          
-          <div className="sidebar-section">
-            <h3>Support</h3>
-            <ul>
-              <li onClick={() => navigateTo('settings')}>
-                <Settings size={20} />
-                <span>Settings</span>
-              </li>
-              <li onClick={() => navigateTo('help')}>
-                <HelpCircle size={20} />
-                <span>Help Center</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-        
-        {/* Main content */}
-        <div className="main-content">
-          <PullToRefresh onRefresh={handleRefresh} pullingContent="" refreshingContent="">
-            <div className="posts-container">
-              {/* Post creation form */}
-              <PostForm />
-              
-              {/* Posts feed */}
-              <motion.div
-                variants={container}
-                initial="hidden"
-                animate="show"
-              >
-                {posts.map(post => (
+
+          {/* Main Content */}
+          <motion.div 
+            className="col-span-1 lg:col-span-6"
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
+            {/* Post Form - Fixed at the top */}
+            <PostForm />
+            
+            {/* Refreshable Posts Section */}
+            <PullToRefresh
+              onRefresh={handleRefresh}
+              pullingContent={<div className="text-center text-gray-500 dark:text-gray-400 py-2">Pull down to refresh</div>}
+              refreshingContent={
+                <div className="flex justify-center items-center py-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 dark:border-blue-400"></div>
+                </div>
+              }
+              className="mt-6"
+            >
+              <div className="space-y-6">
+                {posts.map((post) => (
                   <motion.div key={post.id} variants={item}>
-                    <PostCard 
-                      post={post} 
-                      onPostDeleted={(postId) => {
-                        setPosts(currentPosts => currentPosts.filter(p => p.id !== postId));
-                      }}
-                    />
+                    <PostCard post={post} />
                   </motion.div>
                 ))}
-              </motion.div>
-              
-              {posts.length === 0 && !isLoading && (
-                <div className="empty-feed">
-                  <p>No posts to show. Follow more people or create your first post!</p>
+              </div>
+            </PullToRefresh>
+          </motion.div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-6"
+            >
+              {/* Suggested Connections */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-24 transition-colors duration-200 overflow-hidden">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                  <Users size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  People You May Know
+                </h3>
+                <div className="space-y-2 -mx-4 px-4">
+                  {suggestedUsers.map((suggestedUser) => {
+                    // Get matching attributes for this user
+                    const userYear = extractYear(suggestedUser.universityId);
+                    const userDept = extractDepartment(suggestedUser.universityId);
+                    const currentUserYear = user ? extractYear(user.universityId) : '';
+                    const currentUserDept = user ? extractDepartment(user.universityId) : '';
+                    
+                    // Determine matching attributes for relevance
+                    const hasMatchingYear = userYear === currentUserYear;
+                    const hasMatchingDept = userDept === currentUserDept;
+                    const isFaculty = suggestedUser.role === 'faculty';
+                    
+                    // Department to display
+                    const displayDepartment = isFaculty ? 'Faculty' : 
+                      (hasMatchingDept ? `${extractDepartment(suggestedUser.universityId)} (Same Dept)` : 
+                      extractDepartment(suggestedUser.universityId));
+                    
+                    // Create a function for profile navigation
+                    const navigateToUserProfile = () => {
+                      localStorage.setItem('currentPage', 'profile');
+                      localStorage.setItem('viewProfileUserId', suggestedUser.id);
+                      window.dispatchEvent(new CustomEvent('navigate', { 
+                        detail: { 
+                          page: 'profile',
+                          scrollToTop: true,
+                          timestamp: new Date().getTime() 
+                        } 
+                      }));
+                      window.scrollTo(0, 0);
+                    };
+                    
+                    return (
+                      <div 
+                        key={suggestedUser.id} 
+                        className="flex items-center p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors mx-0"
+                      >
+                        <img 
+                          src={suggestedUser.avatar} 
+                          alt={suggestedUser.name}
+                          className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={navigateToUserProfile}
+                          data-profile-id={suggestedUser.id}
+                        />
+                        <div 
+                          className="ml-3 cursor-pointer" 
+                          onClick={navigateToUserProfile}
+                          data-profile-id={suggestedUser.id}
+                        >
+                          <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            {suggestedUser.name}
+                            {hasMatchingYear && (
+                              <span className="ml-2 text-xs font-medium px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                                Same Year
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{displayDepartment}</p>
+                        </div>
+                        <div className="ml-auto">
+                          <button 
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium whitespace-nowrap"
+                            onClick={(e) => {
+                              // Silently send friend request without showing an alert
+                              // Get existing friend requests from localStorage
+                              const friendRequestsStr = localStorage.getItem('friendRequests') || '[]';
+                              const friendRequests: Array<{id: string; name: string; avatar: string; department: string; timestamp: string}> = JSON.parse(friendRequestsStr);
+                              
+                              // Add new friend request if not already sent
+                              if (!friendRequests.some((req) => req.id === suggestedUser.id)) {
+                                friendRequests.push({
+                                  id: suggestedUser.id,
+                                  name: suggestedUser.name,
+                                  avatar: suggestedUser.avatar,
+                                  department: displayDepartment,
+                                  timestamp: new Date().toISOString()
+                                });
+                                
+                                // Save updated friend requests
+                                localStorage.setItem('friendRequests', JSON.stringify(friendRequests));
+                                
+                                // Update UI to show "Request Sent" instead of "Add Friend"
+                                const button = e.currentTarget as HTMLButtonElement;
+                                button.textContent = 'Request Sent';
+                                button.classList.add('text-gray-500');
+                                button.classList.remove('text-blue-600', 'dark:text-blue-400', 'hover:text-blue-800', 'dark:hover:text-blue-300');
+                                button.disabled = true;
+                                
+                                // Dispatch event to notify other components about the friend request
+                                window.dispatchEvent(new CustomEvent('friendRequestsChange', { 
+                                  detail: { hasRequests: true } 
+                                }));
+                              }
+                            }}
+                          >
+                            Add Friend
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          </PullToRefresh>
-        </div>
-        
-        {/* Right sidebar */}
-        <div className="right-sidebar">
-          <div className="sidebar-section">
-            <h3>People You May Know</h3>
-            <ul className="suggested-users">
-              {suggestedUsers.map(suggestedUser => (
-                <li key={suggestedUser.id} className="suggested-user">
-                  <div className="user-info" onClick={() => viewUserProfile(suggestedUser.id)}>
-                    <img src={suggestedUser.avatar} alt={suggestedUser.name} className="avatar" />
-                    <div>
-                      <span className="name">{suggestedUser.name}</span>
-                      <span className="role">{suggestedUser.role === 'faculty' ? 'Faculty' : 'Student'}</span>
-                    </div>
-                  </div>
-                  <button className="add-friend" onClick={() => addFriend(suggestedUser.id)}>
-                    <Users size={16} />
-                  </button>
-                </li>
-              ))}
-              {suggestedUsers.length === 0 && (
-                <p className="no-suggestions">No suggestions available</p>
-              )}
-            </ul>
-          </div>
-          
-          <div className="sidebar-section trending">
-            <h3>Trending</h3>
-            <ul className="trending-topics">
-              <li>
-                <Sparkles size={16} />
-                <span>Final Exams Preparation</span>
-              </li>
-              <li>
-                <Sparkles size={16} />
-                <span>Campus Fest 2023</span>
-              </li>
-              <li>
-                <Sparkles size={16} />
-                <span>New Library Resources</span>
-              </li>
-              <li>
-                <Sparkles size={16} />
-                <span>Internship Opportunities</span>
-              </li>
-            </ul>
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
-      
-      {/* CSS for loading and error states */}
-      <style>
-        {`
-        .loading-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.5);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-          color: white;
-        }
-        
-        .spinner {
-          animation: spin 1s linear infinite;
-          font-size: 2rem;
-          margin-bottom: 1rem;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        .error-message {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background-color: #f8d7da;
-          color: #721c24;
-          padding: 1rem;
-          border-radius: 4px;
-          z-index: 1000;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-        
-        .error-message button {
-          margin-top: 0.5rem;
-          padding: 0.25rem 0.5rem;
-          background-color: #721c24;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        `}
-      </style>
     </div>
   );
 };

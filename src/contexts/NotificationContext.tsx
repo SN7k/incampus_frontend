@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+<<<<<<< HEAD
 import { mockUsers } from '../data/mockData';
+=======
+>>>>>>> a80153d (Update frontend)
 import { useAuth } from './AuthContext';
 
 export interface Notification {

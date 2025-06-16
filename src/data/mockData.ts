@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { User, Post, Comment, Media } from '../types';
 
 export const mockUsers: User[] = [
@@ -270,3 +271,6 @@ export const mockPosts: Post[] = [
     createdAt: new Date(Date.now() - 237600000) // 66 hours ago
   }
 ];
+=======
+ 
+>>>>>>> a80153d (Update frontend)

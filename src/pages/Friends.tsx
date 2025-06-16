@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+<<<<<<< HEAD
 import { Users, UserPlus, UserCheck, MoreVertical, UserMinus, Check, X, Loader } from 'lucide-react';
 import { mockUsers } from '../data/mockData';
 import { friendsApi } from '../services/friendsApi';
@@ -30,13 +31,40 @@ type FriendTab = 'friends' | 'requests' | 'suggestions';
 
 // No toast notifications as per user request
 
+=======
+import { Users, UserPlus, UserCheck, MoreVertical, UserMinus, Check, X } from 'lucide-react';
+import { friendApi, userApi } from '../services/api';
+import { User } from '../types';
+
+// Define interfaces for our data structures
+interface Friend {
+  id: number;
+  name: string;
+  avatar: string;
+  department: string;
+}
+
+interface FriendRequest extends Friend {
+  mutualFriends: number;
+}
+
+interface Suggestion extends FriendRequest {
+  relevance: string[];
+}
+
+type FriendTab = 'friends' | 'requests' | 'suggestions';
+
+>>>>>>> a80153d (Update frontend)
 const Friends: React.FC = () => {
   const { user } = useAuth();
   
   // Initialize activeTab from localStorage if available
   const [activeTab, setActiveTab] = useState<FriendTab>(() => {
     const savedTab = localStorage.getItem('friendsActiveTab');
+<<<<<<< HEAD
     // Clear the localStorage value after reading it
+=======
+>>>>>>> a80153d (Update frontend)
     if (savedTab) {
       localStorage.removeItem('friendsActiveTab');
     }
@@ -45,8 +73,11 @@ const Friends: React.FC = () => {
       : 'friends';
   });
   
+<<<<<<< HEAD
   // Search functionality removed as requested
   
+=======
+>>>>>>> a80153d (Update frontend)
   // State to track dropdown menus for each friend
   const [friendDropdowns, setFriendDropdowns] = useState<{[key: string]: boolean}>({});
   
@@ -54,6 +85,7 @@ const Friends: React.FC = () => {
   const dropdownRefs = useRef<{[key: string]: React.RefObject<HTMLDivElement>}>({});
   
   // State for tracking sent friend requests
+<<<<<<< HEAD
   const [sentRequests, setSentRequests] = useState<Array<{
     id: number | string;
     name: string;
@@ -67,17 +99,34 @@ const Friends: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Helper function to extract year from university ID (e.g., 'BWU/BCA/20/001' -> '20')
+=======
+  const [sentRequests, setSentRequests] = useState<Array<FriendRequest & { status: 'pending' | 'accepted' | 'declined' }>>([]);
+  
+  // State for friends, requests, and suggestions
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Helper function to extract year from university ID
+>>>>>>> a80153d (Update frontend)
   const extractYear = (universityId: string): string => {
     const parts = universityId.split('/');
     return parts.length >= 3 ? parts[2] : '';
   };
   
+<<<<<<< HEAD
   // Helper function to extract department from university ID (e.g., 'BWU/BCA/20/001' -> 'BCA')
+=======
+  // Helper function to extract department from university ID
+>>>>>>> a80153d (Update frontend)
   const extractDepartment = (universityId: string): string => {
     const parts = universityId.split('/');
     return parts.length >= 2 ? parts[1] : '';
   };
 
+<<<<<<< HEAD
   // Initialize state for friends, requests, and suggestions
   const [friends, setFriends] = useState<Array<{
     id: number | string;
@@ -228,11 +277,77 @@ const Friends: React.FC = () => {
   // Notify the app about friend requests changes
   useEffect(() => {
     // Create and dispatch a custom event when friend requests change
+=======
+  // Load friends, requests, and suggestions from API
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const [friendsList, requestsList, suggestionsList] = await Promise.all([
+          friendApi.getFriends(),
+          friendApi.getFriendRequests(),
+          userApi.getSuggestions()
+        ]);
+
+        // Transform API data to match our interfaces
+        setFriends(friendsList.map((friend: User) => ({
+          id: parseInt(friend.id),
+          name: friend.name,
+          avatar: friend.avatar,
+          department: friend.role === 'faculty' ? 'Faculty' : extractDepartment(friend.universityId)
+        })));
+
+        setFriendRequests(requestsList.map((request: User) => ({
+          id: parseInt(request.id),
+          name: request.name,
+          avatar: request.avatar,
+          department: request.role === 'faculty' ? 'Faculty' : extractDepartment(request.universityId),
+          mutualFriends: 0 // This would come from the API in a real implementation
+        })));
+
+        setSuggestions(suggestionsList.map((suggestion: User) => {
+          const relevance: string[] = [];
+          const year = extractYear(suggestion.universityId);
+          const dept = extractDepartment(suggestion.universityId);
+          
+          if (user && year === extractYear(user.universityId)) {
+            relevance.push('Same Year');
+          }
+          if (user && dept === extractDepartment(user.universityId)) {
+            relevance.push('Same Department');
+          }
+          
+          return {
+            id: parseInt(suggestion.id),
+            name: suggestion.name,
+            avatar: suggestion.avatar,
+            department: suggestion.role === 'faculty' ? 'Faculty' : dept,
+            mutualFriends: 0, // This would come from the API in a real implementation
+            relevance
+          };
+        }));
+      } catch (err) {
+        console.error('Error loading friends data:', err);
+        setError('Failed to load friends data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
+
+  // Notify the app about friend requests changes
+  useEffect(() => {
+>>>>>>> a80153d (Update frontend)
     const event = new CustomEvent('friendRequestsChange', {
       detail: { hasRequests: friendRequests.length > 0 }
     });
     window.dispatchEvent(event);
   }, [friendRequests]);
+<<<<<<< HEAD
   
   // No toast notifications as per user request
   
@@ -526,6 +641,116 @@ const Friends: React.FC = () => {
           // If the dropdown is open and the click is outside the dropdown
           if (dropdownRef && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
             // Close this dropdown
+=======
+
+  // Handle accepting a friend request
+  const handleAcceptRequest = async (requestId: number) => {
+    try {
+      const request = friendRequests.find((req: FriendRequest) => req.id === requestId);
+      if (!request) return;
+
+      await friendApi.acceptFriendRequest(requestId.toString());
+      
+      // Update local state
+      setFriends((prev: Friend[]) => [...prev, {
+        id: request.id,
+        name: request.name,
+        avatar: request.avatar,
+        department: request.department
+      }]);
+      
+      setFriendRequests((prev: FriendRequest[]) => prev.filter((req: FriendRequest) => req.id !== requestId));
+      setSuggestions((prev: Suggestion[]) => prev.filter((sug: Suggestion) => sug.id !== requestId));
+    } catch (err) {
+      console.error('Error accepting friend request:', err);
+    }
+  };
+
+  // Handle declining a friend request
+  const handleDeclineRequest = async (requestId: number) => {
+    try {
+      await friendApi.declineFriendRequest(requestId.toString());
+      setFriendRequests((prev: FriendRequest[]) => prev.filter((req: FriendRequest) => req.id !== requestId));
+    } catch (err) {
+      console.error('Error declining friend request:', err);
+    }
+  };
+
+  // Handle adding a friend from suggestions
+  const handleAddFriend = async (suggestionId: number) => {
+    try {
+      const suggestion = suggestions.find((sug: Suggestion) => sug.id === suggestionId);
+      if (!suggestion) return;
+
+      const isAlreadyFriend = friends.some((friend: Friend) => friend.id === suggestionId);
+      const requestAlreadySent = sentRequests.some((req: FriendRequest & { status: string }) => req.id === suggestionId);
+
+      if (!isAlreadyFriend && !requestAlreadySent) {
+        await friendApi.sendFriendRequest(suggestionId.toString());
+        
+        setSentRequests((prev: Array<FriendRequest & { status: 'pending' | 'accepted' | 'declined' }>) => [...prev, {
+          ...suggestion,
+          status: 'pending' as const
+        }]);
+        
+        setSuggestions((prev: Suggestion[]) => prev.filter((sug: Suggestion) => sug.id !== suggestionId));
+      }
+    } catch (err) {
+      console.error('Error sending friend request:', err);
+    }
+  };
+
+  // Handle unfriending a user
+  const handleUnfriend = async (friendId: number) => {
+    try {
+      await friendApi.unfriend(friendId.toString());
+      setFriends((prev: Friend[]) => prev.filter((friend: Friend) => friend.id !== friendId));
+      
+      // Close the dropdown
+      const newDropdownState = {...friendDropdowns};
+      newDropdownState[friendId] = false;
+      setFriendDropdowns(newDropdownState);
+    } catch (err) {
+      console.error('Error unfriending user:', err);
+    }
+  };
+
+  // Handle canceling a sent friend request
+  const handleCancelRequest = async (requestId: number) => {
+    try {
+      const canceledRequest = sentRequests.find((req: FriendRequest & { status: 'pending' | 'accepted' | 'declined' }) => req.id === requestId);
+      if (!canceledRequest) return;
+
+      // In a real implementation, we would call an API to cancel the request
+      // For now, we'll just update the local state
+      setSentRequests((prev: Array<FriendRequest & { status: 'pending' | 'accepted' | 'declined' }>) => 
+        prev.filter((req: FriendRequest & { status: 'pending' | 'accepted' | 'declined' }) => req.id !== requestId)
+      );
+
+      // Add back to suggestions
+      const newSuggestion: Suggestion = {
+        id: canceledRequest.id,
+        name: canceledRequest.name,
+        avatar: canceledRequest.avatar,
+        department: canceledRequest.department,
+        mutualFriends: 0,
+        relevance: []
+      };
+
+      setSuggestions((prev: Suggestion[]) => [...prev, newSuggestion]);
+    } catch (err) {
+      console.error('Error canceling friend request:', err);
+    }
+  };
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      Object.entries(friendDropdowns).forEach(([friendId, isOpen]) => {
+        if (isOpen) {
+          const dropdownRef = dropdownRefs.current[friendId];
+          if (dropdownRef?.current && !dropdownRef.current.contains(event.target as Node)) {
+>>>>>>> a80153d (Update frontend)
             setFriendDropdowns(prev => ({
               ...prev,
               [friendId]: false
@@ -535,6 +760,7 @@ const Friends: React.FC = () => {
       });
     };
     
+<<<<<<< HEAD
     // Add event listener
     document.addEventListener('mousedown', handleClickOutside);
     
@@ -648,6 +874,45 @@ const Friends: React.FC = () => {
   const filteredSuggestions = validSuggestions;
   
   // The search only affects the search popup, not the active tab content
+=======
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [friendDropdowns]);
+
+  // Navigate to user profile
+  const navigateToProfile = (userId: string | number = '') => {
+    const userIdString = userId.toString();
+    localStorage.clear();
+    localStorage.setItem('currentPage', 'profile');
+    
+    if (userIdString) {
+      localStorage.setItem('viewProfileUserId', userIdString);
+      window.dispatchEvent(new CustomEvent('navigate', { 
+        detail: { 
+          page: 'profile', 
+          userId: userIdString,
+          timestamp: new Date().getTime()
+        } 
+      }));
+    } else {
+      window.dispatchEvent(new CustomEvent('navigate', { 
+        detail: { 
+          page: 'profile',
+          timestamp: new Date().getTime()
+        } 
+      }));
+    }
+  };
+
+  if (!user) return null;
+
+  // Filter out users who are already friends, have sent requests, or have received requests
+  const validSuggestions = suggestions.filter((suggestion: Suggestion) => 
+    !friends.some((friend: Friend) => friend.id === suggestion.id) &&
+    !friendRequests.some((req: FriendRequest) => req.id === suggestion.id) &&
+    !sentRequests.some((req: FriendRequest) => req.id === suggestion.id)
+  );
+>>>>>>> a80153d (Update frontend)
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -666,6 +931,7 @@ const Friends: React.FC = () => {
 
   return (
     <div className="pt-20 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+<<<<<<< HEAD
       {/* No toast notifications as per user request */}
       
       <div className="container mx-auto px-4">
@@ -677,6 +943,14 @@ const Friends: React.FC = () => {
           </div>
 
           {/* Tabs */}
+=======
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col space-y-6 mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Friends</h1>
+          </div>
+
+>>>>>>> a80153d (Update frontend)
           <div className="grid grid-cols-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
             <button
               className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'friends' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
@@ -713,7 +987,11 @@ const Friends: React.FC = () => {
               <div className="relative">
                 <Users size={18} className="mb-1 sm:mb-0 sm:mr-2" />
                 {validSuggestions.length > 0 && (
+<<<<<<< HEAD
                   <span className="absolute -top-1.5 -right-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+=======
+                  <span className="absolute -top-1.5 -right-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+>>>>>>> a80153d (Update frontend)
                     {validSuggestions.length}
                   </span>
                 )}
@@ -722,12 +1000,16 @@ const Friends: React.FC = () => {
             </button>
           </div>
 
+<<<<<<< HEAD
           {/* Content */}
+=======
+>>>>>>> a80153d (Update frontend)
           <motion.div 
             className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-700"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
+<<<<<<< HEAD
             key={activeTab} // This forces animation to restart when tab changes
           >
             {isLoading && (
@@ -749,6 +1031,15 @@ const Friends: React.FC = () => {
                 {filteredFriends.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredFriends.map(friend => (
+=======
+            key={activeTab}
+          >
+            {activeTab === 'friends' && (
+              <>
+                {friends.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {friends.map(friend => (
+>>>>>>> a80153d (Update frontend)
                       <motion.div 
                         key={friend.id}
                         id={`friend-${friend.id}`}
@@ -761,6 +1052,7 @@ const Friends: React.FC = () => {
                           className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity" 
                           onClick={(e) => {
                             e.stopPropagation();
+<<<<<<< HEAD
                             // Add data attribute to track which profile we're clicking
                             console.log(`Navigating to friend profile ID: ${friend.id}`);
                             // Use direct ID reference
@@ -778,12 +1070,26 @@ const Friends: React.FC = () => {
                             navigateToProfile(friend.id);
                           }}
                           data-profile-id={friend.id}
+=======
+                            navigateToProfile(friend.id);
+                          }}
+                        />
+                        <div 
+                          className="ml-3 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateToProfile(friend.id);
+                          }}
+>>>>>>> a80153d (Update frontend)
                         >
                           <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{friend.name}</h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">{friend.department}</p>
                         </div>
                         <div className="ml-auto relative">
+<<<<<<< HEAD
                           {/* Initialize ref for this friend if it doesn't exist */}
+=======
+>>>>>>> a80153d (Update frontend)
                           {(() => {
                             const friendId = friend.id.toString();
                             if (!dropdownRefs.current[friendId]) {
@@ -794,6 +1100,7 @@ const Friends: React.FC = () => {
                           <button 
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                             onClick={() => {
+<<<<<<< HEAD
                               // Toggle dropdown for this specific friend
                               const newDropdownState = {...friendDropdowns};
                               // Close all other dropdowns first
@@ -801,6 +1108,12 @@ const Friends: React.FC = () => {
                                 newDropdownState[key] = false;
                               });
                               // Toggle this dropdown
+=======
+                              const newDropdownState = {...friendDropdowns};
+                              Object.keys(newDropdownState).forEach(key => {
+                                newDropdownState[key] = false;
+                              });
+>>>>>>> a80153d (Update frontend)
                               newDropdownState[friend.id] = !friendDropdowns[friend.id];
                               setFriendDropdowns(newDropdownState);
                             }}
@@ -808,7 +1121,10 @@ const Friends: React.FC = () => {
                             <MoreVertical size={18} />
                           </button>
                           
+<<<<<<< HEAD
                           {/* Dropdown menu */}
+=======
+>>>>>>> a80153d (Update frontend)
                           {friendDropdowns[friend.id] && (
                             <div 
                               ref={dropdownRefs.current[friend.id.toString()]}
@@ -839,12 +1155,20 @@ const Friends: React.FC = () => {
 
             {activeTab === 'requests' && (
               <>
+<<<<<<< HEAD
                 {/* Received Requests Section */}
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Received Requests</h2>
                   {filteredRequests.length > 0 ? (
                     <div className="space-y-4">
                       {filteredRequests.map(request => (
+=======
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Received Requests</h2>
+                  {friendRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      {friendRequests.map(request => (
+>>>>>>> a80153d (Update frontend)
                         <motion.div 
                           key={request.id}
                           id={`request-${request.id}`}
@@ -905,7 +1229,10 @@ const Friends: React.FC = () => {
                   )}
                 </div>
                 
+<<<<<<< HEAD
                 {/* Sent Requests Section */}
+=======
+>>>>>>> a80153d (Update frontend)
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Sent Requests</h2>
                   {sentRequests.filter(req => req.status === 'pending').length > 0 ? (
@@ -969,9 +1296,15 @@ const Friends: React.FC = () => {
               <>
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">People you may know</h2>
+<<<<<<< HEAD
                   {filteredSuggestions.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {filteredSuggestions.map(suggestion => (
+=======
+                  {validSuggestions.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {validSuggestions.map(suggestion => (
+>>>>>>> a80153d (Update frontend)
                         <motion.div 
                           key={suggestion.id}
                           id={`suggestion-${suggestion.id}`}

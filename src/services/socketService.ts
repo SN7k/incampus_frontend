@@ -1,0 +1,155 @@
+import React from 'react';
+import io from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { useAuth } from '../contexts/AuthContext';
+
+interface SocketError {
+  message: string;
+}
+
+interface FriendEventData {
+  fromUser: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
+}
+
+interface PostEventData {
+  postId: string;
+  fromUser: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
+}
+
+let socket: typeof Socket | null = null;
+
+export const initializeSocket = () => {
+  if (socket) return socket;
+
+  const token = localStorage.getItem('authState')
+    ? JSON.parse(localStorage.getItem('authState')!).token
+    : null;
+
+  if (!token) {
+    console.error('No auth token found for socket connection');
+    return null;
+  }
+
+  socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+    auth: { token }
+  });
+
+  socket.on('connect', () => {
+    console.log('Socket connected');
+  });
+
+  socket.on('connect_error', (error: SocketError) => {
+    console.error('Socket connection error:', error);
+    // Attempt to reconnect if token is invalid
+    if (error.message === 'Authentication error') {
+      localStorage.removeItem('authState');
+      window.location.href = '/login';
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected');
+  });
+
+  return socket;
+};
+
+export const getSocket = () => {
+  if (!socket) {
+    return initializeSocket();
+  }
+  return socket;
+};
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+};
+
+// Socket event handlers
+export const socketEvents = {
+  // Friend events
+  onFriendRequest: (callback: (data: FriendEventData) => void) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.on('friend:request', callback);
+    }
+  },
+
+  onFriendAccept: (callback: (data: FriendEventData) => void) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.on('friend:accept', callback);
+    }
+  },
+
+  // Post events
+  onPostLike: (callback: (data: PostEventData) => void) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.on('post:like', callback);
+    }
+  },
+
+  onPostComment: (callback: (data: PostEventData) => void) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.on('post:comment', callback);
+    }
+  },
+
+  // Emit events
+  emitFriendRequest: (toUserId: string) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('friend:request', { toUserId });
+    }
+  },
+
+  emitFriendAccept: (toUserId: string) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('friend:accept', { toUserId });
+    }
+  },
+
+  emitPostLike: (postId: string, postAuthorId: string) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('post:like', { postId, postAuthorId });
+    }
+  },
+
+  emitPostComment: (postId: string, postAuthorId: string) => {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('post:comment', { postId, postAuthorId });
+    }
+  }
+};
+
+// Custom hook for using socket events
+export const useSocket = () => {
+  const { isAuthenticated } = useAuth();
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const socket = initializeSocket();
+      return () => {
+        disconnectSocket();
+      };
+    }
+  }, [isAuthenticated]);
+
+  return socketEvents;
+}; 

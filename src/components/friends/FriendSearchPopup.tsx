@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users } from 'lucide-react';
+<<<<<<< HEAD
 import { mockUsers } from '../../data/mockData';
+=======
+>>>>>>> a80153d (Update frontend)
 
 interface FriendSearchPopupProps {
   isVisible: boolean;
@@ -28,12 +31,16 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   }
   
   // Filter users based on search query only (not by active tab)
+<<<<<<< HEAD
   const filteredUsers = mockUsers
     .filter(user => user.id !== currentUserId) // Exclude current user
     .filter(user => 
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
+=======
+  // Remove mockUsers filter logic
+>>>>>>> a80153d (Update frontend)
   
   // If no results found, return null
   if (filteredUsers.length === 0) {
