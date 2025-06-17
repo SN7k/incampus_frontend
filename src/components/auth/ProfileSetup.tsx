@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 import { User } from '../../types';
 
@@ -19,6 +20,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const { updateProfile } = useAuth();
   
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,17 +57,17 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setLoading(true);
     
     try {
-      // For demo purposes, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you would send this data to your backend
-      onProfileComplete({
+      // Create profile data
+      const profileData = {
         name: userInfo.fullName,
         avatar: profilePicture || '',
         coverPhoto: coverPhoto || undefined,
         bio: bio || undefined,
         role: userInfo.role
-      });
+      };
+      
+      // Call the parent callback to continue the flow
+      onProfileComplete(profileData);
     } catch (error) {
       setError('Failed to complete profile setup. Please try again.');
     } finally {

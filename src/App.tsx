@@ -94,6 +94,8 @@ function AppContent() {
   };
 
   const handleOtpVerificationComplete = () => {
+    // User is now authenticated after OTP verification
+    // Move to profile setup
     setRegistrationStep('profile-setup');
   };
 
@@ -114,10 +116,11 @@ function AppContent() {
   
   const handleSkipProfile = () => {
     // Create minimal profile data with default avatar and explicitly set bio to empty string
-    setPendingProfileData({
+    const minimalProfileData = {
       avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pendingUserData?.fullName || 'User'),
       bio: '' // Explicitly set bio to empty string when skipping profile setup
-    });
+    };
+    setPendingProfileData(minimalProfileData);
     setRegistrationStep('friend-suggestions');
   };
   
@@ -170,6 +173,7 @@ function AppContent() {
     }
   }, [isAuthenticated]);
   
+  // If user is not authenticated, show auth forms
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
@@ -184,6 +188,39 @@ function AppContent() {
           <LoginForm onShowSignup={() => setRegistrationStep('signup')} />
         )}
         
+        {registrationStep === 'otp' && pendingUserData && (
+          <OtpVerification 
+            email={pendingUserData.email}
+            onVerificationComplete={handleOtpVerificationComplete}
+            onResendOtp={handleResendOtp}
+          />
+        )}
+        
+        {registrationStep === 'profile-setup' && pendingUserData && (
+          <ProfileSetup 
+            userInfo={{
+              fullName: pendingUserData.fullName,
+              email: pendingUserData.email,
+              role: pendingUserData.role
+            }}
+            onProfileComplete={handleProfileComplete}
+            onSkip={handleSkipProfile}
+          />
+        )}
+        
+        {registrationStep === 'friend-suggestions' && pendingUserData && pendingProfileData && (
+          <FriendSuggestions
+            onComplete={handleFriendSuggestionsComplete}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // If user is authenticated but still in registration flow, show registration steps
+  if (isAuthenticated && (registrationStep !== 'login' && registrationStep !== 'signup')) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
         {registrationStep === 'otp' && pendingUserData && (
           <OtpVerification 
             email={pendingUserData.email}

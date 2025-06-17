@@ -20,7 +20,7 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   
-  const { resendOTP } = useAuth();
+  const { resendOTP, verifyOTP } = useAuth();
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -35,8 +35,12 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
     setFormError('');
     setLoading(true);
     try {
+      // First verify the OTP with the backend
+      await verifyOTP(email, otp);
+      // Then call the parent callback to continue the flow
       await onVerificationComplete(otp);
-    } catch {
+    } catch (error) {
+      console.error('OTP verification error:', error);
       setFormError('Invalid OTP or server error.');
     } finally {
       setLoading(false);
