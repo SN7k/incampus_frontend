@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { profileApi } from '../services/api';
+import { profileApi, uploadProfilePicture } from '../services/profileApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { School, MapPin, Edit, Camera, BookOpen, Users, Award, User as UserIcon, Bookmark, Link, Heart } from 'lucide-react';
+import { School, MapPin, Edit, Camera, BookOpen, Users, Award, User as UserIcon, Bookmark, Link, Heart, X, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Post, ProfileData as OriginalProfileData, User } from '../types/profile';
 import CreatePostModal from '../components/post/CreatePostModal';
@@ -26,6 +26,8 @@ const Profile: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<ProfileData>>({});
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Animation variants
   const container = {
@@ -160,6 +162,45 @@ const Profile: React.FC = () => {
     };
   }, []);
   
+  // When opening modal, initialize form data
+  useEffect(() => {
+    if (isEditProfileModalOpen && profileData) {
+      setEditFormData(profileData);
+    }
+  }, [isEditProfileModalOpen, profileData]);
+
+  const handleEditInputChange = (field: keyof ProfileData, value: any) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsSavingProfile(true);
+      try {
+        const { avatarUrl } = await uploadProfilePicture(file);
+        setEditFormData((prev) => ({ ...prev, avatar: avatarUrl }));
+      } catch (err) {
+        alert('Failed to upload avatar.');
+      } finally {
+        setIsSavingProfile(false);
+      }
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    try {
+      const updated = await profileApi.updateProfile(editFormData);
+      setProfileData(updated);
+      setIsEditProfileModalOpen(false);
+    } catch (err) {
+      alert('Failed to update profile.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   const handleEditProfile = () => {
     if (profileData) {
       setIsEditProfileModalOpen(true);
@@ -863,6 +904,95 @@ const Profile: React.FC = () => {
         isOpen={isCreatePostModalOpen}
         onClose={() => setIsCreatePostModalOpen(false)}
       />
+
+      {/* Edit Profile Modal */}
+      <AnimatePresence>
+        {isEditProfileModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4">
+            <motion.div 
+              className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-xl w-full max-w-[95%] sm:max-w-lg md:max-w-2xl lg:max-w-3xl max-h-[95vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            >
+              <div className="sticky top-0 bg-white dark:bg-gray-800 p-3 sm:p-4 border-b dark:border-gray-700 flex justify-between items-center z-10">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100">Edit Profile</h2>
+                <button 
+                  onClick={() => setIsEditProfileModalOpen(false)}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X size={20} className="text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+              <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+                {/* Avatar upload */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="edit-avatar-upload" className="cursor-pointer block relative">
+                    <img 
+                      src={getAvatarUrl(editFormData.avatar, editFormData.name || '')} 
+                      alt="Profile" 
+                      className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg hover:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-20 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <span className="text-white text-xs font-medium">Change Photo</span>
+                    </div>
+                  </label>
+                  <input 
+                    id="edit-avatar-upload"
+                    type="file" 
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                </div>
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <input 
+                    type="text" 
+                    value={editFormData.name || ''}
+                    onChange={e => handleEditInputChange('name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                {/* Bio */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
+                  <textarea 
+                    value={editFormData.bio || ''}
+                    onChange={e => handleEditInputChange('bio', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Tell others about yourself"
+                  />
+                </div>
+              </div>
+              <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800 p-3 sm:p-4 border-t dark:border-gray-700 flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs sm:text-sm py-1.5 sm:py-2"
+                  onClick={() => setIsEditProfileModalOpen(false)}
+                  disabled={isSavingProfile}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  className="text-xs sm:text-sm py-1.5 sm:py-2 flex items-center justify-center"
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile}
+                >
+                  <Save size={14} className="mr-1 sm:mr-2" />
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
