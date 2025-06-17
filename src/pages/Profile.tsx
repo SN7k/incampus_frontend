@@ -44,7 +44,7 @@ const Profile: React.FC = () => {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
   };
-
+  
   // Function to get profile likes from localStorage
   const getProfileLikes = (profileId: string) => {
     try {
@@ -95,16 +95,16 @@ const Profile: React.FC = () => {
       console.error('Error updating profile likes:', error);
     }
   };
-
-  // Load profile likes when viewing a profile
+      
+      // Load profile likes when viewing a profile
   useEffect(() => {
-    const targetProfileId = viewingUserId || (user ? user.id : '');
-    if (targetProfileId) {
-      const likes = getProfileLikes(targetProfileId);
-      const userHasLiked = hasUserLikedProfile(targetProfileId);
-      setLikeCount(likes);
-      setHasLiked(userHasLiked);
-    }
+      const targetProfileId = viewingUserId || (user ? user.id : '');
+      if (targetProfileId) {
+        const likes = getProfileLikes(targetProfileId);
+        const userHasLiked = hasUserLikedProfile(targetProfileId);
+        setLikeCount(likes);
+        setHasLiked(userHasLiked);
+      }
   }, [viewingUserId, user]);
 
   // Fetch profile, posts, and friends for the current or viewed user
@@ -127,12 +127,12 @@ const Profile: React.FC = () => {
         // Fetch friends
         const friends = await friendApi.getFriends();
         setFriendsList(friends);
-      } catch (error) {
+            } catch (error) {
         console.error('Error loading profile data:', error);
       } finally {
-        setIsLoadingProfile(false);
-      }
-    };
+          setIsLoadingProfile(false);
+        }
+      };
     fetchData();
   }, [user]);
 
@@ -165,7 +165,7 @@ const Profile: React.FC = () => {
   // When opening modal, initialize form data
   useEffect(() => {
     if (isEditProfileModalOpen && profileData) {
-      setEditFormData(profileData);
+    setEditFormData(profileData);
     }
   }, [isEditProfileModalOpen, profileData]);
 
@@ -180,7 +180,7 @@ const Profile: React.FC = () => {
         degree: prev.education?.degree || '',
         institution: prev.education?.institution || '',
         years: prev.education?.years || '',
-        [field]: value
+          [field]: value
       }
     }));
   };
@@ -188,28 +188,28 @@ const Profile: React.FC = () => {
   const handleSkillChange = (index: number, field: 'name' | 'proficiency', value: string | number) => {
     setEditFormData((prev) => {
       const updatedSkills = [...(prev.skills || [])];
-      updatedSkills[index] = {
-        ...updatedSkills[index],
+          updatedSkills[index] = {
+            ...updatedSkills[index],
         [field]: field === 'proficiency' ? Number(value) : value
       };
       return { ...prev, skills: updatedSkills };
     });
   };
-
+  
   const addSkill = () => {
     setEditFormData((prev) => ({
       ...prev,
       skills: [...(prev.skills || []), { name: '', proficiency: 50 }]
     }));
   };
-
+  
   const removeSkill = (index: number) => {
     setEditFormData((prev) => ({
       ...prev,
       skills: (prev.skills || []).filter((_, i) => i !== index)
     }));
   };
-
+  
   const handleAchievementChange = (index: number, field: string, value: string) => {
     setEditFormData((prev) => {
       const updatedAchievements = [...(prev.achievements || [])];
@@ -227,14 +227,14 @@ const Profile: React.FC = () => {
       achievements: [...(prev.achievements || []), { title: '', description: '', year: '' }]
     }));
   };
-
+  
   const removeAchievement = (index: number) => {
     setEditFormData((prev) => ({
       ...prev,
       achievements: (prev.achievements || []).filter((_, i) => i !== index)
     }));
   };
-
+  
   const handleInterestsChange = (value: string) => {
     const interestsArray = value.split(',').map(item => item.trim()).filter(item => item !== '');
     setEditFormData((prev) => ({ ...prev, interests: interestsArray }));
@@ -247,6 +247,8 @@ const Profile: React.FC = () => {
       try {
         const { avatarUrl } = await uploadProfilePicture(file);
         setEditFormData((prev) => ({ ...prev, avatar: avatarUrl }));
+        // Update the AuthContext with the new avatar URL
+        updateProfile({ avatar: avatarUrl }); 
       } catch (err) {
         alert('Failed to upload avatar.');
       } finally {
@@ -258,9 +260,7 @@ const Profile: React.FC = () => {
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
     try {
-      console.log('Sending profile update data:', editFormData);
       const updated = await profileApi.updateProfile(editFormData);
-      console.log('Received updated profile data:', updated);
       setProfileData(updated);
       setIsEditProfileModalOpen(false);
     } catch (err) {
@@ -293,13 +293,13 @@ const Profile: React.FC = () => {
   };
 
   if (isLoadingProfile) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
+  return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+            <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
+          </div>
         </div>
-      </div>
     );
   }
 
@@ -309,9 +309,9 @@ const Profile: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
             <div className="text-gray-500 mb-4">Profile not found</div>
-          </div>
-        </div>
-      </div>
+                </div>
+                </div>
+                    </div>
     );
   }
 
@@ -323,9 +323,9 @@ const Profile: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
             <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
+                </div>
           </div>
-        </div>
-      )}
+        )}
       
       {/* Cover photo and profile section */}
       <motion.div 
@@ -343,9 +343,9 @@ const Profile: React.FC = () => {
           )}
           <div className="absolute inset-0 bg-black bg-opacity-20"></div>
           {!viewingUserId && (
-            <label htmlFor="cover-photo-upload" className="absolute top-4 right-4 bg-black bg-opacity-40 text-white p-2 rounded-full hover:bg-opacity-60 transition-all cursor-pointer">
-              <Camera size={18} />
-            </label>
+          <label htmlFor="cover-photo-upload" className="absolute top-4 right-4 bg-black bg-opacity-40 text-white p-2 rounded-full hover:bg-opacity-60 transition-all cursor-pointer">
+            <Camera size={18} />
+          </label>
           )}
           <input 
             id="cover-photo-upload"
@@ -399,10 +399,10 @@ const Profile: React.FC = () => {
                         <span className="truncate max-w-[120px] sm:max-w-none">{profileData?.universityId}</span>
                       </span>
                       {profileData?.location && (
-                        <span className="flex items-center text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
-                          <MapPin size={16} className="mr-1.5 text-blue-800" />
+                      <span className="flex items-center text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
+                        <MapPin size={16} className="mr-1.5 text-blue-800" />
                           <span className="truncate max-w-[140px] sm:max-w-none">{profileData.location}</span>
-                        </span>
+                      </span>
                       )}
                     </div>
                   </div>
@@ -625,7 +625,7 @@ const Profile: React.FC = () => {
           animate="show"
         >
           <AnimatePresence mode="wait">
-            {activeTab === 'memories' && (
+          {activeTab === 'memories' && (
               <motion.div 
                 key="memories"
                 initial={{ opacity: 0, y: 20 }}
@@ -633,46 +633,46 @@ const Profile: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                {userPosts.length > 0 ? (
-                  <div className="space-y-6">
-                    {userPosts.map((post) => (
-                      <motion.div key={post.id} variants={item}>
-                        <PostCard post={post} />
-                      </motion.div>
-                    ))}
+              {userPosts.length > 0 ? (
+                <div className="space-y-6">
+                  {userPosts.map((post) => (
+                    <motion.div key={post.id} variants={item}>
+                      <PostCard post={post} />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <motion.div 
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center transition-colors duration-200"
+                  variants={item}
+                >
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                    <BookOpen size={24} className="text-blue-800 dark:text-blue-300" />
                   </div>
-                ) : (
-                  <motion.div 
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center transition-colors duration-200"
-                    variants={item}
-                  >
-                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
-                      <BookOpen size={24} className="text-blue-800 dark:text-blue-300" />
-                    </div>
                     <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
                       {!viewingUserId ? 'No memories shared yet' : 'No memories shared yet'}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300 mb-4">
                       {!viewingUserId ? 'Start sharing your university moments with friends!' : 'This user hasn\'t shared any memories yet.'}
                     </p>
-                    <div className="flex justify-center w-full">
+                  <div className="flex justify-center w-full">
                       {!viewingUserId && (
                         <Button 
                           variant="primary" 
                           size="lg"
                           onClick={() => setIsCreatePostModalOpen(true)}
                         >
-                          Share Your First Memory
-                        </Button>
+                      Share Your First Memory
+                    </Button>
                       )}
-                    </div>
-                  </motion.div>
-                )}
+                  </div>
+                </motion.div>
+              )}
               </motion.div>
-            )}
+          )}
 
-            {activeTab === 'collections' && (
-              <motion.div 
+          {activeTab === 'collections' && (
+            <motion.div 
                 key="collections"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -680,110 +680,110 @@ const Profile: React.FC = () => {
                 transition={{ duration: 0.2 }}
               >
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Photo Gallery</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Photo Gallery</h3>
                     {!viewingUserId && (
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setIsCreatePostModalOpen(true)}
-                        >
-                          <Camera size={16} className="mr-2" />
-                          Add Photo
-                        </Button>
-                      </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCreatePostModalOpen(true)}
+                  >
+                    <Camera size={16} className="mr-2" />
+                    Add Photo
+                  </Button>
+                </div>
                     )}
-                  </div>
-                  {/* Extract all images from user posts */}
-                  {(() => {
-                    // Get all media from user posts
-                    const allMedia = userPosts
-                      .filter(post => post.media && post.media.length > 0)
-                      .flatMap(post => post.media || [])
-                      .filter(media => media.type === 'image');
-                      
-                    if (allMedia.length === 0) {
-                      return (
-                        <div className="text-center py-8">
-                          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
-                            <Bookmark size={24} className="text-blue-800 dark:text-blue-300" />
-                          </div>
-                          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No Photos Yet</h3>
+              </div>
+              {/* Extract all images from user posts */}
+              {(() => {
+                // Get all media from user posts
+                const allMedia = userPosts
+                  .filter(post => post.media && post.media.length > 0)
+                  .flatMap(post => post.media || [])
+                  .filter(media => media.type === 'image');
+                
+                if (allMedia.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                        <Bookmark size={24} className="text-blue-800 dark:text-blue-300" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No Photos Yet</h3>
                           <p className="text-gray-600 dark:text-gray-300 mb-4">
                             {!viewingUserId ? 'Share posts with photos to see them in your gallery' : 'This user hasn\'t shared any photos yet.'}
                           </p>
-                          <div className="flex justify-center w-full">
+                      <div className="flex justify-center w-full">
                             {!viewingUserId && (
-                              <Button 
-                                variant="primary" 
-                                size="sm" 
-                                className="sm:text-base sm:px-4 sm:py-2"
-                                onClick={() => setIsCreatePostModalOpen(true)}
-                              >
-                                Share Your First Photo
-                              </Button>
+                        <Button 
+                          variant="primary" 
+                          size="sm" 
+                          className="sm:text-base sm:px-4 sm:py-2"
+                          onClick={() => setIsCreatePostModalOpen(true)}
+                        >
+                          Share Your First Photo
+                        </Button>
                             )}
-                          </div>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                        {allMedia.map((media, index) => (
-                          <motion.div 
-                            key={media.id || index}
-                            className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <img 
-                              src={media.url} 
-                              alt="Gallery image" 
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </motion.div>
-                        ))}
                       </div>
-                    );
-                  })()} 
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+                    {allMedia.map((media, index) => (
+                      <motion.div 
+                        key={media.id || index}
+                        className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <img 
+                          src={media.url} 
+                          alt="Gallery image" 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                );
+              })()} 
                 </div>
-              </motion.div>
-            )}
+            </motion.div>
+          )}
 
-            {activeTab === 'friends' && (
-              <motion.div 
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200"
-                variants={item}
-              >
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-0">
-                    {viewingUserId ? 'Friends' : 'Your Friends'}
+          {activeTab === 'friends' && (
+            <motion.div 
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200"
+              variants={item}
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-0">
+                  {viewingUserId ? 'Friends' : 'Your Friends'}
                     {friendsList.length > 0 && (
                       <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({friendsList.length})</span>
-                    )}
-                  </h3>
-                  <div className="w-full sm:w-auto relative">
-                    <div className="relative w-full sm:w-64">
-                      <input
-                        type="text"
-                        placeholder="Search friends..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm"
-                      />
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="11" cy="11" r="8"></circle>
-                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                      </div>
+                  )}
+                </h3>
+                <div className="w-full sm:w-auto relative">
+                  <div className="relative w-full sm:w-64">
+                    <input
+                      type="text"
+                      placeholder="Search friends..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm"
+                    />
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
                     </div>
                   </div>
                 </div>
-                
+              </div>
+              
                 {(() => {
                   const filteredFriends = friendsList.filter(friend => 
                     friend.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -792,185 +792,185 @@ const Profile: React.FC = () => {
                   
                   if (filteredFriends.length > 0) {
                     return (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
-                          {filteredFriends.map((friend) => (
-                            <motion.div 
-                              key={friend.id}
-                              className="flex items-center p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
-                              whileHover={{ scale: 1.02 }}
-                            >
-                              <img 
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
+                    {filteredFriends.map((friend) => (
+                      <motion.div 
+                        key={friend.id}
+                        className="flex items-center p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <img 
                                 src={getAvatarUrl(friend.avatar, friend.name)}
-                                alt={friend.name}
-                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-2 sm:mr-3 object-cover"
-                              />
-                              <div>
-                                <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{friend.name}</h4>
+                          alt={friend.name}
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-2 sm:mr-3 object-cover"
+                        />
+                        <div>
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{friend.name}</h4>
                                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{friend.universityId}</p>
-                              </div>
-                              <div className="ml-auto flex items-center space-x-2">
-                                <button 
-                                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                                  onClick={() => {
-                                    // Navigate to friend's profile
+                        </div>
+                        <div className="ml-auto flex items-center space-x-2">
+                          <button 
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                            onClick={() => {
+                              // Navigate to friend's profile
                                     localStorage.setItem('viewProfileUserId', friend.id);
                                     window.location.reload();
-                                  }}
-                                >
-                                  View Profile
-                                </button>
-                              </div>
-                            </motion.div>
-                          ))}
+                            }}
+                          >
+                            View Profile
+                          </button>
                         </div>
-                      </>
+                      </motion.div>
+                    ))}
+                  </div>
+                </>
                     );
                   } else {
                     return (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Users size={24} className="text-gray-500 dark:text-gray-400" />
-                        </div>
-                        {searchQuery ? (
-                          <>
-                            <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">No results found</h4>
-                            <p className="text-gray-600 dark:text-gray-400 mb-4">Try a different search term</p>
-                          </>
-                        ) : (
-                          <>
-                            <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
-                              {viewingUserId ? 'No friends yet' : 'You have no friends yet'}
-                            </h4>
-                            <p className="text-gray-600 dark:text-gray-400 mb-4">
-                              {viewingUserId ? 
-                                'This user hasn\'t connected with anyone yet' : 
-                                'Connect with other students to see them here'}
-                            </p>
-                          </>
-                        )}
-                      </div>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users size={24} className="text-gray-500 dark:text-gray-400" />
+                  </div>
+                  {searchQuery ? (
+                    <>
+                      <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">No results found</h4>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">Try a different search term</p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
+                        {viewingUserId ? 'No friends yet' : 'You have no friends yet'}
+                      </h4>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        {viewingUserId ? 
+                          'This user hasn\'t connected with anyone yet' : 
+                          'Connect with other students to see them here'}
+                      </p>
+                    </>
+                  )}
+                </div>
                     );
                   }
                 })()}
-                
-                {!viewingUserId && (
-                  <div className="mt-6 flex justify-center w-full">
-                    <Button 
-                      variant="primary" 
-                      size="md"
-                      onClick={() => {
+              
+              {!viewingUserId && (
+                <div className="mt-6 flex justify-center w-full">
+                  <Button 
+                    variant="primary" 
+                    size="md"
+                    onClick={() => {
                         // Navigate to Friends page
-                        localStorage.setItem('currentPage', 'friends');
+                      localStorage.setItem('currentPage', 'friends');
                         window.location.href = '/friends';
-                      }}
-                    >
-                      Find More Friends
-                    </Button>
-                  </div>
-                )}
-              </motion.div>
-            )}
+                    }}
+                  >
+                    Find More Friends
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          )}
 
-            {activeTab === 'about' && (
-              <motion.div 
+          {activeTab === 'about' && (
+            <motion.div 
                 key="about"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
-              >
-                <div className="space-y-6">
+            >
+              <div className="space-y-6">
                   {/* Education */}
                   {profileData?.education && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Education</h4>
+                  <div className="flex items-start">
+                    <School size={18} className="text-gray-500 dark:text-gray-400 mt-0.5 mr-2" />
                     <div>
-                      <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Education</h4>
-                      <div className="flex items-start">
-                        <School size={18} className="text-gray-500 dark:text-gray-400 mt-0.5 mr-2" />
-                        <div>
                           <p className="text-gray-800 dark:text-gray-200 font-medium">{profileData.education.degree}</p>
                           <p className="text-gray-600 dark:text-gray-300 text-sm">{profileData.education.institution}</p>
                           <p className="text-gray-500 dark:text-gray-400 text-sm">{profileData.education.years}</p>
-                        </div>
-                      </div>
                     </div>
+                  </div>
+                </div>
                   )}
-                  
+                
                   {/* Location */}
                   {profileData?.location && (
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Location</h4>
-                      <div className="flex items-center">
-                        <MapPin size={18} className="text-gray-500 dark:text-gray-400 mr-2" />
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Location</h4>
+                  <div className="flex items-center">
+                    <MapPin size={18} className="text-gray-500 dark:text-gray-400 mr-2" />
                         <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">{profileData.location}</p>
-                      </div>
-                    </div>
+                  </div>
+                </div>
                   )}
-                  
+                
                   {/* Skills */}
                   {profileData?.skills && profileData.skills.length > 0 && (
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Skills</h4>
-                      <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Skills</h4>
+                  <div className="grid grid-cols-2 gap-2">
                         {profileData.skills.map((skill, index) => (
-                          <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
-                            <p className="text-gray-800 dark:text-gray-200 font-medium">{skill.name}</p>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 mt-1 rounded-full">
-                              <div 
-                                className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full" 
-                                style={{ width: `${skill.proficiency}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))}
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+                        <p className="text-gray-800 dark:text-gray-200 font-medium">{skill.name}</p>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 mt-1 rounded-full">
+                          <div 
+                            className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full" 
+                            style={{ width: `${skill.proficiency}%` }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
                   )}
-                  
+                
                   {/* Achievements */}
                   {profileData?.achievements && profileData.achievements.length > 0 && (
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Achievements & Awards</h4>
-                      <div className="space-y-2">
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Achievements & Awards</h4>
+                  <div className="space-y-2">
                         {profileData.achievements.map((achievement, index) => (
-                          <div key={index} className="flex items-start">
-                            <Award size={18} className="text-blue-500 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
-                            <div>
-                              <p className="text-gray-800 dark:text-gray-200 font-medium">{achievement.title}</p>
-                              <p className="text-gray-600 dark:text-gray-300 text-sm">{achievement.description} ({achievement.year})</p>
-                            </div>
-                          </div>
-                        ))}
+                      <div key={index} className="flex items-start">
+                        <Award size={18} className="text-blue-500 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+                        <div>
+                          <p className="text-gray-800 dark:text-gray-200 font-medium">{achievement.title}</p>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">{achievement.description} ({achievement.year})</p>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
                   )}
-                  
+                
                   {/* Interests */}
                   {profileData?.interests && profileData.interests.length > 0 && (
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Hobbies & Interests</h4>
-                      <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4 mt-2">
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Hobbies & Interests</h4>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4 mt-2">
                         {profileData.interests.map((interest, index) => (
-                          <span 
-                            key={index}
-                            className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm"
-                          >
-                            {interest}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                      <span 
+                        key={index}
+                        className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </motion.div>
-            )}
+                  )}
+              </div>
+            </motion.div>
+          )}
           </AnimatePresence>
         </motion.div>
       </div>
                 
       {/* Create Post Modal */}
       <CreatePostModal 
-        isOpen={isCreatePostModalOpen}
+        isOpen={isCreatePostModalOpen} 
         onClose={() => setIsCreatePostModalOpen(false)}
       />
 
