@@ -1,16 +1,8 @@
-<<<<<<< HEAD
-import React, { useState, useEffect } from 'react';
-=======
 import React, { useState } from 'react';
->>>>>>> a80153d (Update frontend)
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-<<<<<<< HEAD
-import { logApiStatus } from './utils/apiHealthCheck';
-=======
->>>>>>> a80153d (Update frontend)
 import LoginForm from './components/auth/LoginForm';
 import SignupForm from './components/auth/SignupForm';
 import OtpVerification from './components/auth/OtpVerification';
@@ -36,25 +28,6 @@ function AppContent() {
   const { isAuthenticated, login } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
-<<<<<<< HEAD
-  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-  
-  // Check API connectivity on app startup
-  useEffect(() => {
-    const checkApiConnection = async () => {
-      try {
-        await logApiStatus();
-        setApiStatus('connected');
-      } catch (error) {
-        console.error('Failed to connect to API:', error);
-        setApiStatus('error');
-      }
-    };
-    
-    checkApiConnection();
-  }, []);
-=======
->>>>>>> a80153d (Update frontend)
   
   // Initialize currentPage from localStorage or default to 'feed'
   const [currentPage, setCurrentPage] = React.useState<AppPage>(() => {
@@ -176,7 +149,7 @@ function AppContent() {
     try {
       // This is a mock login - in a real app you'd get a token from your backend
       // and then fetch the user profile
-      await login(mockUser.universityId, 'password');
+      await login(mockUser.universityId, 'password', mockUser.role);
       
       // Initialize friend system for new user
       const defaultFriends: { id: string; name: string; avatar: string }[] = [];
@@ -245,10 +218,6 @@ function AppContent() {
         
         {registrationStep === 'friend-suggestions' && pendingUserData && pendingProfileData && (
           <FriendSuggestions
-            currentUser={{
-              ...pendingUserData,
-              ...pendingProfileData
-            }}
             onComplete={handleFriendSuggestionsComplete}
           />
         )}
@@ -257,17 +226,7 @@ function AppContent() {
   }
 
   return (
-<<<<<<< HEAD
-    <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      {/* API Status Notification */}
-      {apiStatus === 'error' && (
-        <div className="bg-red-500 text-white text-center py-2 px-4 fixed top-0 left-0 right-0 z-50">
-          Unable to connect to InCampus API. Some features may not work correctly.
-        </div>
-      )}
-=======
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
->>>>>>> a80153d (Update frontend)
       <Navbar />
       
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden">

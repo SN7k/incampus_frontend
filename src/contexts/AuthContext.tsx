@@ -1,143 +1,192 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
-import { authApi } from '../services/api';
-
-interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  loading: boolean;
-  error: string | null;
-}
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { AuthState, User } from '../types';
+import { authApi, tokenService } from '../services/authApi';
+import { usersApi } from '../services/usersApi';
 
 interface AuthContextType extends AuthState {
-  login: (emailOrId: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string, role: 'student' | 'faculty') => Promise<void>;
   logout: () => void;
-  updateProfile: (data: Partial<User>) => Promise<void>;
+  updateProfile: (profileData: Partial<User>) => void;
+  signup: (email: string, password: string, collegeId: string, name: string, role: 'student' | 'faculty') => Promise<void>;
+  verifyOTP: (email: string, otp: string) => Promise<void>;
+  resendOTP: (email: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const initialState: AuthState = {
+  isAuthenticated: false,
+  user: null,
+  error: null,
+  loading: false
+};
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    loading: true,
-    error: null
+const AuthContext = createContext<AuthContextType>({
+  ...initialState,
+  login: async () => {},
+  logout: () => {},
+  updateProfile: () => {},
+  signup: async () => {},
+  verifyOTP: async () => {},
+  resendOTP: async () => {}
+});
+
+export const useAuth = () => useContext(AuthContext);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Initialize state from localStorage if available
+  const [state, setState] = useState<AuthState>(() => {
+    const savedAuth = localStorage.getItem('authState');
+    if (savedAuth) {
+      try {
+        return JSON.parse(savedAuth) as AuthState;
+      } catch (e) {
+        console.error('Failed to parse saved auth state', e);
+        return initialState;
+      }
+    }
+    return initialState;
   });
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await authApi.getCurrentUser();
-          if (response.status === 'success') {
-            setState({
-              isAuthenticated: true,
-              user: response.data.user,
-              loading: false,
-              error: null
-            });
-          } else {
-            // Invalid token, clear it
-            localStorage.removeItem('token');
-            setState(prev => ({ ...prev, loading: false }));
-          }
-        } else {
-          setState(prev => ({ ...prev, loading: false }));
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        localStorage.removeItem('token');
-        setState(prev => ({ ...prev, loading: false }));
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  const login = async (emailOrId: string, password: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    collegeId: string,
+    name: string,
+    role: 'student' | 'faculty'
+  ) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const response = await authApi.login(emailOrId, password);
+      const response = await authApi.signup(email, password, collegeId, name, role);
       
-      if (response.status === 'success') {
-        const { token, user } = response.data;
-        localStorage.setItem('token', token);
-        
-        setState({
-          isAuthenticated: true,
-          user,
-          loading: false,
-          error: null
-        });
-      } else {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          error: response.message || 'Login failed'
-        }));
-      }
-    } catch (error: any) {
-      setState(prev => ({
-        ...prev,
+      // Store token
+      tokenService.setToken(response.data.token);
+      
+      const newState = {
+        isAuthenticated: true,
+        user: response.data.user,
         loading: false,
-        error: error.response?.data?.message || 'Login failed. Please try again.'
-      }));
+        error: null
+      };
+      
+      setState(newState);
+      localStorage.setItem('authState', JSON.stringify(newState));
+      localStorage.setItem('currentPage', 'feed');
+    } catch (error: any) {
+      setState({
+        isAuthenticated: false,
+        user: null,
+        loading: false,
+        error: error.message || 'Signup failed'
+      });
+      throw error;
+    }
+  };
+
+  const login = async (identifier: string, password: string, role: 'student' | 'faculty') => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await authApi.login(identifier, password, role);
+      
+      // Store token
+      tokenService.setToken(response.data.token);
+      
+      const newState = {
+        isAuthenticated: true,
+        user: response.data.user,
+        loading: false,
+        error: null
+      };
+      
+      setState(newState);
+      localStorage.setItem('authState', JSON.stringify(newState));
+      localStorage.setItem('currentPage', 'feed');
+    } catch (error: any) {
+      setState({
+        isAuthenticated: false,
+        user: null,
+        loading: false,
+        error: error.message || 'Login failed'
+      });
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (email: string, otp: string) => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await authApi.verifyOTP(email, otp);
+      
+      // Store token
+      tokenService.setToken(response.data.token);
+      
+      const newState = {
+        isAuthenticated: true,
+        user: response.data.user,
+        loading: false,
+        error: null
+      };
+      
+      setState(newState);
+      localStorage.setItem('authState', JSON.stringify(newState));
+      localStorage.setItem('currentPage', 'feed');
+    } catch (error: any) {
+      setState({
+        isAuthenticated: false,
+        user: null,
+        loading: false,
+        error: error.message || 'OTP verification failed'
+      });
+      throw error;
+    }
+  };
+
+  const resendOTP = async (email: string) => {
+    try {
+      await authApi.resendOTP(email);
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to resend OTP');
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    setState({
-      isAuthenticated: false,
-      user: null,
-      loading: false,
-      error: null
-    });
+    tokenService.removeToken();
+    setState(initialState);
+    localStorage.removeItem('authState');
+    localStorage.removeItem('currentPage');
   };
 
-  const updateProfile = async (data: Partial<User>) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  const updateProfile = async (profileData: Partial<User>) => {
+    if (!state.user) return;
     
     try {
-      const response = await authApi.updateProfile(data);
+      const updatedUser = await usersApi.updateCurrentUser(profileData);
       
-      if (response.status === 'success') {
-        setState(prev => ({
-          ...prev,
-          user: { ...prev.user!, ...response.data.user },
-          loading: false
-        }));
-      } else {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          error: response.message || 'Failed to update profile'
-        }));
-      }
+      const newState = {
+        ...state,
+        user: updatedUser
+      };
+      
+      setState(newState);
+      localStorage.setItem('authState', JSON.stringify(newState));
     } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.response?.data?.message || 'Failed to update profile. Please try again.'
-      }));
+      console.error('Error updating profile:', error);
+      throw error;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ 
+      ...state, 
+      login, 
+      logout, 
+      updateProfile, 
+      signup, 
+      verifyOTP, 
+      resendOTP 
+    }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

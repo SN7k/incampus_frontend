@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { friendApi } from '../../services/api';
 import { User } from '../../types';
-import { UserCheck, UserMinus, UserPlus, X, Check } from 'lucide-react';
+import { UserMinus, UserPlus, X, Check } from 'lucide-react';
 
 const FriendsList: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'suggestions'>('friends');
@@ -11,10 +11,12 @@ const FriendsList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load data based on active tab
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
+      
       try {
         if (activeTab === 'friends') {
           const friendsData = await friendApi.getFriends();
@@ -28,10 +30,12 @@ const FriendsList: React.FC = () => {
         }
         setLoading(false);
       } catch (error) {
+        console.error(`Error loading ${activeTab}:`, error);
         setError(`Failed to load ${activeTab}. Please try again.`);
         setLoading(false);
       }
     };
+    
     loadData();
   }, [activeTab]);
 

@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-<<<<<<< HEAD
-import { mockUsers, mockPosts } from '../data/mockData';
-=======
-import { userApi, postApi } from '../services/api';
->>>>>>> a80153d (Update frontend)
+import { usersApi } from '../services/usersApi';
+import { postsApi } from '../services/postsApi';
+import { User, Post } from '../types';
 
 // Define search result types
 interface SearchResult {
@@ -39,93 +37,83 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const performSearch = (query: string) => {
+  const performSearch = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
-    
-    // Normalize query for case-insensitive search
     const normalizedQuery = query.toLowerCase().trim();
-    
-    // Search users
-<<<<<<< HEAD
-    const userResults = mockUsers
-=======
-    const userResults = userApi
->>>>>>> a80153d (Update frontend)
-      .filter(user => 
-        user.name.toLowerCase().includes(normalizedQuery) || 
-        user.universityId.toLowerCase().includes(normalizedQuery) ||
-        (user.bio && user.bio.toLowerCase().includes(normalizedQuery))
-      )
-      .map(user => ({
-        type: 'user' as const,
-        id: user.id,
-        title: user.name,
-        subtitle: user.universityId,
-        avatar: user.avatar,
-        url: `/profile/${user.id}`
-      }));
-    
-    // Search posts
-<<<<<<< HEAD
-    const postResults = mockPosts
-=======
-    const postResults = postApi
->>>>>>> a80153d (Update frontend)
-      .filter(post => 
-        post.content.toLowerCase().includes(normalizedQuery)
-      )
-      .map(post => ({
-        type: 'post' as const,
-        id: post.id,
-        title: post.user.name,
-        subtitle: post.content.length > 60 ? post.content.substring(0, 60) + '...' : post.content,
-        avatar: post.user.avatar,
-        url: `/post/${post.id}`
-      }));
-    
-    // Search comments
-<<<<<<< HEAD
-    const commentResults = mockPosts
-=======
-    const commentResults = postApi
->>>>>>> a80153d (Update frontend)
-      .flatMap(post => 
-        post.comments
-          .filter(comment => comment.content.toLowerCase().includes(normalizedQuery))
-          .map(comment => ({
-            type: 'comment' as const,
-            id: comment.id,
-            title: comment.user.name,
-            subtitle: comment.content.length > 60 ? comment.content.substring(0, 60) + '...' : comment.content,
-            avatar: comment.user.avatar,
-            url: `/post/${post.id}`
-          }))
-      );
-    
-    // Combine and sort results
-    const allResults = [...userResults, ...postResults, ...commentResults];
-    
-    // Sort by relevance (simple implementation - could be improved)
-    const sortedResults = allResults.sort((a, b) => {
-      // Exact matches first
-      const aExact = a.title.toLowerCase() === normalizedQuery || a.subtitle.toLowerCase() === normalizedQuery;
-      const bExact = b.title.toLowerCase() === normalizedQuery || b.subtitle.toLowerCase() === normalizedQuery;
-      
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
-      
-      // Then prioritize by type: users > posts > comments
-      const typeOrder = { user: 0, post: 1, comment: 2 };
-      return typeOrder[a.type] - typeOrder[b.type];
-    });
-    
-    setSearchResults(sortedResults);
-    setIsSearching(false);
+
+    try {
+      // Fetch users and posts from API
+      const [users, posts] = await Promise.all([
+        usersApi.search(query),
+        postsApi.getFeedPosts()
+      ]);
+
+      // Search users
+      const userResults = users.users
+        .filter((user: User) => 
+          user.name.toLowerCase().includes(normalizedQuery) || 
+          user.universityId.toLowerCase().includes(normalizedQuery) ||
+          (user.bio && user.bio.toLowerCase().includes(normalizedQuery))
+        )
+        .map((user: User) => ({
+          type: 'user' as const,
+          id: user.id,
+          title: user.name,
+          subtitle: user.universityId,
+          avatar: user.avatar,
+          url: `/profile/${user.id}`
+        }));
+
+      // Search posts
+      const postResults = posts
+        .filter((post: Post) => 
+          post.content.toLowerCase().includes(normalizedQuery)
+        )
+        .map((post: Post) => ({
+          type: 'post' as const,
+          id: post.id,
+          title: post.user.name,
+          subtitle: post.content.length > 60 ? post.content.substring(0, 60) + '...' : post.content,
+          avatar: post.user.avatar,
+          url: `/post/${post.id}`
+        }));
+
+      // Search comments
+      const commentResults = posts
+        .flatMap((post: Post) => 
+          post.comments
+            .filter((comment: any) => comment.content.toLowerCase().includes(normalizedQuery))
+            .map((comment: any) => ({
+              type: 'comment' as const,
+              id: comment.id,
+              title: comment.user.name,
+              subtitle: comment.content.length > 60 ? comment.content.substring(0, 60) + '...' : comment.content,
+              avatar: comment.user.avatar,
+              url: `/post/${post.id}`
+            }))
+        );
+
+      // Combine and sort results
+      const allResults = [...userResults, ...postResults, ...commentResults];
+      const sortedResults = allResults.sort((a, b) => {
+        const aExact = a.title.toLowerCase() === normalizedQuery || a.subtitle.toLowerCase() === normalizedQuery;
+        const bExact = b.title.toLowerCase() === normalizedQuery || b.subtitle.toLowerCase() === normalizedQuery;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+        const typeOrder: { [key: string]: number } = { user: 0, post: 1, comment: 2 };
+        return typeOrder[a.type] - typeOrder[b.type];
+      });
+      setSearchResults(sortedResults);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const clearSearch = () => {

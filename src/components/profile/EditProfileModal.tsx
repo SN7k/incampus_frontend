@@ -3,7 +3,6 @@ import { X, Camera, Save } from 'lucide-react';
 import Button from '../ui/Button';
 import { User } from '../../types';
 import { profileApi } from '../../services/profileApi';
-import { USE_MOCK_DATA } from '../../utils/mockDataTransition';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProfileData } from '../../types/profile';
 
@@ -31,7 +30,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
-  const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   
   const [loading, setLoading] = useState(false);
@@ -97,7 +95,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setCoverPhoto(file);
       setCoverPhotoPreview(URL.createObjectURL(file));
     }
   };
@@ -135,50 +132,26 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
         interests: formData.interests
       };
       
-      if (USE_MOCK_DATA) {
-        // Mock update for development
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Real API update
+      // First update the profile data
+      await profileApi.updateProfile(updateData);
+      
+      // Then upload profile picture if changed
+      if (profilePicture) {
+        const avatarResult = await profileApi.uploadProfilePicture(profilePicture);
+        updateData.avatar = avatarResult.avatarUrl;
         
-        // Update auth context with new profile data
-        updateAuthProfile({
-          name: formData.name
-        });
-        
-        // Upload profile picture if changed
-        if (profilePicture) {
-          console.log('Mock uploading profile picture:', profilePicture.name);
-          // In a real app, this would upload to a server
-        }
-        
-        // Upload cover photo if changed
-        if (coverPhoto) {
-          console.log('Mock uploading cover photo:', coverPhoto.name);
-          // In a real app, this would upload to a server
-        }
-        
-        setSuccess('Profile updated successfully!');
-      } else {
-        // Real API update
-        // First update the profile data
-        await profileApi.updateProfile(updateData);
-        
-        // Then upload profile picture if changed
-        if (profilePicture) {
-          const avatarResult = await profileApi.uploadProfilePicture(profilePicture);
-          updateData.avatar = avatarResult.avatarUrl;
-          
-          // Update the profile with the new avatar URL
-          await profileApi.updateProfile({ avatar: avatarResult.avatarUrl });
-        }
-        
-        // Update auth context with new profile data
-        updateAuthProfile({
-          name: formData.name,
-          avatar: updateData.avatar
-        });
-        
-        setSuccess('Profile updated successfully!');
+        // Update the profile with the new avatar URL
+        await profileApi.updateProfile({ avatar: avatarResult.avatarUrl });
       }
+      
+      // Update auth context with new profile data
+      updateAuthProfile({
+        name: formData.name,
+        avatar: updateData.avatar
+      });
+      
+      setSuccess('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
       setError('Failed to update profile. Please try again.');

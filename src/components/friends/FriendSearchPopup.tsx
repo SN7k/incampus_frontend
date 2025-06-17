@@ -1,18 +1,21 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users } from 'lucide-react';
-<<<<<<< HEAD
-import { mockUsers } from '../../data/mockData';
-=======
->>>>>>> a80153d (Update frontend)
+import { User } from '../../types';
+
+interface FriendRequest {
+  id: string;
+  status?: string;
+}
 
 interface FriendSearchPopupProps {
   isVisible: boolean;
   searchQuery: string;
   currentUserId: string;
-  friends: any[];
-  friendRequests: any[];
-  sentRequests: any[];
+  friends: User[];
+  friendRequests: FriendRequest[];
+  sentRequests: FriendRequest[];
+  users: User[];
   onUserClick: (userId: number) => void;
 }
 
@@ -23,6 +26,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   friends,
   friendRequests,
   sentRequests,
+  users,
   onUserClick
 }) => {
   // Don't show popup if search query is empty
@@ -31,16 +35,12 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   }
   
   // Filter users based on search query only (not by active tab)
-<<<<<<< HEAD
-  const filteredUsers = mockUsers
+  const filteredUsers = users
     .filter(user => user.id !== currentUserId) // Exclude current user
     .filter(user => 
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
-=======
-  // Remove mockUsers filter logic
->>>>>>> a80153d (Update frontend)
   
   // If no results found, return null
   if (filteredUsers.length === 0) {
@@ -49,12 +49,11 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   
   // Determine user type for each filtered user
   const getUserType = (userId: string) => {
-    const numId = parseInt(userId);
-    if (friends.some(friend => friend.id === numId)) {
+    if (friends.some(friend => friend.id === userId)) {
       return 'friend';
-    } else if (friendRequests.some(req => req.id === numId)) {
+    } else if (friendRequests.some(req => req.id === userId)) {
       return 'request';
-    } else if (sentRequests.some(req => req.id === numId && req.status === 'pending')) {
+    } else if (sentRequests.some(req => req.id === userId && req.status === 'pending')) {
       return 'sent';
     } else {
       return 'other';

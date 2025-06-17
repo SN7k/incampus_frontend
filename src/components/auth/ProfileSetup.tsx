@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
-<<<<<<< HEAD
-=======
-import { profileApi } from '../../services/api';
->>>>>>> a80153d (Update frontend)
 
 interface ProfileSetupProps {
   userInfo: {
@@ -18,82 +14,29 @@ interface ProfileSetupProps {
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete, onSkip }) => {
   const [step, setStep] = useState<1 | 2>(1);
-<<<<<<< HEAD
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-=======
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
-  const [bio, setBio] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [previewUrls, setPreviewUrls] = useState<{
-    profile: string | null;
-    cover: string | null;
-  }>({
-    profile: null,
-    cover: null
-  });
->>>>>>> a80153d (Update frontend)
   
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-<<<<<<< HEAD
       // In a real app, you would upload this to a server
       // For demo, we'll use a local URL
       const imageUrl = URL.createObjectURL(file);
       setProfilePicture(imageUrl);
-=======
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload an image file');
-        return;
-      }
-      
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size should be less than 5MB');
-        return;
-      }
-      
-      setProfilePicture(file);
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewUrls(prev => ({ ...prev, profile: url }));
->>>>>>> a80153d (Update frontend)
     }
   };
   
   const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-<<<<<<< HEAD
       // In a real app, you would upload this to a server
       // For demo, we'll use a local URL
       const imageUrl = URL.createObjectURL(file);
       setCoverPhoto(imageUrl);
-=======
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload an image file');
-        return;
-      }
-      
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size should be less than 5MB');
-        return;
-      }
-      
-      setCoverPhoto(file);
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewUrls(prev => ({ ...prev, cover: url }));
->>>>>>> a80153d (Update frontend)
     }
   };
   
@@ -109,7 +52,6 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-<<<<<<< HEAD
     
     try {
       // For demo purposes, simulate API call
@@ -125,54 +67,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       });
     } catch (error) {
       setError('Failed to complete profile setup. Please try again.');
-=======
-    setError('');
-    
-    try {
-      // Create FormData for multipart/form-data
-      const formData = new FormData();
-      formData.append('name', userInfo.fullName);
-      formData.append('role', userInfo.role);
-      if (bio) formData.append('bio', bio);
-      
-      // Upload profile picture
-      if (profilePicture) {
-        formData.append('avatar', profilePicture);
-      }
-      
-      // Upload cover photo if provided
-      if (coverPhoto) {
-        formData.append('coverPhoto', coverPhoto);
-      }
-      
-      // Call the API to update profile
-      const response = await profileApi.updateProfile(formData);
-      
-      if (response.status === 'success') {
-        // Call parent component with updated user data
-        onProfileComplete(response.data.user);
-      } else {
-        setError(response.message || 'Failed to complete profile setup');
-      }
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to complete profile setup. Please try again.');
->>>>>>> a80153d (Update frontend)
     } finally {
       setLoading(false);
     }
   };
   
-<<<<<<< HEAD
-=======
-  // Cleanup preview URLs when component unmounts
-  React.useEffect(() => {
-    return () => {
-      if (previewUrls.profile) URL.revokeObjectURL(previewUrls.profile);
-      if (previewUrls.cover) URL.revokeObjectURL(previewUrls.cover);
-    };
-  }, [previewUrls]);
-  
->>>>>>> a80153d (Update frontend)
   return (
     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full">
       <div className="text-center mb-6">
@@ -196,15 +95,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         <div className="flex flex-col items-center">
           <div className="mb-6 relative">
             <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
-<<<<<<< HEAD
               {profilePicture ? (
                 <img 
                   src={profilePicture} 
-=======
-              {previewUrls.profile ? (
-                <img 
-                  src={previewUrls.profile} 
->>>>>>> a80153d (Update frontend)
                   alt="Profile" 
                   className="w-full h-full object-cover"
                 />
@@ -261,15 +154,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
               Cover Photo
             </label>
             <div className="relative h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-2">
-<<<<<<< HEAD
               {coverPhoto ? (
                 <img 
                   src={coverPhoto} 
-=======
-              {previewUrls.cover ? (
-                <img 
-                  src={previewUrls.cover} 
->>>>>>> a80153d (Update frontend)
                   alt="Cover" 
                   className="w-full h-full object-cover"
                 />

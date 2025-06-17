@@ -1,8 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-<<<<<<< HEAD
-import { mockUsers } from '../data/mockData';
-=======
->>>>>>> a80153d (Update frontend)
 import { useAuth } from './AuthContext';
 
 export interface Notification {
@@ -117,45 +113,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Listen for friend requests to create notifications
   useEffect(() => {
     const handleFriendRequest = (event: CustomEvent) => {
-      const { fromUser, toUser, requestType } = event.detail;
-      
-      console.log('Friend request event received:', { fromUser, toUser, requestType });
-      console.log('Current user:', user?.id);
-      
-      // Only create notification if the current user is the recipient
-      if (user && ((requestType === 'new' && toUser === user.id) || 
-                   (requestType === 'accepted' && toUser === user.id))) {
-        
-        console.log('Creating notification for user:', user.id);
-        
-        const sender = mockUsers.find(u => u.id === fromUser);
-        console.log('Sender found:', sender?.name);
-        
-        if (sender) {
-          const message = requestType === 'new' 
-            ? `${sender.name} sent you a friend request` 
-            : `${sender.name} accepted your friend request`;
-          
-          console.log('Adding notification with message:', message);
-            
-          addNotification({
-            type: 'friend_request',
-            message,
-            userId: sender.id,
-            avatar: sender.avatar
-          });
-        }
-      } else {
-        console.log('Notification criteria not met:', {
-          userExists: !!user,
-          isNewRequest: requestType === 'new',
-          isToCurrentUser: user ? toUser === user.id : false
+      const { fromUser, toUser, requestType, fromUserName, fromUserAvatar } = event.detail;
+      if (user && ((requestType === 'new' && toUser === user.id) || (requestType === 'accepted' && toUser === user.id))) {
+        const message = requestType === 'new'
+          ? `${fromUserName || 'Someone'} sent you a friend request`
+          : `${fromUserName || 'Someone'} accepted your friend request`;
+        addNotification({
+          type: 'friend_request',
+          message,
+          userId: fromUser,
+          avatar: fromUserAvatar
         });
       }
     };
-
     window.addEventListener('friendRequest', handleFriendRequest as EventListener);
-    
     return () => {
       window.removeEventListener('friendRequest', handleFriendRequest as EventListener);
     };
@@ -164,25 +135,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Listen for post likes to create notifications
   useEffect(() => {
     const handlePostLike = (event: CustomEvent) => {
-      const { fromUser, postId, postAuthorId } = event.detail;
-      
-      // Only create notification if the current user is the post author
+      const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
       if (user && postAuthorId === user.id && fromUser !== user.id) {
-        const liker = mockUsers.find(u => u.id === fromUser);
-        if (liker) {
-          addNotification({
-            type: 'like',
-            message: `${liker.name} liked your post`,
-            userId: liker.id,
-            postId,
-            avatar: liker.avatar
-          });
-        }
+        addNotification({
+          type: 'like',
+          message: `${fromUserName || 'Someone'} liked your post`,
+          userId: fromUser,
+          postId,
+          avatar: fromUserAvatar
+        });
       }
     };
-
     window.addEventListener('postLike', handlePostLike as EventListener);
-    
     return () => {
       window.removeEventListener('postLike', handlePostLike as EventListener);
     };
@@ -191,25 +155,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Listen for post comments to create notifications
   useEffect(() => {
     const handlePostComment = (event: CustomEvent) => {
-      const { fromUser, postId, postAuthorId } = event.detail;
-      
-      // Only create notification if the current user is the post author
+      const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
       if (user && postAuthorId === user.id && fromUser !== user.id) {
-        const commenter = mockUsers.find(u => u.id === fromUser);
-        if (commenter) {
-          addNotification({
-            type: 'comment',
-            message: `${commenter.name} commented on your post`,
-            userId: commenter.id,
-            postId,
-            avatar: commenter.avatar
-          });
-        }
+        addNotification({
+          type: 'comment',
+          message: `${fromUserName || 'Someone'} commented on your post`,
+          userId: fromUser,
+          postId,
+          avatar: fromUserAvatar
+        });
       }
     };
-
     window.addEventListener('postComment', handlePostComment as EventListener);
-    
     return () => {
       window.removeEventListener('postComment', handlePostComment as EventListener);
     };

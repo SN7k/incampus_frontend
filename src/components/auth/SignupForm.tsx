@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 
 type UserRole = 'student' | 'faculty';
-
-
 
 interface SignupFormProps {
   onBackToLogin: () => void;
@@ -32,7 +31,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const { signup } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
     
@@ -79,11 +80,11 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       }
     }
     
-    // Simulate API call
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      // Here you would normally send the data to your backend
+      // Use the collegeId field for universityId
+      const collegeId = role === 'student' ? universityId : department;
+      await signup(email, password, collegeId, fullName, role);
       
       // Pass the user data to the parent component to handle OTP verification
       onSignupSuccess({
@@ -96,8 +97,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         department: role === 'faculty' ? department : undefined
       });
       
-    } catch (error) {
-      setFormError('Failed to create account. Please try again.');
+    } catch (error: unknown) {
+      setFormError('Signup failed.');
+    } finally {
       setLoading(false);
     }
   };
@@ -201,7 +203,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         <Input
           label="Password"
           type="password"
-          placeholder="Create a password (min. 8 characters)"
+          placeholder="Enter your password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           fullWidth
@@ -219,22 +221,22 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         <Button
           type="submit"
           loading={loading}
-          className="w-full mt-2"
+          className="w-full mt-6"
           size="lg"
         >
           Create Account
         </Button>
-        
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={onBackToLogin}
-            className="text-blue-800 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
-          >
-            Already have an account? Sign in
-          </button>
-        </div>
       </form>
+      
+      <div className="mt-6 text-center text-sm">
+        <button
+          type="button"
+          onClick={onBackToLogin}
+          className="text-blue-800 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+        >
+          Already have an account? Sign in
+        </button>
+      </div>
     </div>
   );
 };

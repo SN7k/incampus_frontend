@@ -1,229 +1,232 @@
 import React, { useState, useRef } from 'react';
-import { X, ImagePlus } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { postsApi } from '../../services/postsApi';
+import { X, Image, Smile, MapPin } from 'lucide-react';
+import Button from '../ui/Button';
 
 interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
-  userAvatar: string;
-  userName: string;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  userAvatar,
-  userName 
-}) => {
-  const { isDarkMode } = useTheme();
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
   const [content, setContent] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  if (!isOpen) return null;
-  
-  const handlePhotoUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      
+      if (!isValidType) {
+        setError('Please select only image or video files');
+        return false;
+      }
+      
+      if (!isValidSize) {
+        setError('File size must be less than 10MB');
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length + mediaFiles.length > 5) {
+      setError('You can upload a maximum of 5 files');
+      return;
+    }
+    
+    setError('');
+    setMediaFiles(prev => [...prev, ...validFiles]);
+    
+    // Create previews for new files
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setMediaPreviews(prev => [...prev, e.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setMediaPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (!content.trim() && mediaFiles.length === 0) {
+      setError('Please add some content or media to your post');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Create post with content and media
+      const postData = {
+        content: content.trim(),
+        image: mediaFiles[0] || null, // For now, just use the first file
+        visibility: 'public' as const
+      };
+      
+      const newPost = await postsApi.createPost(postData);
+      
+      // Dispatch event to notify other components about the new post
+      window.dispatchEvent(new CustomEvent('postCreated', { 
+        detail: { post: newPost } 
+      }));
+      
+      // Reset form and close modal
+      setContent('');
+      setMediaFiles([]);
+      setMediaPreviews([]);
+      onClose();
+      
+    } catch (error: any) {
+      setError(error.message || 'Failed to create post. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    setIsUploading(true);
-    
-    // Convert FileList to array and filter by image type
-    const newFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-    
-    // Create object URLs for previews
-    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-    
-    setMediaPreviews(prev => [...prev, ...newPreviews]);
-    
-    // Reset the file input
-    if (e.target) e.target.value = '';
-    
-    // Simulate upload delay
-    setTimeout(() => setIsUploading(false), 1000);
+
+  const handleClose = () => {
+    if (!loading) {
+      setContent('');
+      setMediaFiles([]);
+      setMediaPreviews([]);
+      setError('');
+      onClose();
+    }
   };
-  
-  const removeMedia = (index: number) => {
-    // Revoke the object URL to avoid memory leaks
-    URL.revokeObjectURL(mediaPreviews[index]);
-    
-    setMediaPreviews(prev => prev.filter((_, i: number) => i !== index));
-  };
-  
-  const handleSubmit = () => {
-    if (!content.trim() && mediaPreviews.length === 0) return;
-    
-    // Get existing posts from localStorage or initialize empty array
-    const existingPosts = JSON.parse(localStorage.getItem('userPosts') || '[]');
-    
-    // Generate a unique ID for the new post
-    const newPostId = `post_${Date.now()}`;
-    
-    // Process media files - in a real app this would upload to a server
-    // For our mock app, we'll store the data URLs directly
-    const postImages = mediaPreviews.map((preview, index) => ({
-      id: `${newPostId}_img_${index}`,
-      url: preview,
-      alt: `Image ${index + 1}`
-    }));
-    
-    // Create the new post object
-    const newPost = {
-      id: newPostId,
-      content: content,
-      images: postImages,
-      likes: 0,
-      comments: [],
-      createdAt: new Date().toISOString(),
-      user: {
-        id: localStorage.getItem('userId') || '1',
-        name: userName,
-        avatar: userAvatar,
-        role: 'student'
-      }
-    };
-    
-    // Add the new post to the beginning of the posts array
-    const updatedPosts = [newPost, ...existingPosts];
-    
-    // Save the updated posts to localStorage
-    localStorage.setItem('userPosts', JSON.stringify(updatedPosts));
-    
-    // Dispatch an event to notify other components about the new post
-    window.dispatchEvent(new CustomEvent('postCreated', { 
-      detail: { post: newPost } 
-    }));
-    
-    console.log('New post created:', newPost);
-    
-    // Reset the form and close modal
-    setContent('');
-    setMediaPreviews([]);
-    onClose();
-  };
-  
-  // Prevent clicks inside the modal from closing it
-  const handleModalClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-  
+
+  if (!isOpen) return null;
+
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <div 
-        className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg w-full max-w-lg transition-colors duration-200`}
-        onClick={handleModalClick}
-      >
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            Create post
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Create Post
           </h2>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          <button
+            onClick={handleClose}
+            disabled={loading}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <X size={24} className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+            <X className="h-6 w-6" />
           </button>
         </div>
         
-        {/* User info */}
-        <div className="p-4 flex items-center space-x-2">
-          <img 
-            src={userAvatar} 
-            alt={userName} 
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div>
-            <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{userName}</div>
-          </div>
-        </div>
-        
-        {/* Post content */}
-        <div className="px-4 pb-2">
-          <textarea
-            placeholder={`What's on your mind, ${userName.split(' ')[0]}?`}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className={`w-full p-2 min-h-[120px] resize-none border-none ${isDarkMode ? 'bg-gray-800 text-white placeholder-gray-400' : 'bg-white text-gray-800 placeholder-gray-500'} focus:outline-none text-lg`}
-          />
-          
-          {/* Media previews */}
-          {mediaPreviews.length > 0 && (
-            <div className={`mt-2 rounded-lg overflow-hidden border ${isDarkMode ? 'border-gray-700 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-              {isUploading && (
-                <div className={`p-3 ${isDarkMode ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-50 text-blue-600'} text-sm`}>
-                  Uploading media...
-                </div>
-              )}
-              
-              <div className={`relative ${mediaPreviews.length > 1 ? 'grid grid-cols-2 gap-1 p-1' : ''}`}>
-                {mediaPreviews.map((preview, index) => (
-                  <div key={index} className="relative rounded-lg overflow-hidden">
-                    <img 
-                      src={preview} 
-                      alt={`Upload preview ${index + 1}`} 
-                      className="w-full h-auto max-h-80 object-cover"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => removeMedia(index)}
-                      className="absolute top-2 right-2 bg-gray-800 bg-opacity-70 text-white p-1 rounded-full hover:bg-opacity-100 transition-all"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+        {/* Content */}
+        <div className="p-4">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg">
+              {error}
             </div>
           )}
           
-          {/* Add to your post */}
-          <div className={`mt-4 p-3 rounded-lg border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
-            <div className="text-sm font-medium">Add to your post</div>
+          {/* User info */}
+          <div className="flex items-center space-x-3 mb-4">
+            <img
+              src={user?.avatar || 'https://via.placeholder.com/40'}
+              alt={user?.name || 'User'}
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <div>
-              <button 
-                onClick={handlePhotoUpload}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-green-500"
-              >
-                <ImagePlus size={20} />
-              </button>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
+                {user?.name || 'User'}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {user?.universityId || 'Student'}
+              </p>
             </div>
           </div>
           
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-            accept="image/*"
-            multiple
+          {/* Post content */}
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="What's on your mind?"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            rows={4}
+            maxLength={2000}
           />
+          
+          {/* Character count */}
+          <div className="text-right text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {content.length}/2000
+          </div>
+          
+          {/* Media previews */}
+          {mediaPreviews.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {mediaPreviews.map((preview, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={() => removeMedia(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Action buttons */}
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={mediaFiles.length >= 5}
+                className="p-2 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Image className="h-5 w-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-yellow-500 dark:text-gray-400 dark:hover:text-yellow-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <Smile className="h-5 w-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <MapPin className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <Button
+              onClick={handleSubmit}
+              loading={loading}
+              disabled={!content.trim() && mediaFiles.length === 0}
+              className="px-6"
+            >
+              Post
+            </Button>
+          </div>
         </div>
         
-        {/* Post button */}
-        <div className="p-4">
-          <button
-            onClick={handleSubmit}
-            disabled={!content.trim() && mediaPreviews.length === 0}
-            className={`w-full py-2 rounded-lg font-medium ${
-              !content.trim() && mediaPreviews.length === 0
-                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            } transition-colors`}
-          >
-            Post
-          </button>
-        </div>
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
       </div>
     </div>
   );

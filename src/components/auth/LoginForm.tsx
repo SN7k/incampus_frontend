@@ -14,37 +14,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
   
-  const { login, loading, error } = useAuth();
+  const { login } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
-    
-    if (!identifier) {
-      setFormError(role === 'student' ? 'Student ID or email is required' : 'Email is required');
-      return;
+    setLoading(true);
+    try {
+      await login(identifier, password, role);
+    } catch (error: unknown) {
+      setFormError('Login failed.');
+    } finally {
+      setLoading(false);
     }
-    
-    if (!password) {
-      setFormError('Password is required');
-      return;
-    }
-    
-    // Check if the identifier is an email
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-    
-    // If it's a student and not an email, validate the university ID format
-    if (role === 'student' && !isEmail) {
-      const idPattern = /^[A-Z]+\/[A-Z]+\/\d+\/\d+$|^[A-Z]+\/[A-Z]+\/[A-Z]+\/\d+$/;
-      if (!idPattern.test(identifier)) {
-        setFormError('Invalid university ID format. Example: BWU/BCA/20/123');
-        return;
-      }
-    }
-    
-    // For demo purposes, we'll still use the existing login function
-    await login(identifier, password);
   };
 
   return (
@@ -56,9 +40,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
       
       
       <form onSubmit={handleSubmit}>
-        {(formError || error) && (
+        {(formError) && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4">
-            {formError || error}
+            {formError}
           </div>
         )}
         

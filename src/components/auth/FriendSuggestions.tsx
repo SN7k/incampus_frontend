@@ -1,35 +1,46 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Button from '../ui/Button';
 import { User } from '../../types';
-import { mockUsers } from '../../data/mockData';
 import { Search } from 'lucide-react';
+import { friendsApi } from '../../services/friendsApi';
+
+interface FriendSuggestion {
+  user: User;
+  mutualFriends: number;
+}
 
 interface FriendSuggestionsProps {
-  currentUser: Partial<User>;
   onComplete: (followedUsers: string[]) => void;
 }
 
-const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onComplete }) => {
-  // Filter out the current user from suggestions
-  const allSuggestions = mockUsers.filter(user => 
-    user.universityId !== currentUser.universityId
-  );
-  
+const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => {
+  const [suggestions, setSuggestions] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      try {
+        const data: FriendSuggestion[] = await friendsApi.getFriendSuggestions();
+        setSuggestions(data.map((s) => s.user));
+      } catch {
+        setSuggestions([]);
+      }
+    };
+    fetchSuggestions();
+  }, []);
+
   // Filter suggestions based on search query
-  const suggestions = useMemo(() => {
-    if (!searchQuery.trim()) return allSuggestions;
-    
+  const filteredSuggestions = useMemo(() => {
+    if (!searchQuery.trim()) return suggestions;
     const query = searchQuery.toLowerCase();
-    return allSuggestions.filter(user => 
+    return suggestions.filter(user => 
       user.name.toLowerCase().includes(query) || 
       user.universityId.toLowerCase().includes(query) ||
       (user.role && user.role.toLowerCase().includes(query))
     );
-  }, [allSuggestions, searchQuery]);
+  }, [suggestions, searchQuery]);
   
   const toggleUserSelection = (userId: string) => {
     if (selectedUsers.includes(userId)) {
@@ -76,7 +87,7 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ currentUser, onCo
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        {suggestions.map(user => (
+        {filteredSuggestions.map(user => (
           <div 
             key={user.id}
             className={`p-4 rounded-lg border ${
