@@ -102,6 +102,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         const axiosError = error as any;
         if (axiosError.response?.data?.message) {
           setFormError(axiosError.response.data.message);
+        } else if (axiosError.response?.data?.errors) {
+          // Show the first validation error
+          setFormError(axiosError.response.data.errors[0]?.msg || 'Signup failed. Please try again.');
         } else {
           setFormError('Signup failed. Please try again.');
         }
