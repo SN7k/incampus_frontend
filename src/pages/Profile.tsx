@@ -276,19 +276,24 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result && user) {
-          // Update cover photo in user context or via API
-          updateProfile({
-            coverPhoto: event.target.result as string
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Upload cover photo to backend
+        const { coverPhotoUrl } = await profileApi.uploadCoverPhoto(file);
+        
+        // Update local profile data
+        setProfileData(prev => prev ? { ...prev, coverPhoto: { url: coverPhotoUrl } } : null);
+        
+        // Update auth context
+        updateProfile({
+          coverPhoto: { url: coverPhotoUrl }
+        });
+      } catch (error) {
+        console.error('Failed to upload cover photo:', error);
+        alert('Failed to upload cover photo. Please try again.');
+      }
     }
   };
 
@@ -334,9 +339,9 @@ const Profile: React.FC = () => {
         animate={{ opacity: 1 }}
       >
         <div className="h-48 sm:h-56 md:h-72 w-full bg-gradient-to-r from-blue-800 to-blue-600 overflow-hidden relative">
-          {profileData?.coverPhoto && (
+          {profileData?.coverPhoto?.url && (
             <img 
-              src={profileData.coverPhoto} 
+              src={profileData.coverPhoto.url} 
               alt="Cover" 
               className="w-full h-full object-cover"
             />

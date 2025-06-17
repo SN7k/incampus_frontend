@@ -8,7 +8,10 @@ export interface User {
     publicId?: string;
   };
   bio?: string;
-  coverPhoto?: string;
+  coverPhoto?: {
+    url: string;
+    publicId?: string;
+  };
   email?: string;
 }
 

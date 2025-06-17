@@ -32,7 +32,10 @@ export interface ProfileData {
     publicId?: string;
   };
   bio: string;
-  coverPhoto: string;
+  coverPhoto: {
+    url: string;
+    publicId?: string;
+  };
   education: Education;
   location: string;
   skills: Skill[];

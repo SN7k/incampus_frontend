@@ -49,6 +49,24 @@ export const uploadProfilePicture = async (file: File): Promise<{ avatarUrl: str
 };
 
 /**
+ * Upload a cover photo
+ * @param file The image file to upload
+ * @returns The updated profile data with the new cover photo URL
+ */
+export const uploadCoverPhoto = async (file: File): Promise<{ coverPhotoUrl: string }> => {
+  const formData = new FormData();
+  formData.append('coverPhoto', file);
+  
+  const response = await API.post<{ data: { coverPhoto: { url: string } } }>('/profile/cover', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  
+  return { coverPhotoUrl: response.data.data.coverPhoto.url };
+};
+
+/**
  * Update user education information
  * @param educationData The education data to update
  * @returns The updated profile data
@@ -84,6 +102,7 @@ export const profileApi = {
   getUserProfile,
   updateProfile,
   uploadProfilePicture,
+  uploadCoverPhoto,
   updateEducation,
   updateExperience,
   updateSkills

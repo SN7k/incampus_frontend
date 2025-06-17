@@ -60,8 +60,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       // Create profile data
       const profileData = {
         name: userInfo.fullName,
-        avatar: profilePicture || '',
-        coverPhoto: coverPhoto || undefined,
+        avatar: profilePicture ? { url: profilePicture } : undefined,
+        coverPhoto: coverPhoto ? { url: coverPhoto } : undefined,
         bio: bio || undefined,
         role: userInfo.role
       };

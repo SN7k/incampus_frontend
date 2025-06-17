@@ -53,7 +53,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
       });
       
       setProfilePicturePreview(profileData.avatar?.url || null);
-      setCoverPhotoPreview('coverPhoto' in profileData && profileData.coverPhoto ? profileData.coverPhoto : null);
+      setCoverPhotoPreview('coverPhoto' in profileData && profileData.coverPhoto?.url ? profileData.coverPhoto.url : null);
     }
   }, [profileData]);
   
