@@ -99,7 +99,7 @@ export const friendApi = {
   // Get friends list
   getFriends: async (): Promise<User[]> => {
     try {
-      const response = await API.get<{status: string, data: {friends: User[]}}>('/friends');
+      const response = await API.get<{status: string, data: {friends: User[]}}>('/friends/friends-list');
       return response.data.data.friends;
     } catch (error) {
       console.error('Error fetching friends:', error);

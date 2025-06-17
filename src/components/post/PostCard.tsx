@@ -3,6 +3,7 @@ import { Heart, Share2, Trash2, MoreVertical } from 'lucide-react';
 import { Post } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 interface PostCardProps {
   post: Post;
@@ -33,7 +34,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         setLikeCount(prev => prev + 1);
         setIsLiked(true);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling like:', error);
       // Revert the UI state on error
     } finally {
@@ -111,7 +112,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         window.dispatchEvent(new CustomEvent('postDeleted', { 
           detail: { postId: post.id } 
         }));
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error deleting post:', error);
         alert('Failed to delete post. Please try again.');
       }
@@ -145,7 +146,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img
-              src={post.user.avatar}
+              src={getAvatarUrl(post.user.avatar, post.user.name)}
               alt={post.user.name}
               className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
               onClick={navigateToProfile}

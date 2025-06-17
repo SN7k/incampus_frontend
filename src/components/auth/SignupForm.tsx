@@ -102,7 +102,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         return;
       }
       
-      const response = await signup(email, password, collegeId, fullName, role);
+      await signup(email, password, collegeId, fullName, role);
       
       // Pass the user data to the parent component to handle OTP verification
       onSignupSuccess({
@@ -117,7 +117,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
+        const axiosError = error as { response?: { data?: { message?: string; errors?: Array<{ msg?: string }> } } };
         if (axiosError.response?.data?.message) {
           setFormError(axiosError.response.data.message);
         } else if (axiosError.response?.data?.errors) {

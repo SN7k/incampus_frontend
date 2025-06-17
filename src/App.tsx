@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -15,17 +15,11 @@ import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import { User } from './types';
 
-// Mock data for friend requests (in a real app, this would come from an API)
-const mockFriendRequests = [
-  { id: 5, name: 'Priya Sharma', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150', department: 'Mathematics', mutualFriends: 3 },
-  { id: 6, name: 'James Wilson', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150', department: 'Physics', mutualFriends: 1 },
-];
-
 type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-suggestions';
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
 
 function AppContent() {
-  const { isAuthenticated, user, updateProfile } = useAuth();
+  const { isAuthenticated, updateProfile } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
@@ -36,7 +30,7 @@ function AppContent() {
   });
   
   // State to track friend requests
-  const [hasFriendRequests, setHasFriendRequests] = useState(mockFriendRequests.length > 0);
+  const [hasFriendRequests, setHasFriendRequests] = useState(false);
   
   // Update friend requests state when they change
   React.useEffect(() => {

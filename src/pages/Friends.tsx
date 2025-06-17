@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, UserCheck, UserMinus, Check, X } from 'lucide-react';
 import { friendApi } from '../services/api';
 import { User } from '../types';
+import { UserPlus, UserCheck, Users, UserMinus, Check, X } from 'lucide-react';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 type FriendTab = 'friends' | 'requests' | 'suggestions';
 
@@ -26,7 +27,7 @@ const Friends: React.FC = () => {
       ? savedTab as FriendTab 
       : 'friends';
   });
-
+  
   const [friends, setFriends] = useState<User[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -50,7 +51,7 @@ const Friends: React.FC = () => {
     };
     fetchData();
   }, [activeTab]);
-
+  
   // Notify the app about friend requests changes
   useEffect(() => {
     const event = new CustomEvent('friendRequestsChange', {
@@ -58,7 +59,7 @@ const Friends: React.FC = () => {
     });
     window.dispatchEvent(event);
   }, [friendRequests]);
-
+  
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
     console.log('NAVIGATION: Going to profile ID:', userId);
@@ -90,49 +91,62 @@ const Friends: React.FC = () => {
       }));
     }
   };
-
+  
   // Handle accepting a friend request
-  const handleAcceptRequest = (requestId: string) => {
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      const result = await friendApi.acceptRequest(requestId);
     const request = friendRequests.find(req => req.id === requestId);
-    if (!request) return;
-    
-    const isAlreadyFriend = friends.some(friend => friend.id === request.sender.id);
-    
-    if (!isAlreadyFriend) {
-      setFriends(prev => [...prev, request.sender]);
-      setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+      if (request && result) {
+        setFriends(prev => [...prev, request.sender]);
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+    }
+  };
+  
+  // Handle declining a friend request
+  const handleDeclineRequest = async (requestId: string) => {
+    try {
+      await friendApi.declineRequest(requestId);
+    setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+    } catch (error) {
+      console.error('Error declining friend request:', error);
     }
   };
 
-  // Handle declining a friend request
-  const handleDeclineRequest = (requestId: string) => {
-    setFriendRequests(prev => prev.filter(req => req.id !== requestId));
-  };
-
   // Handle adding a friend from suggestions
-  const handleAddFriend = (suggestionId: string) => {
-    const suggestion = suggestions.find(sugg => sugg.user.id === suggestionId);
-    if (!suggestion) return;
-    
-    // Remove from suggestions
-    setSuggestions(prev => prev.filter(sugg => sugg.user.id !== suggestionId));
+  const handleAddFriend = async (suggestionId: string) => {
+    try {
+      await friendApi.sendRequest(suggestionId);
+      // Remove from suggestions
+      setSuggestions(prev => prev.filter(sugg => sugg.user.id !== suggestionId));
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+    }
   };
 
   // Handle unfriending
-  const handleUnfriend = (friendId: string) => {
-    setFriends(prev => prev.filter(friend => friend.id !== friendId));
+  const handleUnfriend = async (friendId: string) => {
+    try {
+      await friendApi.unfriend(friendId);
+      setFriends(prev => prev.filter(friend => friend.id !== friendId));
+    } catch (error) {
+      console.error('Error unfriending user:', error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20">
       <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
+          {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Friends</h1>
           <p className="text-gray-600 dark:text-gray-400">Connect with your classmates and faculty</p>
-        </div>
+          </div>
 
-        {/* Tabs */}
+          {/* Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
@@ -159,8 +173,8 @@ const Friends: React.FC = () => {
               {friendRequests.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {friendRequests.length}
-                </span>
-              )}
+                  </span>
+                )}
             </button>
             <button
               onClick={() => setActiveTab('suggestions')}
@@ -192,8 +206,8 @@ const Friends: React.FC = () => {
                     <div key={friend.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <img
-                          src={friend.avatar}
-                          alt={friend.name}
+                          src={getAvatarUrl(friend.avatar, friend.name)}
+                          alt={friend.name} 
                           className="w-12 h-12 rounded-full object-cover"
                         />
                         <div>
@@ -204,27 +218,27 @@ const Friends: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button
+                          <button 
                           onClick={() => navigateToProfile(friend.id)}
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                         >
                           View Profile
-                        </button>
-                        <button
-                          onClick={() => handleUnfriend(friend.id)}
+                          </button>
+                              <button 
+                                onClick={() => handleUnfriend(friend.id)}
                           className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                        >
+                              >
                           <UserMinus className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
+                              </button>
+                            </div>
+                        </div>
                   ))
                 )}
               </div>
             )}
 
             {activeTab === 'requests' && (
-              <div className="space-y-4">
+                    <div className="space-y-4">
                 {friendRequests.length === 0 ? (
                   <div className="text-center py-8">
                     <UserPlus className="mx-auto h-12 w-12 text-gray-400" />
@@ -238,7 +252,7 @@ const Friends: React.FC = () => {
                     <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <img
-                          src={request.sender.avatar}
+                          src={getAvatarUrl(request.sender.avatar, request.sender.name)}
                           alt={request.sender.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -246,29 +260,29 @@ const Friends: React.FC = () => {
                           <h3 className="font-medium text-gray-900 dark:text-white">{request.sender.name}</h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {request.sender.role === 'faculty' ? 'Faculty' : 'Student'}
-                          </p>
-                        </div>
-                      </div>
+                              </p>
+                            </div>
+                          </div>
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleAcceptRequest(request.id)}
+                            <button 
+                              onClick={() => handleAcceptRequest(request.id)}
                           className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                        >
+                            >
                           <Check className="w-4 h-4 inline mr-1" />
                           Accept
-                        </button>
-                        <button
-                          onClick={() => handleDeclineRequest(request.id)}
+                            </button>
+                            <button 
+                              onClick={() => handleDeclineRequest(request.id)}
                           className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                        >
+                            >
                           <X className="w-4 h-4 inline mr-1" />
                           Decline
-                        </button>
-                      </div>
+                            </button>
+                          </div>
                     </div>
                   ))
-                )}
-              </div>
+                  )}
+                </div>
             )}
 
             {activeTab === 'suggestions' && (
@@ -286,7 +300,7 @@ const Friends: React.FC = () => {
                     <div key={suggestion.user.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <img
-                          src={suggestion.user.avatar}
+                          src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
                           alt={suggestion.user.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -298,8 +312,8 @@ const Friends: React.FC = () => {
                           <p className="text-xs text-gray-400 dark:text-gray-500">
                             {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
                           </p>
-                        </div>
-                      </div>
+                            </div>
+                          </div>
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => navigateToProfile(suggestion.user.id)}
@@ -307,18 +321,18 @@ const Friends: React.FC = () => {
                         >
                           View Profile
                         </button>
-                        <button
+                            <button 
                           onClick={() => handleAddFriend(suggestion.user.id)}
                           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
                         >
                           <UserPlus className="w-4 h-4 inline mr-1" />
                           Add Friend
-                        </button>
-                      </div>
+                            </button>
+                          </div>
                     </div>
                   ))
-                )}
-              </div>
+                  )}
+                </div>
             )}
           </div>
         </div>
