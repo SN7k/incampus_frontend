@@ -258,7 +258,9 @@ const Profile: React.FC = () => {
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
     try {
+      console.log('Sending profile update data:', editFormData);
       const updated = await profileApi.updateProfile(editFormData);
+      console.log('Received updated profile data:', updated);
       setProfileData(updated);
       setIsEditProfileModalOpen(false);
     } catch (err) {
