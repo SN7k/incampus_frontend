@@ -71,11 +71,11 @@ export const usersApi = {
   // Get user suggestions (for friend suggestions)
   getUserSuggestions: async (): Promise<User[]> => {
     try {
-      const response = await API.get<UsersResponse>('/users/suggestions');
-      return response.data.data.users;
+      const response = await API.get<{status: string, data: User[]}>('/friends/suggestions');
+      return response.data.data;
     } catch (error) {
       console.error('Error fetching user suggestions:', error);
-      throw error;
+      throw new Error('An error occurred');
     }
   },
 

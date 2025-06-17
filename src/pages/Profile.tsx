@@ -92,7 +92,7 @@ const Profile: React.FC = () => {
   };
 
   if (loading) {
-    return (
+  return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="animate-pulse">
@@ -102,10 +102,10 @@ const Profile: React.FC = () => {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
               ))}
+          </div>
+        </div>
+              </div>
                         </div>
-                        </div>
-                      </div>
-                  </div>
     );
   }
 
@@ -116,9 +116,9 @@ const Profile: React.FC = () => {
           <div className="text-center">
             <div className="text-red-500 mb-4">{error}</div>
             <Button onClick={loadProfileData}>Try Again</Button>
-                  </div>
-                        </div>
-                        </div>
+                </div>
+                </div>
+                    </div>
     );
   }
 
@@ -129,8 +129,8 @@ const Profile: React.FC = () => {
           <div className="text-center">
             <div className="text-gray-500 mb-4">Profile not found</div>
                 </div>
-              </div>
-              </div>
+                  </div>
+                        </div>
     );
   }
 

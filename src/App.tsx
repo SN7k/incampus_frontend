@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -25,7 +25,7 @@ type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-s
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
 
 function AppContent() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, user, updateProfile } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
@@ -128,42 +128,36 @@ function AppContent() {
   };
   
   const handleFriendSuggestionsComplete = async (followedUsers: string[]) => {
-    // In a real app, you would send this to your backend
-    // For demo, we'll simulate a successful registration and auto-login
-    
-    // Create a mock user with the combined data
-    const mockUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: pendingUserData?.fullName || '',
-      universityId: pendingUserData?.universityId || `BWU/${pendingUserData?.program || 'BCA'}/23/${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-      role: pendingUserData?.role || 'student',
-      avatar: pendingProfileData?.avatar || '',
-      bio: pendingProfileData?.bio,
-      coverPhoto: pendingProfileData?.coverPhoto
-    };
-    
-    // Store the new user in localStorage for the login function to find
-    localStorage.setItem('pendingRegistration', JSON.stringify(mockUser));
-    
-    // Auto-login the user
     try {
-      // This is a mock login - in a real app you'd get a token from your backend
-      // and then fetch the user profile
-      await login(mockUser.universityId, 'password', mockUser.role);
+      // Since the user is already authenticated after OTP verification,
+      // we just need to update their profile and redirect to feed
       
-      // Initialize friend system for new user
-      const defaultFriends: { id: string; name: string; avatar: string }[] = [];
-      localStorage.setItem('userFriends', JSON.stringify(defaultFriends));
+      // Update the user's profile with the collected data
+      if (pendingProfileData) {
+        try {
+          await updateProfile(pendingProfileData);
+        } catch (error) {
+          console.error('Failed to update profile:', error);
+          // Continue anyway, profile can be updated later
+        }
+      }
       
-      // In a real app, you would also store the followed users
+      // Store followed users (in a real app, this would be sent to backend)
       console.log('Followed users:', followedUsers);
       
-      // Set current page to feed to ensure the user sees the feed after login
+      // Set current page to feed
       setCurrentPage('feed');
+      localStorage.setItem('currentPage', 'feed');
+      
+      // Clear pending data
+      setPendingUserData(null);
+      setPendingProfileData(null);
+      
     } catch (error) {
-      console.error('Failed to auto-login after registration', error);
-      // Fall back to login screen
-      setRegistrationStep('login');
+      console.error('Failed to complete registration:', error);
+      // If there's an error, just redirect to feed anyway
+      setCurrentPage('feed');
+      localStorage.setItem('currentPage', 'feed');
     }
   };
 

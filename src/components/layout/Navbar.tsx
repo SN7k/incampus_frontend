@@ -260,7 +260,7 @@ const Navbar: React.FC = () => {
                 className="flex items-center focus:outline-none"
               >
                 <img
-                  src={user?.avatar || "https://via.placeholder.com/40"}
+                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`}
                   alt={user?.name || "User"}
                   className="w-11 h-11 rounded-full object-cover border-2 border-blue-200 dark:border-blue-800 cursor-pointer transition-transform active:scale-95 hover:border-blue-400 dark:hover:border-blue-600 shadow-md"
                 />
@@ -276,7 +276,7 @@ const Navbar: React.FC = () => {
                         <button onClick={navigateToProfile} className="w-full text-left block p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                           <div className="flex items-center">
                             <img 
-                              src={user?.avatar || "https://via.placeholder.com/40"} 
+                              src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`} 
                               alt={user?.name || "User"} 
                               className="w-12 h-12 rounded-full object-cover shadow-sm"
                             />
@@ -414,7 +414,7 @@ const Navbar: React.FC = () => {
             <button onClick={navigateToProfile} className="w-full text-left block p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
               <div className="flex items-center">
                 <img 
-                  src={user?.avatar || "https://via.placeholder.com/40"} 
+                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`} 
                   alt={user?.name || "User"} 
                   className="w-12 h-12 rounded-full object-cover shadow-sm"
                 />

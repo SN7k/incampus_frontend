@@ -139,7 +139,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           {/* User info */}
           <div className="flex items-center space-x-3 mb-4">
             <img
-              src={user?.avatar || 'https://via.placeholder.com/40'}
+              src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`}
               alt={user?.name || 'User'}
               className="w-10 h-10 rounded-full object-cover"
             />
