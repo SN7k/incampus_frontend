@@ -26,6 +26,6 @@ git commit -m "Update frontend with latest changes"
 
 # Push to GitHub
 Write-Host "Pushing to GitHub..."
-git push -u origin main
+git push -u origin master
 
 Write-Host "Done! Frontend code has been pushed to GitHub."
