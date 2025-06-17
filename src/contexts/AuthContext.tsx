@@ -95,6 +95,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         error: null
       };
       
+      // Debug: Log the user data received from login
+      console.log('AuthContext: Login user data:', response.data.user);
+      console.log('AuthContext: Login avatar:', response.data.user.avatar);
+      
       setState(newState);
       localStorage.setItem('authState', JSON.stringify(newState));
       localStorage.setItem('currentPage', 'feed');
@@ -124,6 +128,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading: false,
         error: null
       };
+      
+      // Debug: Log the user data received from OTP verification
+      console.log('AuthContext: OTP verification user data:', response.data.user);
+      console.log('AuthContext: OTP verification avatar:', response.data.user.avatar);
       
       setState(newState);
       localStorage.setItem('authState', JSON.stringify(newState));
@@ -167,6 +175,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setState(newState);
       localStorage.setItem('authState', JSON.stringify(newState));
+      
+      // Debug: Log the updated user data
+      console.log('AuthContext: Updated user data:', updatedUser);
+      console.log('AuthContext: Updated avatar:', updatedUser.avatar);
     } catch (error: any) {
       console.error('Error updating profile:', error);
       throw error;

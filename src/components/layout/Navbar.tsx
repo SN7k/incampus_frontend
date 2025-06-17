@@ -13,8 +13,12 @@ const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { themeMode, setThemeMode } = useTheme();
   const { unreadCount, showNotificationPanel, setShowNotificationPanel } = useNotifications();
-  // State for dropdown and submenu management
-  const [_] = useState(false);
+  
+  // Debug: Log user data to see what's available
+  console.log('Navbar user data:', user);
+  console.log('User avatar:', user?.avatar);
+  console.log('Avatar type:', typeof user?.avatar);
+  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDisplaySubmenu, setShowDisplaySubmenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -24,11 +28,13 @@ const Navbar: React.FC = () => {
   const searchModalRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   
-  // Use the search context - we don't need any methods here as the SearchModal handles everything
-  const { } = useSearch();
-  
   // State for friend requests notification
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
+
+  // Function to open search modal
+  const openSearchModal = () => {
+    setIsSearchModalOpen(true);
+  };
 
   // Navigation functions to different pages
   const navigateToProfile = () => {
@@ -153,11 +159,6 @@ const Navbar: React.FC = () => {
       window.removeEventListener('pageChange', handleNavigation);
     };
   }, [isSearchModalOpen]);
-
-  // Function to open search modal
-  const openSearchModal = () => {
-    setIsSearchModalOpen(true);
-  };
 
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 fixed w-full top-0 z-50">
