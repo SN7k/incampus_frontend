@@ -60,7 +60,7 @@ const Feed: React.FC = () => {
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
       const { postId } = event.detail;
-      setPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
+      setPosts(currentPosts => currentPosts.filter(post => post._id !== postId));
     };
     
     window.addEventListener('postDeleted', handlePostDeleted as EventListener);
@@ -180,7 +180,7 @@ const Feed: React.FC = () => {
               <div className="space-y-4">
                 {posts.map((post) => (
                   <motion.div
-                    key={post.id}
+                    key={post._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
@@ -205,7 +205,7 @@ const Feed: React.FC = () => {
                 
                 <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => (
-                    <div key={suggestedUser.id} className="flex items-center justify-between">
+                    <div key={suggestedUser._id} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <img
                           src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)}
@@ -223,13 +223,12 @@ const Feed: React.FC = () => {
                       </div>
                       <button
                         onClick={() => {
-                          // Navigate to user profile
-                          localStorage.setItem('viewProfileUserId', suggestedUser.id);
+                          localStorage.setItem('viewProfileUserId', suggestedUser._id);
                           window.dispatchEvent(new CustomEvent('navigate', { 
-                            detail: { page: 'profile', userId: suggestedUser.id } 
+                            detail: { page: 'profile', userId: suggestedUser._id }
                           }));
                         }}
-                        className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
                       >
                         View Profile
                       </button>

@@ -66,7 +66,7 @@ const Profile: React.FC = () => {
       const userLikesStr = localStorage.getItem('userProfileLikes');
       if (userLikesStr && user) {
         const userLikes = JSON.parse(userLikesStr);
-        return userLikes[`${user.id}_${profileId}`] || false;
+        return userLikes[`${user._id}_${profileId}`] || false;
       }
       return false;
     } catch (error) {
@@ -88,7 +88,7 @@ const Profile: React.FC = () => {
       if (user) {
         const userLikesStr = localStorage.getItem('userProfileLikes');
         const userLikes = userLikesStr ? JSON.parse(userLikesStr) : {};
-        userLikes[`${user.id}_${profileId}`] = hasLiked;
+        userLikes[`${user._id}_${profileId}`] = hasLiked;
         localStorage.setItem('userProfileLikes', JSON.stringify(userLikes));
       }
     } catch (error) {
@@ -98,7 +98,7 @@ const Profile: React.FC = () => {
       
       // Load profile likes when viewing a profile
   useEffect(() => {
-      const targetProfileId = viewingUserId || (user ? user.id : '');
+      const targetProfileId = viewingUserId || (user ? user._id : '');
       if (targetProfileId) {
         const likes = getProfileLikes(targetProfileId);
         const userHasLiked = hasUserLikedProfile(targetProfileId);
@@ -115,7 +115,7 @@ const Profile: React.FC = () => {
         const targetUserId = localStorage.getItem('viewProfileUserId');
         setViewingUserId(targetUserId); // null if viewing own profile, userId if viewing someone else
         
-        const userIdToFetch = targetUserId || user?.id;
+        const userIdToFetch = targetUserId || user?._id;
         if (!userIdToFetch) return;
         
         // Fetch profile
@@ -140,7 +140,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
       const { postId } = event.detail;
-      setUserPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
+      setUserPosts(currentPosts => currentPosts.filter(post => post._id !== postId));
     };
     
     window.addEventListener('postDeleted', handlePostDeleted as EventListener);
@@ -513,7 +513,7 @@ const Profile: React.FC = () => {
                     variants={item} 
                     className={`px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md ${hasLiked ? 'bg-gradient-to-br from-emerald-200 to-emerald-300 dark:from-emerald-600 dark:to-emerald-500' : 'bg-gradient-to-br from-emerald-50/80 to-emerald-100/70 dark:from-emerald-800/40 dark:to-emerald-700/30'}`}
                     onClick={() => {
-                      const targetProfileId = viewingUserId || (user ? user.id : '');
+                      const targetProfileId = viewingUserId || (user ? user._id : '');
                       if (!targetProfileId || !user) return;
                       
                       if (hasLiked) {
@@ -643,7 +643,7 @@ const Profile: React.FC = () => {
               {userPosts.length > 0 ? (
                 <div className="space-y-6">
                   {userPosts.map((post) => (
-                    <motion.div key={post.id} variants={item}>
+                    <motion.div key={post._id} variants={item}>
                       <PostCard post={post} />
                     </motion.div>
                   ))}
@@ -706,8 +706,8 @@ const Profile: React.FC = () => {
               {(() => {
                 // Get all media from user posts
                 const allMedia = userPosts
-                  .filter(post => post.media && post.media.length > 0)
-                  .flatMap(post => post.media || [])
+                  .filter(post => post.images && post.images.length > 0)
+                  .flatMap(post => post.images || [])
                   .filter(media => media.type === 'image');
                 
                 if (allMedia.length === 0) {
@@ -740,7 +740,7 @@ const Profile: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                     {allMedia.map((media, index) => (
                       <motion.div 
-                        key={media.id || index}
+                        key={`${media.url}_${index}`}
                         className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.98 }}
@@ -803,7 +803,7 @@ const Profile: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
                     {filteredFriends.map((friend) => (
                       <motion.div 
-                        key={friend.id}
+                        key={friend._id}
                         className="flex items-center p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
                         whileHover={{ scale: 1.02 }}
                       >
@@ -821,7 +821,7 @@ const Profile: React.FC = () => {
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                             onClick={() => {
                               // Navigate to friend's profile
-                                    localStorage.setItem('viewProfileUserId', friend.id);
+                                    localStorage.setItem('viewProfileUserId', friend._id);
                                     window.location.reload();
                             }}
                           >

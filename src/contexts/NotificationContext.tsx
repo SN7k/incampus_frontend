@@ -46,7 +46,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Load notifications from localStorage on initial render
   useEffect(() => {
     if (user) {
-      const storedNotifications = localStorage.getItem(`notifications_${user.id}`);
+      const storedNotifications = localStorage.getItem(`notifications_${user._id}`);
       if (storedNotifications) {
         const parsedNotifications = JSON.parse(storedNotifications);
         setNotifications(parsedNotifications);
@@ -64,7 +64,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         ];
         setNotifications(initialNotifications);
         setUnreadCount(1);
-        localStorage.setItem(`notifications_${user.id}`, JSON.stringify(initialNotifications));
+        localStorage.setItem(`notifications_${user._id}`, JSON.stringify(initialNotifications));
       }
     }
   }, [user]);
@@ -72,7 +72,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Save notifications to localStorage whenever they change
   useEffect(() => {
     if (user && notifications.length > 0) {
-      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications));
+      localStorage.setItem(`notifications_${user._id}`, JSON.stringify(notifications));
       setUnreadCount(notifications.filter(notif => !notif.read).length);
     }
   }, [notifications, user]);
@@ -114,7 +114,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   useEffect(() => {
     const handleFriendRequest = (event: CustomEvent) => {
       const { fromUser, toUser, requestType, fromUserName, fromUserAvatar } = event.detail;
-      if (user && ((requestType === 'new' && toUser === user.id) || (requestType === 'accepted' && toUser === user.id))) {
+      if (user && ((requestType === 'new' && toUser === user._id) || (requestType === 'accepted' && toUser === user._id))) {
         const message = requestType === 'new'
           ? `${fromUserName || 'Someone'} sent you a friend request`
           : `${fromUserName || 'Someone'} accepted your friend request`;
@@ -136,7 +136,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   useEffect(() => {
     const handlePostLike = (event: CustomEvent) => {
       const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
-      if (user && postAuthorId === user.id && fromUser !== user.id) {
+      if (user && postAuthorId === user._id && fromUser !== user._id) {
         addNotification({
           type: 'like',
           message: `${fromUserName || 'Someone'} liked your post`,
@@ -156,7 +156,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   useEffect(() => {
     const handlePostComment = (event: CustomEvent) => {
       const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
-      if (user && postAuthorId === user.id && fromUser !== user.id) {
+      if (user && postAuthorId === user._id && fromUser !== user._id) {
         addNotification({
           type: 'comment',
           message: `${fromUserName || 'Someone'} commented on your post`,

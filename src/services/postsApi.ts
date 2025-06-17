@@ -58,8 +58,8 @@ export const createPost = async (postData: CreatePostData): Promise<Post> => {
   // If there's an image, use FormData
   if (postData.image) {
     const formData = new FormData();
-    formData.append('content', postData.content);
-    formData.append('image', postData.image);
+    formData.append('text', postData.content);
+    formData.append('images', postData.image);
     
     if (postData.visibility) {
       formData.append('visibility', postData.visibility);
@@ -75,7 +75,10 @@ export const createPost = async (postData: CreatePostData): Promise<Post> => {
   }
   
   // No image, use regular JSON
-  const response = await API.post<PostResponse>('/posts', postData);
+  const response = await API.post<PostResponse>('/posts', {
+    text: postData.content,
+    visibility: postData.visibility
+  });
   return response.data.data.post;
 };
 
@@ -103,21 +106,21 @@ export const deletePost = async (postId: string): Promise<boolean> => {
 /**
  * Like a post
  * @param postId Post ID to like
- * @returns Updated post
+ * @returns Like status
  */
-export const likePost = async (postId: string): Promise<Post> => {
-  const response = await API.post<PostResponse>(`/posts/${postId}/like`);
-  return response.data.data.post;
+export const likePost = async (postId: string): Promise<{ likes: number; isLiked: boolean }> => {
+  const response = await API.patch(`/posts/${postId}/like`);
+  return response.data.data;
 };
 
 /**
  * Unlike a post
  * @param postId Post ID to unlike
- * @returns Updated post
+ * @returns Like status
  */
-export const unlikePost = async (postId: string): Promise<Post> => {
-  const response = await API.delete<PostResponse>(`/posts/${postId}/like`);
-  return response.data.data.post;
+export const unlikePost = async (postId: string): Promise<{ likes: number; isLiked: boolean }> => {
+  const response = await API.patch(`/posts/${postId}/like`);
+  return response.data.data;
 };
 
 /**
@@ -127,7 +130,7 @@ export const unlikePost = async (postId: string): Promise<Post> => {
  * @returns Updated post with new comment
  */
 export const addComment = async (postId: string, content: string): Promise<Post> => {
-  const response = await API.post<PostResponse>(`/posts/${postId}/comments`, { content });
+  const response = await API.post<PostResponse>(`/posts/${postId}/comments`, { text: content });
   return response.data.data.post;
 };
 

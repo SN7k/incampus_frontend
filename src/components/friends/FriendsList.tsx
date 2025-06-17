@@ -74,7 +74,7 @@ const FriendsList: React.FC = () => {
       await friendApi.sendRequest(userId);
       
       // Update UI optimistically
-      setSuggestions(prev => prev.filter(suggestion => suggestion.user.id !== userId));
+      setSuggestions(prev => prev.filter(suggestion => suggestion.user._id !== userId));
     } catch (error) {
       console.error('Error sending friend request:', error);
       // Handle error
@@ -86,7 +86,7 @@ const FriendsList: React.FC = () => {
       await friendApi.unfriend(userId);
       
       // Update UI optimistically
-      setFriends(prev => prev.filter(friend => friend.id !== userId));
+      setFriends(prev => prev.filter(friend => friend._id !== userId));
     } catch (error) {
       console.error('Error unfriending user:', error);
       // Handle error
@@ -155,7 +155,7 @@ const FriendsList: React.FC = () => {
                   </p>
                 ) : (
                   friends.map(friend => (
-                    <div key={friend.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={friend._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
                           src={getAvatarUrl(friend.avatar, friend.name)}
@@ -170,7 +170,7 @@ const FriendsList: React.FC = () => {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleUnfriend(friend.id)}
+                        onClick={() => handleUnfriend(friend._id)}
                         className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
                         title="Unfriend"
                       >
@@ -234,7 +234,7 @@ const FriendsList: React.FC = () => {
                   </p>
                 ) : (
                   suggestions.map(suggestion => (
-                    <div key={suggestion.user.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={suggestion.user._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
                           src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
@@ -249,7 +249,7 @@ const FriendsList: React.FC = () => {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleAddFriend(suggestion.user.id)}
+                        onClick={() => handleAddFriend(suggestion.user._id)}
                         className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full"
                         title="Add Friend"
                       >

@@ -1,5 +1,5 @@
 export interface User {
-  id: string;
+  _id: string;
   name: string;
   universityId: string;
   role: 'student' | 'faculty';
@@ -16,21 +16,23 @@ export interface User {
 }
 
 export interface Post {
-  id: string;
-  userId: string;
-  user: User;
+  _id: string;
+  author: User;
   content: string;
-  media?: Media[];
-  likes: number;
+  images?: {
+    type: 'image' | 'video';
+    url: string;
+    publicId?: string;
+  }[];
+  likes: string[];
   comments: Comment[];
   createdAt: Date;
 }
 
 export interface Comment {
-  id: string;
-  userId: string;
+  _id: string;
   user: User;
-  content: string;
+  text: string;
   createdAt: Date;
 }
 
