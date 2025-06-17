@@ -9,6 +9,7 @@ import { Post, ProfileData, User } from '../types/profile';
 import CreatePostModal from '../components/post/CreatePostModal';
 import { postsApi } from '../services/postsApi';
 import { friendApi } from '../services/api';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ const Profile: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-      loadProfileData();
+    loadProfileData();
   }, [loadProfileData]);
   
   // Listen for post deletion events
@@ -102,29 +103,21 @@ const Profile: React.FC = () => {
     }
   };
 
-  const getAvatarUrl = (avatar: unknown, name: string) => {
-    if (typeof avatar === 'string') return avatar;
-    if (avatar && typeof avatar === 'object' && 'url' in avatar && typeof (avatar as any).url === 'string') {
-      return (avatar as any).url;
-    }
-    return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&size=128&background=random';
-  };
-
   if (loading) {
-  return (
+    return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg mb-6"></div>
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-                  <div className="space-y-4">
+            <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
               ))}
+            </div>
           </div>
         </div>
-              </div>
-                        </div>
+      </div>
     );
   }
 
@@ -135,9 +128,9 @@ const Profile: React.FC = () => {
           <div className="text-center">
             <div className="text-red-500 mb-4">{error}</div>
             <Button onClick={loadProfileData}>Try Again</Button>
-                </div>
-                </div>
-                    </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -147,9 +140,9 @@ const Profile: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
             <div className="text-gray-500 mb-4">Profile not found</div>
-                </div>
-                  </div>
-                        </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -163,21 +156,21 @@ const Profile: React.FC = () => {
             {profileData.coverPhoto && (
               <img
                 src={profileData.coverPhoto}
-              alt="Cover" 
-              className="w-full h-full object-cover"
-            />
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
             )}
             {isOwnProfile && (
               <button className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-colors">
                 <Camera className="h-5 w-5" />
               </button>
             )}
-        </div>
+          </div>
         
           {/* Profile Info */}
           <div className="relative px-6 pb-6">
             <div className="flex items-end -mt-16 mb-4">
-                <div className="relative">
+              <div className="relative">
                 <img
                   src={getAvatarUrl(profileData.avatar, profileData.name)}
                   alt={profileData.name}
@@ -203,15 +196,15 @@ const Profile: React.FC = () => {
                     {profileData.location}
                   </div>
                 )}
-                  </div>
-                  
+              </div>
+              
               {isOwnProfile && (
                 <Button onClick={handleEditProfile} className="ml-4">
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
-                      </Button>
-                    )}
-                </div>
+                </Button>
+              )}
+            </div>
                 
             {profileData.bio && (
               <p className="text-gray-700 dark:text-gray-300 mb-4">
@@ -226,15 +219,15 @@ const Profile: React.FC = () => {
                 <span className="text-gray-600 dark:text-gray-400">
                   {friendsList.length} friends
                 </span>
-                    </div>
+              </div>
               <div className="flex items-center">
                 <BookOpen className="h-4 w-4 mr-1 text-gray-500" />
                 <span className="text-gray-600 dark:text-gray-400">
                   {userPosts.length} posts
                 </span>
-                    </div>
-                    </div>
-                    </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         {/* Tabs */}
@@ -263,16 +256,16 @@ const Profile: React.FC = () => {
                 );
               })}
             </nav>
-                    </div>
+          </div>
           
           {/* Tab Content */}
           <div className="p-6">
             <AnimatePresence mode="wait">
               {activeTab === 'posts' && (
-        <motion.div 
+                <motion.div 
                   key="posts"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
                 >
@@ -292,21 +285,21 @@ const Profile: React.FC = () => {
                         No posts yet
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400">
-                        {isOwnProfile ? 'Create your first post to get started!' : 'This user hasn\'t posted anything yet.'}
+                        {isOwnProfile ? 'Create your first post to get started!' : "This user hasn't posted anything yet."}
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                  {userPosts.map((post) => (
+                      {userPosts.map((post) => (
                         <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
+                      ))}
+                    </div>
                   )}
                 </motion.div>
-          )}
+              )}
 
               {activeTab === 'about' && (
-            <motion.div 
+                <motion.div 
                   key="about"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -331,8 +324,8 @@ const Profile: React.FC = () => {
                           <p className="text-sm text-gray-500 dark:text-gray-500">
                             {profileData.education.years}
                           </p>
-                </div>
-              </div>
+                        </div>
+                      </div>
                     )}
                     
                     {/* Skills */}
@@ -350,8 +343,8 @@ const Profile: React.FC = () => {
                               {skill.name}
                             </span>
                           ))}
+                        </div>
                       </div>
-                    </div>
                     )}
                     
                     {/* Achievements */}
@@ -374,16 +367,16 @@ const Profile: React.FC = () => {
                                 {achievement.year}
                               </p>
                             </div>
-                    ))}
-                  </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-            </motion.div>
-          )}
+                </motion.div>
+              )}
 
-          {activeTab === 'friends' && (
-            <motion.div 
+              {activeTab === 'friends' && (
+                <motion.div 
                   key="friends"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -392,7 +385,7 @@ const Profile: React.FC = () => {
                 >
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                     Friends ({friendsList.length})
-                </h3>
+                  </h3>
                   
                   {friendsList.length === 0 ? (
                     <div className="text-center py-12">
@@ -401,19 +394,19 @@ const Profile: React.FC = () => {
                         No friends yet
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400">
-                        {isOwnProfile ? 'Start connecting with other students and faculty!' : 'This user hasn\'t added any friends yet.'}
+                        {isOwnProfile ? 'Start connecting with other students and faculty!' : "This user hasn't added any friends yet."}
                       </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {friendsList.map((friend) => (
                         <div
-                        key={friend.id}
+                          key={friend.id}
                           className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex items-center space-x-3"
-                      >
-                        <img 
-                          src={friend.avatar}
-                          alt={friend.name}
+                        >
+                          <img 
+                            src={getAvatarUrl(friend.avatar, friend.name)}
+                            alt={friend.name}
                             className="w-12 h-12 rounded-full object-cover"
                           />
                           <div className="flex-1">
@@ -423,19 +416,19 @@ const Profile: React.FC = () => {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {friend.universityId}
                             </p>
-                        </div>
+                          </div>
                         </div>
                       ))}
-                </div>
+                    </div>
+                  )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
             </AnimatePresence>
-                  </div>
-                </div>
+          </div>
+        </div>
                 
-      {/* Create Post Modal */}
-      <CreatePostModal 
+        {/* Create Post Modal */}
+        <CreatePostModal 
           isOpen={showCreatePost}
           onClose={() => setShowCreatePost(false)}
         />
