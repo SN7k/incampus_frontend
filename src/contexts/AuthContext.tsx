@@ -7,7 +7,7 @@ interface AuthContextType extends AuthState {
   login: (identifier: string, password: string, role: 'student' | 'faculty') => Promise<void>;
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => void;
-  signup: (email: string, password: string, collegeId: string, name: string, role: 'student' | 'faculty') => Promise<void>;
+  signup: (email: string, password: string, collegeId: string, name: string, role: 'student' | 'faculty') => Promise<any>;
   verifyOTP: (email: string, otp: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
 }
@@ -24,7 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: () => {},
   updateProfile: () => {},
-  signup: async () => {},
+  signup: async () => ({}),
   verifyOTP: async () => {},
   resendOTP: async () => {}
 });
@@ -58,19 +58,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await authApi.signup(email, password, collegeId, name, role);
       
-      // Store token
-      tokenService.setToken(response.data.token);
+      // Don't log in automatically - wait for OTP verification
+      // Just show success message and clear loading state
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: null 
+      }));
       
-      const newState = {
-        isAuthenticated: true,
-        user: response.data.user,
-        loading: false,
-        error: null
-      };
-      
-      setState(newState);
-      localStorage.setItem('authState', JSON.stringify(newState));
-      localStorage.setItem('currentPage', 'feed');
+      // Return the response for the parent component to handle OTP flow
+      return response;
     } catch (error: any) {
       setState({
         isAuthenticated: false,
