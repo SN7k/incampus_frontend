@@ -86,6 +86,8 @@ function AppContent() {
     role: 'student' | 'faculty';
   } | null>(null);
 
+  const [pendingOtp, setPendingOtp] = useState<string | null>(null);
+
   const handleSignupSuccess = (userData: {
     fullName: string;
     email: string;
@@ -94,8 +96,9 @@ function AppContent() {
     batch?: string;
     department?: string;
     role: 'student' | 'faculty';
-  }) => {
+  }, otp?: string) => {
     setPendingUserData(userData);
+    setPendingOtp(otp || null);
     setRegistrationStep('otp');
   };
 
@@ -201,6 +204,7 @@ function AppContent() {
             email={pendingUserData.email}
             onVerificationComplete={handleOtpVerificationComplete}
             onResendOtp={handleResendOtp}
+            providedOtp={pendingOtp || undefined}
           />
         )}
         

@@ -7,14 +7,16 @@ interface OtpVerificationProps {
   email: string;
   onVerificationComplete: (otp: string) => void;
   onResendOtp: () => void;
+  providedOtp?: string; // OTP provided from signup response
 }
 
 const OtpVerification: React.FC<OtpVerificationProps> = ({ 
   email, 
   onVerificationComplete, 
-  onResendOtp 
+  onResendOtp,
+  providedOtp
 }) => {
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(providedOtp || '');
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -70,6 +72,18 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
           We've sent a verification code to
         </p>
         <p className="text-blue-600 dark:text-blue-400 font-medium">{email}</p>
+        
+        {/* Show provided OTP if email service is not working */}
+        {providedOtp && (
+          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+              <strong>Email service temporarily unavailable.</strong>
+            </p>
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              Your verification code is: <strong className="text-lg">{providedOtp}</strong>
+            </p>
+          </div>
+        )}
       </div>
       
       <form onSubmit={handleSubmit}>

@@ -15,7 +15,7 @@ interface SignupFormProps {
     batch?: string;
     department?: string;
     role: 'student' | 'faculty';
-  }) => void;
+  }, otp?: string) => void;
 }
 
 const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess }) => {
@@ -84,9 +84,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
     try {
       // Use the collegeId field for universityId
       const collegeId = role === 'student' ? universityId : department;
-      await signup(email, password, collegeId, fullName, role);
+      const response = await signup(email, password, collegeId, fullName, role);
       
-      // Pass the user data to the parent component to handle OTP verification
+      // Pass the user data and OTP to the parent component to handle OTP verification
       onSignupSuccess({
         role,
         fullName,
@@ -95,7 +95,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
         program: role === 'student' ? program : undefined,
         batch: role === 'student' ? batch : undefined,
         department: role === 'faculty' ? department : undefined
-      });
+      }, response?.data?.otp);
       
     } catch (error: unknown) {
       setFormError('Signup failed.');
