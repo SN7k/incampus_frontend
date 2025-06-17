@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import { User } from './types';
+import { profileApi } from './services/profileApi';
 
 type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-suggestions';
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
@@ -148,12 +149,19 @@ function AppContent() {
         ...pendingProfileData
       };
       
-      // Update the user's profile with the complete data
+      // Setup the user's profile with the complete data
       try {
-        await updateProfile(completeProfileData);
-        console.log('Profile updated successfully with:', completeProfileData);
+        const setupData = {
+          name: pendingUserData?.fullName || '',
+          avatar: pendingProfileData?.avatar,
+          coverPhoto: pendingProfileData?.coverPhoto,
+          bio: pendingProfileData?.bio,
+          role: pendingUserData?.role || 'student'
+        };
+        await profileApi.setupProfile(setupData);
+        console.log('Profile setup successfully with:', setupData);
       } catch (error) {
-        console.error('Failed to update profile:', error);
+        console.error('Failed to setup profile:', error);
         // Continue anyway, profile can be updated later
       }
       

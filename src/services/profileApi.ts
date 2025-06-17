@@ -96,6 +96,22 @@ export const updateSkills = async (skills: string[]): Promise<ProfileData> => {
   return response.data.data;
 };
 
+/**
+ * Setup user profile (for new users)
+ * @param profileData The profile data including avatar and cover photo
+ * @returns The updated profile data
+ */
+export const setupProfile = async (profileData: {
+  name: string;
+  avatar?: { url: string };
+  coverPhoto?: { url: string };
+  bio?: string;
+  role: 'student' | 'faculty';
+}): Promise<ProfileData> => {
+  const response = await API.post<{ data: ProfileData }>('/profile/setup', profileData);
+  return response.data.data;
+};
+
 // Export all functions as a single object for easier imports
 export const profileApi = {
   getMyProfile,
@@ -105,5 +121,6 @@ export const profileApi = {
   uploadCoverPhoto,
   updateEducation,
   updateExperience,
-  updateSkills
+  updateSkills,
+  setupProfile
 };

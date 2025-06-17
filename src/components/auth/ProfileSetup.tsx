@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 import { User } from '../../types';
+import { profileApi } from '../../services/profileApi';
 
 interface ProfileSetupProps {
   userInfo: {
@@ -15,8 +16,10 @@ interface ProfileSetupProps {
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete, onSkip }) => {
   const [step, setStep] = useState<1 | 2>(1);
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
+  const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,20 +29,16 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload this to a server
-      // For demo, we'll use a local URL
-      const imageUrl = URL.createObjectURL(file);
-      setProfilePicture(imageUrl);
+      setProfilePicture(file);
+      setProfilePicturePreview(URL.createObjectURL(file));
     }
   };
   
   const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload this to a server
-      // For demo, we'll use a local URL
-      const imageUrl = URL.createObjectURL(file);
-      setCoverPhoto(imageUrl);
+      setCoverPhoto(file);
+      setCoverPhotoPreview(URL.createObjectURL(file));
     }
   };
   
@@ -57,11 +56,25 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setLoading(true);
     
     try {
+      // Upload profile picture if provided
+      let avatarUrl = '';
+      if (profilePicture) {
+        const result = await profileApi.uploadProfilePicture(profilePicture);
+        avatarUrl = result.avatarUrl;
+      }
+
+      // Upload cover photo if provided
+      let coverPhotoUrl = '';
+      if (coverPhoto) {
+        const result = await profileApi.uploadCoverPhoto(coverPhoto);
+        coverPhotoUrl = result.coverPhotoUrl;
+      }
+
       // Create profile data
       const profileData = {
         name: userInfo.fullName,
-        avatar: profilePicture ? { url: profilePicture } : undefined,
-        coverPhoto: coverPhoto ? { url: coverPhoto } : undefined,
+        avatar: avatarUrl ? { url: avatarUrl } : undefined,
+        coverPhoto: coverPhotoUrl ? { url: coverPhotoUrl } : undefined,
         bio: bio || undefined,
         role: userInfo.role
       };
@@ -69,6 +82,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       // Call the parent callback to continue the flow
       onProfileComplete(profileData);
     } catch (error) {
+      console.error('Profile setup error:', error);
       setError('Failed to complete profile setup. Please try again.');
     } finally {
       setLoading(false);
@@ -98,9 +112,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         <div className="flex flex-col items-center">
           <div className="mb-6 relative">
             <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
-              {profilePicture ? (
+              {profilePicturePreview ? (
                 <img 
-                  src={profilePicture} 
+                  src={profilePicturePreview} 
                   alt="Profile" 
                   className="w-full h-full object-cover"
                 />
@@ -157,9 +171,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
               Cover Photo
             </label>
             <div className="relative h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-2">
-              {coverPhoto ? (
+              {coverPhotoPreview ? (
                 <img 
-                  src={coverPhoto} 
+                  src={coverPhotoPreview} 
                   alt="Cover" 
                   className="w-full h-full object-cover"
                 />
