@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { friendApi } from '../../services/api';
 import { User } from '../../types';
 import { UserMinus, UserPlus, X, Check } from 'lucide-react';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 const FriendsList: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'suggestions'>('friends');
@@ -157,7 +158,7 @@ const FriendsList: React.FC = () => {
                     <div key={friend.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
-                          src={friend.avatar}
+                          src={getAvatarUrl(friend.avatar, friend.name)}
                           alt={friend.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -192,7 +193,7 @@ const FriendsList: React.FC = () => {
                     <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
-                          src={request.sender.avatar}
+                          src={getAvatarUrl(request.sender.avatar, request.sender.name)}
                           alt={request.sender.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -236,7 +237,7 @@ const FriendsList: React.FC = () => {
                     <div key={suggestion.user.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
-                          src={suggestion.user.avatar}
+                          src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
                           alt={suggestion.user.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />

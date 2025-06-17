@@ -124,7 +124,7 @@ function AppContent() {
       batch: pendingUserData?.batch,
       role: pendingUserData?.role,
       // Include minimal profile data
-      avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pendingUserData?.fullName || 'User'),
+      avatar: { url: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pendingUserData?.fullName || 'User') },
       bio: '' // Explicitly set bio to empty string when skipping profile setup
     };
     setPendingProfileData(minimalProfileData);

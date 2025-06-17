@@ -52,7 +52,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
         newInterest: ''
       });
       
-      setProfilePicturePreview(profileData.avatar || null);
+      setProfilePicturePreview(profileData.avatar?.url || null);
       setCoverPhotoPreview('coverPhoto' in profileData && profileData.coverPhoto ? profileData.coverPhoto : null);
     }
   }, [profileData]);
@@ -139,10 +139,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
       // Then upload profile picture if changed
       if (profilePicture) {
         const avatarResult = await profileApi.uploadProfilePicture(profilePicture);
-        updateData.avatar = avatarResult.avatarUrl;
+        updateData.avatar = { url: avatarResult.avatarUrl };
         
         // Update the profile with the new avatar URL
-        await profileApi.updateProfile({ avatar: avatarResult.avatarUrl });
+        await profileApi.updateProfile({ avatar: { url: avatarResult.avatarUrl } });
       }
       
       // Update auth context with new profile data

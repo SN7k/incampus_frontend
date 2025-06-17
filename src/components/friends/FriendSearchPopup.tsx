@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users } from 'lucide-react';
 import { User } from '../../types';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 interface FriendRequest {
   id: string;
@@ -118,7 +119,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
                   onClick={() => onUserClick(parseInt(user.id))}
                 >
                   <div className="flex items-center">
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                    <img src={getAvatarUrl(user.avatar, user.name)} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
                     <div className="ml-2">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{user.role === 'faculty' ? 'Faculty' : 'Computer Science'}</p>

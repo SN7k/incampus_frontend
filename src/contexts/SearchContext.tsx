@@ -9,7 +9,7 @@ interface SearchResult {
   id: string;
   title: string;
   subtitle: string;
-  avatar?: string;
+  avatar?: { url: string; publicId?: string; };
   url?: string;
 }
 

@@ -3,7 +3,10 @@ export interface User {
   name: string;
   universityId: string;
   role: 'student' | 'faculty';
-  avatar: string;
+  avatar: {
+    url: string;
+    publicId?: string;
+  };
   bio?: string;
   coverPhoto?: string;
   email?: string;

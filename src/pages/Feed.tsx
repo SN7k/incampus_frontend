@@ -8,6 +8,7 @@ import { Sparkles } from 'lucide-react';
 import { User, Post } from '../types';
 import { postsApi } from '../services/postsApi';
 import { usersApi } from '../services/usersApi';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 const Feed: React.FC = () => {
   const { user } = useAuth();
@@ -193,7 +194,7 @@ const Feed: React.FC = () => {
                     <div key={suggestedUser.id} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={suggestedUser.avatar}
+                          src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)}
                           alt={suggestedUser.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />

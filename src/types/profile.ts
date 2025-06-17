@@ -27,7 +27,10 @@ export type Media = AppMedia;
 export interface ProfileData {
   id: string;
   name: string;
-  avatar: string;
+  avatar: {
+    url: string;
+    publicId?: string;
+  };
   bio: string;
   coverPhoto: string;
   education: Education;

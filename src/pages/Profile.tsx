@@ -246,9 +246,9 @@ const Profile: React.FC = () => {
       setIsSavingProfile(true);
       try {
         const { avatarUrl } = await uploadProfilePicture(file);
-        setEditFormData((prev) => ({ ...prev, avatar: avatarUrl }));
-        // Update the AuthContext with the new avatar URL
-        updateProfile({ avatar: avatarUrl }); 
+        setEditFormData((prev) => ({ ...prev, avatar: { url: avatarUrl } }));
+        // Update the AuthContext with the new avatar URL as an object
+        updateProfile({ avatar: { url: avatarUrl } }); 
       } catch (err) {
         alert('Failed to upload avatar.');
       } finally {
