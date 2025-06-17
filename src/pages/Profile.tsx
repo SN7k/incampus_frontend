@@ -102,6 +102,14 @@ const Profile: React.FC = () => {
     }
   };
 
+  const getAvatarUrl = (avatar: unknown, name: string) => {
+    if (typeof avatar === 'string') return avatar;
+    if (avatar && typeof avatar === 'object' && 'url' in avatar && typeof (avatar as any).url === 'string') {
+      return (avatar as any).url;
+    }
+    return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&size=128&background=random';
+  };
+
   if (loading) {
   return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
@@ -171,7 +179,7 @@ const Profile: React.FC = () => {
             <div className="flex items-end -mt-16 mb-4">
                 <div className="relative">
                 <img
-                  src={profileData.avatar}
+                  src={getAvatarUrl(profileData.avatar, profileData.name)}
                   alt={profileData.name}
                   className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 object-cover"
                 />

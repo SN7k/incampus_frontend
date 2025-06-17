@@ -63,7 +63,7 @@ export const profileApi = {
   // Get user profile by ID
   getUserProfile: async (userId: string): Promise<ProfileData> => {
     try {
-      const response = await API.get<ProfileResponse>(`/users/${userId}/profile`);
+      const response = await API.get<ProfileResponse>(`/profile/${userId}`);
       return response.data.data.profile;
     } catch (error) {
       console.error('Error fetching profile:', error);
