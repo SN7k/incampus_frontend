@@ -18,6 +18,16 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
+  // Validate post structure
+  if (!post || !post._id || !post.author) {
+    console.error('Invalid post structure:', post);
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <p className="text-gray-500 dark:text-gray-400">Invalid post data</p>
+      </div>
+    );
+  }
+
   const handleLike = async () => {
     if (!currentUser || loading) return;
     

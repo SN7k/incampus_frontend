@@ -72,11 +72,22 @@ const Feed: React.FC = () => {
   // Listen for new post creation events
   useEffect(() => {
     const handlePostCreated = (event: CustomEvent) => {
-      const { post } = event.detail;
-      console.log('New post detected:', post);
-      
-      // Add the new post to the beginning of the feed
-      setPosts(currentPosts => [post, ...currentPosts]);
+      try {
+        const { post } = event.detail;
+        console.log('New post detected:', post);
+        
+        // Validate post structure before adding
+        if (!post || !post._id || !post.author) {
+          console.error('Invalid post structure received:', post);
+          return;
+        }
+        
+        // Add the new post to the beginning of the feed
+        setPosts(currentPosts => [post, ...currentPosts]);
+        console.log('Post added to feed successfully');
+      } catch (error) {
+        console.error('Error handling post creation event:', error);
+      }
     };
     
     window.addEventListener('postCreated', handlePostCreated as EventListener);

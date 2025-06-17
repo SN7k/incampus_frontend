@@ -73,6 +73,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     setError('');
     
     try {
+      console.log('Creating post with data:', { content: content.trim(), image: mediaFiles[0] });
+      
       // Create post with content and media
       const postData = {
         content: content.trim(),
@@ -81,6 +83,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       };
       
       const newPost = await postsApi.createPost(postData);
+      console.log('Post created successfully:', newPost);
       
       // Dispatch event to notify other components about the new post
       window.dispatchEvent(new CustomEvent('postCreated', { 
@@ -94,6 +97,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       onClose();
       
     } catch (error: any) {
+      console.error('Error creating post:', error);
       setError(error.message || 'Failed to create post. Please try again.');
     } finally {
       setLoading(false);
