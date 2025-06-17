@@ -27,13 +27,24 @@ const Profile: React.FC = () => {
 
   // Load profile data
   const loadProfileData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('User is null or undefined');
+      setError('User not found. Please log in again.');
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
       setError(null);
       
       const targetUserId = viewingUserId || user.id;
+      console.log('Loading profile for user ID:', targetUserId);
+      
+      if (!targetUserId) {
+        throw new Error('User ID is undefined');
+      }
+      
       const profile = await profileApi.getUserProfile(targetUserId);
       setProfileData(profile);
       
