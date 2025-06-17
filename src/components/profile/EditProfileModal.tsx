@@ -139,10 +139,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
       // Then upload profile picture if changed
       if (profilePicture) {
         const avatarResult = await profileApi.uploadProfilePicture(profilePicture);
-        updateData.avatar = { url: avatarResult.avatarUrl };
+        updateData.avatar = avatarResult.avatar;
         
-        // Update the profile with the new avatar URL
-        await profileApi.updateProfile({ avatar: { url: avatarResult.avatarUrl } });
+        // Update the profile with the new avatar object
+        await profileApi.updateProfile({ avatar: avatarResult.avatar });
       }
       
       // Update auth context with new profile data

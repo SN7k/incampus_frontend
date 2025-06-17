@@ -3,7 +3,7 @@ import { profileApi } from '../services/profileApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { School, MapPin, Edit, Camera, BookOpen, Users, Award, User as UserIcon, Bookmark, Link, Heart, X, Save } from 'lucide-react';
+import { School, MapPin, Edit, Camera, BookOpen, Users, Award, Bookmark, Link, Heart, X, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Post, ProfileData as OriginalProfileData, User } from '../types/profile';
 import CreatePostModal from '../components/post/CreatePostModal';
@@ -61,7 +61,7 @@ const Profile: React.FC = () => {
   };
   
   // Function to check if the current user has liked a profile
-  const hasUserLikedProfile = (profileId: string) => {
+  const hasUserLikedProfile = useCallback((profileId: string) => {
     try {
       const userLikesStr = localStorage.getItem('userProfileLikes');
       if (userLikesStr && user) {
@@ -73,7 +73,7 @@ const Profile: React.FC = () => {
       console.error('Error checking if user liked profile:', error);
       return false;
     }
-  };
+  }, [user]);
   
   // Function to update profile likes in localStorage
   const updateProfileLikes = (profileId: string, newCount: number, hasLiked: boolean) => {
@@ -105,7 +105,7 @@ const Profile: React.FC = () => {
         setLikeCount(likes);
         setHasLiked(userHasLiked);
       }
-  }, [viewingUserId, user]);
+  }, [viewingUserId, user, hasUserLikedProfile]);
 
   // Fetch profile, posts, and friends for the current or viewed user
   useEffect(() => {
@@ -169,7 +169,7 @@ const Profile: React.FC = () => {
     }
   }, [isEditProfileModalOpen, profileData]);
 
-  const handleEditInputChange = (field: keyof ProfileData, value: any) => {
+  const handleEditInputChange = (field: keyof ProfileData, value: string | number | string[] | { name: string; proficiency: number }[] | { title: string; description: string; year: string }[] | { degree: string; institution: string; years: string } | undefined) => {
     setEditFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -245,11 +245,12 @@ const Profile: React.FC = () => {
     if (file) {
       setIsSavingProfile(true);
       try {
-        const { avatarUrl } = await profileApi.uploadProfilePicture(file);
-        setEditFormData((prev) => ({ ...prev, avatar: { url: avatarUrl } }));
-        // Update the AuthContext with the new avatar URL as an object
-        updateProfile({ avatar: { url: avatarUrl } }); 
+        const avatarResult = await profileApi.uploadProfilePicture(file);
+        setEditFormData((prev) => ({ ...prev, avatar: avatarResult.avatar }));
+        // Update the AuthContext with the new avatar object
+        updateProfile({ avatar: avatarResult.avatar }); 
       } catch (err) {
+        console.error('Failed to upload avatar:', err);
         alert('Failed to upload avatar.');
       } finally {
         setIsSavingProfile(false);
@@ -264,6 +265,7 @@ const Profile: React.FC = () => {
       setProfileData(updated);
       setIsEditProfileModalOpen(false);
     } catch (err) {
+      console.error('Failed to update profile:', err);
       alert('Failed to update profile.');
     } finally {
       setIsSavingProfile(false);

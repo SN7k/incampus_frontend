@@ -60,7 +60,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       let avatarUrl = '';
       if (profilePicture) {
         const result = await profileApi.uploadProfilePicture(profilePicture);
-        avatarUrl = result.avatarUrl;
+        avatarUrl = result.avatar.url;
       }
 
       // Upload cover photo if provided

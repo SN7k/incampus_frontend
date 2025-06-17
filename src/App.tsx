@@ -20,7 +20,7 @@ type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-s
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
 
 function AppContent() {
-  const { isAuthenticated, updateProfile } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
@@ -136,18 +136,6 @@ function AppContent() {
     try {
       // Since the user is already authenticated after OTP verification,
       // we just need to update their profile and redirect to feed
-      
-      // Combine signup data with profile data
-      const completeProfileData = {
-        // Include signup data
-        name: pendingUserData?.fullName,
-        universityId: pendingUserData?.universityId,
-        course: pendingUserData?.program,
-        batch: pendingUserData?.batch,
-        role: pendingUserData?.role,
-        // Include profile setup data
-        ...pendingProfileData
-      };
       
       // Setup the user's profile with the complete data
       try {

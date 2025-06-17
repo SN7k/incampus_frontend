@@ -33,13 +33,13 @@ export const updateProfile = async (profileData: Partial<ProfileData>): Promise<
 /**
  * Upload a profile picture
  * @param file The image file to upload
- * @returns The updated profile data with the new avatar URL
+ * @returns The updated profile data with the new avatar object
  */
-export const uploadProfilePicture = async (file: File): Promise<{ avatarUrl: string }> => {
+export const uploadProfilePicture = async (file: File): Promise<{ avatar: { url: string; publicId?: string } }> => {
   const formData = new FormData();
   formData.append('avatar', file);
   
-  const response = await API.post<{ data: { avatarUrl: string } }>('/profile/avatar', formData, {
+  const response = await API.post<{ data: { avatar: { url: string; publicId?: string } } }>('/profile/avatar', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

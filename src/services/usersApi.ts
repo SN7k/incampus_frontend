@@ -80,12 +80,12 @@ export const usersApi = {
   },
 
   // Upload avatar
-  uploadAvatar: async (file: File): Promise<{ avatar: string }> => {
+  uploadAvatar: async (file: File): Promise<{ avatar: { url: string; publicId?: string } }> => {
     try {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const response = await API.post<{ status: string; data: { avatar: string } }>('/users/avatar', formData, {
+      const response = await API.post<{ status: string; data: { avatar: { url: string; publicId?: string } } }>('/users/avatar', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -99,12 +99,12 @@ export const usersApi = {
   },
 
   // Upload cover photo
-  uploadCoverPhoto: async (file: File): Promise<{ coverPhoto: string }> => {
+  uploadCoverPhoto: async (file: File): Promise<{ coverPhoto: { url: string; publicId?: string } }> => {
     try {
       const formData = new FormData();
       formData.append('coverPhoto', file);
       
-      const response = await API.post<{ status: string; data: { coverPhoto: string } }>('/users/cover-photo', formData, {
+      const response = await API.post<{ status: string; data: { coverPhoto: { url: string; publicId?: string } } }>('/users/cover-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
