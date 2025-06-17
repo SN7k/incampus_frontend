@@ -26,7 +26,7 @@ export const getUserProfile = async (userId: string): Promise<ProfileData> => {
  * @returns The updated profile data
  */
 export const updateProfile = async (profileData: Partial<ProfileData>): Promise<ProfileData> => {
-  const response = await API.put<{ data: ProfileData }>('/profile/update', profileData);
+  const response = await API.patch<{ data: ProfileData }>('/profile', profileData);
   return response.data.data;
 };
 
@@ -39,7 +39,7 @@ export const uploadProfilePicture = async (file: File): Promise<{ avatarUrl: str
   const formData = new FormData();
   formData.append('avatar', file);
   
-  const response = await API.post<{ data: { avatarUrl: string } }>('/profile/upload-avatar', formData, {
+  const response = await API.post<{ data: { avatarUrl: string } }>('/profile/avatar', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
