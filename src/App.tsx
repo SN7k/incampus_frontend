@@ -117,6 +117,13 @@ function AppContent() {
   const handleSkipProfile = () => {
     // Create minimal profile data with default avatar and explicitly set bio to empty string
     const minimalProfileData = {
+      // Include signup data
+      name: pendingUserData?.fullName,
+      universityId: pendingUserData?.universityId,
+      course: pendingUserData?.program,
+      batch: pendingUserData?.batch,
+      role: pendingUserData?.role,
+      // Include minimal profile data
       avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pendingUserData?.fullName || 'User'),
       bio: '' // Explicitly set bio to empty string when skipping profile setup
     };
@@ -129,14 +136,25 @@ function AppContent() {
       // Since the user is already authenticated after OTP verification,
       // we just need to update their profile and redirect to feed
       
-      // Update the user's profile with the collected data
-      if (pendingProfileData) {
-        try {
-          await updateProfile(pendingProfileData);
-        } catch (error) {
-          console.error('Failed to update profile:', error);
-          // Continue anyway, profile can be updated later
-        }
+      // Combine signup data with profile data
+      const completeProfileData = {
+        // Include signup data
+        name: pendingUserData?.fullName,
+        universityId: pendingUserData?.universityId,
+        course: pendingUserData?.program,
+        batch: pendingUserData?.batch,
+        role: pendingUserData?.role,
+        // Include profile setup data
+        ...pendingProfileData
+      };
+      
+      // Update the user's profile with the complete data
+      try {
+        await updateProfile(completeProfileData);
+        console.log('Profile updated successfully with:', completeProfileData);
+      } catch (error) {
+        console.error('Failed to update profile:', error);
+        // Continue anyway, profile can be updated later
       }
       
       // Store followed users (in a real app, this would be sent to backend)
