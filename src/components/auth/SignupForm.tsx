@@ -98,7 +98,16 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
       }, response?.data?.otp);
       
     } catch (error: unknown) {
-      setFormError('Signup failed.');
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        if (axiosError.response?.data?.message) {
+          setFormError(axiosError.response.data.message);
+        } else {
+          setFormError('Signup failed. Please try again.');
+        }
+      } else {
+        setFormError('Signup failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
