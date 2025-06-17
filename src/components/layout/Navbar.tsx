@@ -14,11 +14,6 @@ const Navbar: React.FC = () => {
   const { themeMode, setThemeMode } = useTheme();
   const { unreadCount, showNotificationPanel, setShowNotificationPanel } = useNotifications();
   
-  // Debug: Log user data to see what's available
-  console.log('Navbar user data:', user);
-  console.log('User avatar:', user?.avatar);
-  console.log('Avatar type:', typeof user?.avatar);
-  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDisplaySubmenu, setShowDisplaySubmenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

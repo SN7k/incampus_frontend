@@ -3,6 +3,7 @@ import { ImagePlus } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import CreatePostModal from './CreatePostModal';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 const PostForm: React.FC = () => {
   const { isDarkMode } = useTheme();
@@ -38,7 +39,7 @@ const PostForm: React.FC = () => {
       >
         <div className="flex items-center space-x-3">
           <img 
-            src={user?.avatar || "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=150"} 
+            src={getAvatarUrl(user?.avatar, user?.name || 'User')} 
             alt={user?.name || "Your avatar"} 
             className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
             onClick={navigateToProfile}
@@ -66,8 +67,6 @@ const PostForm: React.FC = () => {
       <CreatePostModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        userAvatar={user?.avatar || "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=150"}
-        userName={user?.name || "User"}
       />
     </>
   );
