@@ -25,9 +25,10 @@ const Profile: React.FC = () => {
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [editFormData, setEditFormData] = useState<Partial<ProfileData>>({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Animation variants
   const container = {
@@ -111,30 +112,59 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoadingProfile(true);
+      setError(null);
       try {
         const targetUserId = localStorage.getItem('viewProfileUserId');
+        console.log('Target user ID from localStorage:', targetUserId);
         setViewingUserId(targetUserId); // null if viewing own profile, userId if viewing someone else
         
         const userIdToFetch = targetUserId || user?._id;
-        if (!userIdToFetch) return;
+        console.log('User ID to fetch:', userIdToFetch);
+        console.log('Current user:', user);
+        
+        if (!userIdToFetch) {
+          console.error('No user ID to fetch profile for');
+          setError('No user ID found. Please try logging in again.');
+          setIsLoadingProfile(false);
+          return;
+        }
         
         // Fetch profile
+        console.log('Fetching profile for user:', userIdToFetch);
         const profile = await profileApi.getUserProfile(userIdToFetch);
+        console.log('Profile loaded:', profile);
         setProfileData(profile);
+        
         // Fetch posts
+        console.log('Fetching posts for user:', userIdToFetch);
         const posts = await postsApi.getUserPosts(userIdToFetch);
+        console.log('Posts loaded:', posts);
         setUserPosts(posts);
+        
         // Fetch friends
+        console.log('Fetching friends');
         const friends = await friendApi.getFriends();
+        console.log('Friends loaded:', friends);
         setFriendsList(friends);
-            } catch (error) {
+      } catch (error) {
         console.error('Error loading profile data:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load profile data';
+        setError(errorMessage);
+        // Don't set profileData to null immediately, let the error be handled gracefully
       } finally {
-          setIsLoadingProfile(false);
-        }
-      };
+        setIsLoadingProfile(false);
+      }
+    };
     fetchData();
   }, [user]);
+
+  // Cleanup viewProfileUserId when viewing own profile
+  useEffect(() => {
+    if (!viewingUserId && user?._id) {
+      // If we're viewing our own profile, clear the viewProfileUserId
+      localStorage.removeItem('viewProfileUserId');
+    }
+  }, [viewingUserId, user?._id]);
 
   // Listen for post deletion events
   useEffect(() => {
@@ -310,15 +340,53 @@ const Profile: React.FC = () => {
     );
   }
 
-  if (!profileData) {
+  if (!profileData && !isLoadingProfile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <div className="text-gray-500 mb-4">Profile not found</div>
+            <div className="text-gray-500 mb-4">
+              {error ? (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+                  <p className="mb-2">{error}</p>
+                  <button 
+                    onClick={() => {
+                      setError(null);
+                      setIsLoadingProfile(true);
+                      // Retry fetching data
+                      const fetchData = async () => {
+                        try {
+                          const targetUserId = localStorage.getItem('viewProfileUserId');
+                          const userIdToFetch = targetUserId || user?._id;
+                          if (userIdToFetch) {
+                            const profile = await profileApi.getUserProfile(userIdToFetch);
+                            setProfileData(profile);
+                            const posts = await postsApi.getUserPosts(userIdToFetch);
+                            setUserPosts(posts);
+                            const friends = await friendApi.getFriends();
+                            setFriendsList(friends);
+                          }
+                        } catch (error) {
+                          console.error('Retry failed:', error);
+                          setError('Failed to load profile. Please try again.');
+                        } finally {
+                          setIsLoadingProfile(false);
+                        }
+                      };
+                      fetchData();
+                    }}
+                    className="underline hover:no-underline"
+                  >
+                    Try again
+                  </button>
                 </div>
-                </div>
-                    </div>
+              ) : (
+                'Profile not found'
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -820,9 +888,11 @@ const Profile: React.FC = () => {
                           <button 
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                             onClick={() => {
-                              // Navigate to friend's profile
-                                    localStorage.setItem('viewProfileUserId', friend._id);
-                                    window.location.reload();
+                              // Navigate to friend's profile using proper navigation
+                              localStorage.setItem('viewProfileUserId', friend._id);
+                              localStorage.setItem('currentPage', 'profile');
+                              // Dispatch navigation event instead of reloading
+                              window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'profile' } }));
                             }}
                           >
                             View Profile

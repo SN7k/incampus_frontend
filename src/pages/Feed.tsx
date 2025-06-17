@@ -19,19 +19,26 @@ const Feed: React.FC = () => {
   
   // Load posts from API
   const loadPosts = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping loadPosts');
+      return;
+    }
     
     try {
+      console.log('Loading posts for user:', user._id);
       setLoading(true);
       setError(null);
       
       // Get feed posts from API
       const feedPosts = await postsApi.getFeedPosts();
+      console.log('Feed posts loaded:', feedPosts);
       setPosts(feedPosts);
     } catch (error: unknown) {
       console.error('Error loading posts:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load posts';
       setError(errorMessage);
+      // Set empty posts array to prevent blank screen
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -52,9 +59,14 @@ const Feed: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    loadPosts();
-    loadFriendSuggestions();
-  }, [loadPosts, loadFriendSuggestions]);
+    if (user) {
+      console.log('User authenticated, loading feed data...');
+      loadPosts();
+      loadFriendSuggestions();
+    } else {
+      console.log('No user authenticated, skipping feed load');
+    }
+  }, [loadPosts, loadFriendSuggestions, user]);
 
   // Listen for post deletion events
   useEffect(() => {
@@ -99,14 +111,20 @@ const Feed: React.FC = () => {
   // Handle refresh function
   const handleRefresh = async () => {
     try {
+      console.log('Refreshing feed...');
       await loadPosts();
       await loadFriendSuggestions();
+      console.log('Feed refresh completed');
     } catch (error: unknown) {
       console.error('Error refreshing feed:', error);
+      // Don't let refresh errors break the UI
     }
   };
 
-  if (!user) return null;
+  if (!user) {
+    console.log('No user found, not rendering feed');
+    return null;
+  }
 
   if (loading) {
     return (
