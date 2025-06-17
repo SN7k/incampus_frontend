@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { profileApi, uploadProfilePicture } from '../services/profileApi';
+import { profileApi } from '../services/profileApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -245,7 +245,7 @@ const Profile: React.FC = () => {
     if (file) {
       setIsSavingProfile(true);
       try {
-        const { avatarUrl } = await uploadProfilePicture(file);
+        const { avatarUrl } = await profileApi.uploadProfilePicture(file);
         setEditFormData((prev) => ({ ...prev, avatar: { url: avatarUrl } }));
         // Update the AuthContext with the new avatar URL as an object
         updateProfile({ avatar: { url: avatarUrl } }); 
