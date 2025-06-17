@@ -110,14 +110,17 @@ const Profile: React.FC = () => {
     const fetchData = async () => {
       setIsLoadingProfile(true);
       try {
-        const targetUserId = localStorage.getItem('viewProfileUserId') || user?.id;
-        setViewingUserId(targetUserId || null);
-        if (!targetUserId) return;
+        const targetUserId = localStorage.getItem('viewProfileUserId');
+        setViewingUserId(targetUserId); // null if viewing own profile, userId if viewing someone else
+        
+        const userIdToFetch = targetUserId || user?.id;
+        if (!userIdToFetch) return;
+        
         // Fetch profile
-        const profile = await profileApi.getUserProfile(targetUserId);
+        const profile = await profileApi.getUserProfile(userIdToFetch);
         setProfileData(profile);
         // Fetch posts
-        const posts = await postsApi.getUserPosts(targetUserId);
+        const posts = await postsApi.getUserPosts(userIdToFetch);
         setUserPosts(posts);
         // Fetch friends
         const friends = await friendApi.getFriends();
@@ -229,7 +232,7 @@ const Profile: React.FC = () => {
             />
           )}
           <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-          {viewingUserId === user?.id && (
+          {!viewingUserId && (
             <label htmlFor="cover-photo-upload" className="absolute top-4 right-4 bg-black bg-opacity-40 text-white p-2 rounded-full hover:bg-opacity-60 transition-all cursor-pointer">
               <Camera size={18} />
             </label>
@@ -520,15 +523,6 @@ const Profile: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                {viewingUserId === user?.id && (
-                  <Button
-                    onClick={() => setIsCreatePostModalOpen(true)}
-                    className="mb-6"
-                  >
-                    Create Post
-                  </Button>
-                )}
-                
                 {userPosts.length > 0 ? (
                   <div className="space-y-6">
                     {userPosts.map((post) => (
@@ -545,12 +539,22 @@ const Profile: React.FC = () => {
                     <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
                       <BookOpen size={24} className="text-blue-800 dark:text-blue-300" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No memories shared yet</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">Start sharing your university moments with friends!</p>
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                      {!viewingUserId ? 'No memories shared yet' : 'No memories shared yet'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                      {!viewingUserId ? 'Start sharing your university moments with friends!' : 'This user hasn\'t shared any memories yet.'}
+                    </p>
                     <div className="flex justify-center w-full">
-                      <Button variant="primary" size="lg">
-                        Share Your First Memory
-                      </Button>
+                      {!viewingUserId && (
+                        <Button 
+                          variant="primary" 
+                          size="lg"
+                          onClick={() => setIsCreatePostModalOpen(true)}
+                        >
+                          Share Your First Memory
+                        </Button>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -568,16 +572,18 @@ const Profile: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Photo Gallery</h3>
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setIsCreatePostModalOpen(true)}
-                      >
-                        <Camera size={16} className="mr-2" />
-                        Add Photo
-                      </Button>
-                    </div>
+                    {!viewingUserId && (
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsCreatePostModalOpen(true)}
+                        >
+                          <Camera size={16} className="mr-2" />
+                          Add Photo
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   {/* Extract all images from user posts */}
                   {(() => {
@@ -594,16 +600,20 @@ const Profile: React.FC = () => {
                             <Bookmark size={24} className="text-blue-800 dark:text-blue-300" />
                           </div>
                           <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No Photos Yet</h3>
-                          <p className="text-gray-600 dark:text-gray-300 mb-4">Share posts with photos to see them in your gallery</p>
+                          <p className="text-gray-600 dark:text-gray-300 mb-4">
+                            {!viewingUserId ? 'Share posts with photos to see them in your gallery' : 'This user hasn\'t shared any photos yet.'}
+                          </p>
                           <div className="flex justify-center w-full">
-                            <Button 
-                              variant="primary" 
-                              size="sm" 
-                              className="sm:text-base sm:px-4 sm:py-2"
-                              onClick={() => setIsCreatePostModalOpen(true)}
-                            >
-                              Share Your First Photo
-                            </Button>
+                            {!viewingUserId && (
+                              <Button 
+                                variant="primary" 
+                                size="sm" 
+                                className="sm:text-base sm:px-4 sm:py-2"
+                                onClick={() => setIsCreatePostModalOpen(true)}
+                              >
+                                Share Your First Photo
+                              </Button>
+                            )}
                           </div>
                         </div>
                       );
