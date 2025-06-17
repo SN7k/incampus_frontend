@@ -4,7 +4,7 @@ import { User, Post } from '../types';
 
 // Configure axios with base URL and default headers
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: 'https://incampus-backend.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
