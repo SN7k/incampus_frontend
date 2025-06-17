@@ -3,10 +3,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { Search, Bell, Home, LogOut, Settings, HelpCircle, Shield, ChevronRight, Users } from 'lucide-react';
+import { Search, Bell, Home, LogOut, Settings, HelpCircle, Shield, ChevronRight, Users, ChevronDown } from 'lucide-react';
 import Button from '../ui/Button';
 import SearchModal from '../search/SearchModal';
 import NotificationPanel from '../notification/NotificationPanel';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -260,7 +261,7 @@ const Navbar: React.FC = () => {
                 className="flex items-center focus:outline-none"
               >
                 <img
-                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`}
+                  src={getAvatarUrl(user?.avatar, user?.name || 'User')}
                   alt={user?.name || "User"}
                   className="w-11 h-11 rounded-full object-cover border-2 border-blue-200 dark:border-blue-800 cursor-pointer transition-transform active:scale-95 hover:border-blue-400 dark:hover:border-blue-600 shadow-md"
                 />
@@ -276,7 +277,7 @@ const Navbar: React.FC = () => {
                         <button onClick={navigateToProfile} className="w-full text-left block p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                           <div className="flex items-center">
                             <img 
-                              src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`} 
+                              src={getAvatarUrl(user?.avatar, user?.name || 'User')} 
                               alt={user?.name || "User"} 
                               className="w-12 h-12 rounded-full object-cover shadow-sm"
                             />
@@ -414,7 +415,7 @@ const Navbar: React.FC = () => {
             <button onClick={navigateToProfile} className="w-full text-left block p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
               <div className="flex items-center">
                 <img 
-                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=40&background=random`} 
+                  src={getAvatarUrl(user?.avatar, user?.name || 'User')} 
                   alt={user?.name || "User"} 
                   className="w-12 h-12 rounded-full object-cover shadow-sm"
                 />

@@ -20,7 +20,7 @@ type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-s
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, updateProfile } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
@@ -146,8 +146,18 @@ function AppContent() {
           bio: pendingProfileData?.bio,
           role: pendingUserData?.role || 'student'
         };
-        await profileApi.setupProfile(setupData);
+        const updatedProfile = await profileApi.setupProfile(setupData);
         console.log('Profile setup successfully with:', setupData);
+        
+        // Update the AuthContext with the new profile data
+        if (updateProfile) {
+          updateProfile({
+            name: updatedProfile.name,
+            avatar: updatedProfile.avatar,
+            coverPhoto: updatedProfile.coverPhoto,
+            bio: updatedProfile.bio
+          });
+        }
       } catch (error) {
         console.error('Failed to setup profile:', error);
         // Continue anyway, profile can be updated later
