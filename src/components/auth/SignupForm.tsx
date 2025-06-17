@@ -84,6 +84,24 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
     try {
       // Use the collegeId field for universityId
       const collegeId = role === 'student' ? universityId : department;
+      
+      // Debug logging
+      console.log('Signup data:', {
+        email,
+        role,
+        collegeId,
+        universityId,
+        department,
+        fullName
+      });
+      
+      // Additional validation to ensure collegeId is not empty
+      if (!collegeId || collegeId.trim() === '') {
+        setFormError(role === 'student' ? 'University ID is required' : 'Department is required');
+        setLoading(false);
+        return;
+      }
+      
       const response = await signup(email, password, collegeId, fullName, role);
       
       // Pass the user data and OTP to the parent component to handle OTP verification
