@@ -63,8 +63,12 @@ export const profileApi = {
   // Get user profile by ID
   getUserProfile: async (userId: string): Promise<ProfileData> => {
     try {
-      const response = await API.get<ProfileResponse>(`/profile/${userId}`);
-      return response.data.data.profile;
+      console.log('profileApi.getUserProfile - calling API with userId:', userId);
+      const response = await API.get<{status: string, data: ProfileData}>(`/profile/${userId}`);
+      console.log('profileApi.getUserProfile - raw response:', response);
+      console.log('profileApi.getUserProfile - response.data:', response.data);
+      console.log('profileApi.getUserProfile - returning:', response.data.data);
+      return response.data.data;
     } catch (error) {
       console.error('Error fetching profile:', error);
       throw error;

@@ -118,6 +118,7 @@ const Profile: React.FC = () => {
         console.log('Profile component - userIdToFetch:', userIdToFetch);
         console.log('Profile component - viewingUserId:', viewingUserId);
         console.log('Profile component - user?.id:', user?.id);
+        console.log('Profile component - About to call profileApi.getUserProfile with userId:', userIdToFetch);
         
         if (!userIdToFetch) {
           console.log('Profile component - No userIdToFetch, returning early');
@@ -128,6 +129,8 @@ const Profile: React.FC = () => {
         console.log('Profile component - Fetching profile for userId:', userIdToFetch);
         const profile = await profileApi.getUserProfile(userIdToFetch);
         console.log('Profile component - Profile fetched successfully:', profile);
+        console.log('Profile component - Profile name:', profile.name);
+        console.log('Profile component - Profile id:', profile.id);
         setProfileData(profile);
         
         // Fetch posts
