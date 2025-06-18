@@ -332,18 +332,12 @@ function AppContent() {
             onClick={() => {
               setCurrentPage('profile');
               localStorage.setItem('currentPage', 'profile');
-              // Only clear viewProfileUserId if we're not already viewing someone else's profile
-              const currentViewProfileUserId = localStorage.getItem('viewProfileUserId');
-              if (!currentViewProfileUserId) {
-                // We're viewing our own profile, so clear any stored profile ID
-                localStorage.removeItem('viewProfileUserId');
-                // Dispatch a custom event to notify Profile component
-                window.dispatchEvent(new CustomEvent('profileNavigation', { 
-                  detail: { action: 'viewOwnProfile' } 
-                }));
-              }
-              // If currentViewProfileUserId exists, we're already viewing someone else's profile
-              // so we don't clear it and let the Profile component handle the navigation
+              // Always clear viewProfileUserId to show the current user's profile
+              localStorage.removeItem('viewProfileUserId');
+              // Dispatch a custom event to notify Profile component
+              window.dispatchEvent(new CustomEvent('profileNavigation', { 
+                detail: { action: 'viewOwnProfile' } 
+              }));
             }}
             className={`px-4 py-2 ${currentPage === 'profile' ? 'text-blue-800 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
           >
