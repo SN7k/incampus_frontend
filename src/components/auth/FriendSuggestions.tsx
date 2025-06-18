@@ -3,6 +3,7 @@ import Button from '../ui/Button';
 import { User } from '../../types';
 import { Search } from 'lucide-react';
 import { friendsApi } from '../../services/friendsApi';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 interface FriendSuggestion {
   user: User;
@@ -100,7 +101,7 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
             <div className="flex items-center">
               <div className="relative">
                 <img 
-                  src={user.avatar} 
+                  src={getAvatarUrl(user.avatar, user.name)} 
                   alt={user.name} 
                   className="w-12 h-12 rounded-full object-cover"
                 />

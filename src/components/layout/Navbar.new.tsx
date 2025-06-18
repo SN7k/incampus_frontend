@@ -3,15 +3,34 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Search, Menu, X, Bell, MessageSquare, Home, Users, BookOpen, LogOut, ChevronDown, Sun, Moon, Settings, HelpCircle, UserCircle, Image, Shield } from 'lucide-react';
 import Button from '../ui/Button';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 const Navbar: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { user, logout } = useAuth();
+  const { isDarkMode, setThemeMode } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Add loading state check
+  if (!user) {
+    return (
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -51,9 +70,9 @@ const Navbar: React.FC = () => {
     console.log('Search query:', searchQuery);
   };
 
-  if (!isAuthenticated || !user) {
-    return null;
-  }
+  const toggleDarkMode = () => {
+    setThemeMode(isDarkMode ? 'light' : 'dark');
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-md dark:shadow-gray-900/50 py-2 fixed top-0 left-0 right-0 z-20">
@@ -119,8 +138,8 @@ const Navbar: React.FC = () => {
                     className="flex items-center space-x-2 focus:outline-none"
                   >
                     <img
-                      src={user.avatar || "https://via.placeholder.com/40"}
-                      alt={user.name}
+                      src={getAvatarUrl(user?.avatar, user?.name || 'User')}
+                      alt={user?.name || 'User'}
                       className="w-8 h-8 rounded-full object-cover border-2 border-blue-200 dark:border-blue-800"
                     />
                     <span className="font-medium text-gray-800 dark:text-gray-200">{user.name}</span>
@@ -135,8 +154,8 @@ const Navbar: React.FC = () => {
                         <a href="#" className="block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                           <div className="flex items-center">
                             <img 
-                              src={user.avatar || "https://via.placeholder.com/40"} 
-                              alt={user.name} 
+                              src={getAvatarUrl(user?.avatar, user?.name || 'User')} 
+                              alt={user?.name || 'User'} 
                               className="w-10 h-10 rounded-full object-cover"
                             />
                             <div className="ml-3">
@@ -264,8 +283,8 @@ const Navbar: React.FC = () => {
             {/* User info - Facebook style */}
             <a href="#" className="flex items-center space-x-3 py-3 border-b border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 px-2">
               <img
-                src={user.avatar || "https://via.placeholder.com/40"}
-                alt={user.name}
+                src={getAvatarUrl(user?.avatar, user?.name || 'User')}
+                alt={user?.name || 'User'}
                 className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 dark:border-blue-800"
               />
               <div>
