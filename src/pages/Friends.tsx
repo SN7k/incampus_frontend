@@ -262,7 +262,15 @@ const Friends: React.FC = () => {
                           </div>
                           <div className="flex items-center space-x-2">
                               <button 
-                              onClick={() => navigateToProfile(friend.id)}
+                              onClick={() => {
+                                console.log('FRIENDS: View Profile clicked for friend:', friend);
+                                console.log('FRIENDS: Friend ID:', friend.id);
+                                if (!friend.id) {
+                                  console.error('FRIENDS: Friend ID is undefined!');
+                                  return;
+                                }
+                                navigateToProfile(friend.id);
+                              }}
                               className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                             >
                               View Profile
@@ -359,7 +367,15 @@ const Friends: React.FC = () => {
                               </div>
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => navigateToProfile(suggestion.user.id)}
+                              onClick={() => {
+                                console.log('FRIENDS: View Profile clicked for suggestion:', suggestion.user);
+                                console.log('FRIENDS: Suggestion user ID:', suggestion.user.id);
+                                if (!suggestion.user.id) {
+                                  console.error('FRIENDS: Suggestion user ID is undefined!');
+                                  return;
+                                }
+                                navigateToProfile(suggestion.user.id);
+                              }}
                               className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                             >
                               View Profile

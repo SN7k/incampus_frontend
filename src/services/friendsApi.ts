@@ -2,6 +2,23 @@
 import { User } from '../types';
 import API from './api';
 
+// Helper function to transform backend data (convert _id to id)
+const transformUser = (user: any): User => {
+  console.log('TRANSFORM: Original user data:', user);
+  const transformed = {
+    id: user._id || user.id,
+    name: user.name,
+    universityId: user.universityId,
+    role: user.role,
+    avatar: user.avatar,
+    bio: user.bio,
+    coverPhoto: user.coverPhoto,
+    email: user.email
+  };
+  console.log('TRANSFORM: Transformed user data:', transformed);
+  return transformed;
+};
+
 // Friend types
 export interface FriendRequest {
   id: string;
@@ -53,7 +70,8 @@ export const friendsApi = {
   getFriendsList: async (): Promise<User[]> => {
     try {
       const response = await API.get<FriendsResponse>('/friends/friends-list');
-      return response.data.data.friends;
+      const friends = response.data.data.friends;
+      return friends.map(transformUser);
     } catch (error) {
       console.error('Error fetching friends list:', error);
       throw error;
@@ -64,7 +82,12 @@ export const friendsApi = {
   getPendingRequests: async (): Promise<FriendRequest[]> => {
     try {
       const response = await API.get<FriendRequestsResponse>('/friends/pending-requests');
-      return response.data.data.requests;
+      const requests = response.data.data.requests;
+      return requests.map(request => ({
+        ...request,
+        sender: transformUser(request.sender),
+        receiver: transformUser(request.receiver)
+      }));
     } catch (error) {
       console.error('Error fetching pending requests:', error);
       throw error;
@@ -75,7 +98,11 @@ export const friendsApi = {
   getFriendSuggestions: async (): Promise<FriendSuggestion[]> => {
     try {
       const response = await API.get<FriendSuggestionsResponse>('/friends/suggestions');
-      return response.data.data.suggestions;
+      const suggestions = response.data.data.suggestions;
+      return suggestions.map(suggestion => ({
+        ...suggestion,
+        user: transformUser(suggestion.user)
+      }));
     } catch (error) {
       console.error('Error fetching friend suggestions:', error);
       throw error;
@@ -88,7 +115,12 @@ export const friendsApi = {
       const response = await API.post<FriendRequestResponse>('/friends/send-request', {
         receiverId
       });
-      return response.data.data.friendRequest;
+      const request = response.data.data.friendRequest;
+      return {
+        ...request,
+        sender: transformUser(request.sender),
+        receiver: transformUser(request.receiver)
+      };
     } catch (error) {
       console.error('Error sending friend request:', error);
       throw error;
@@ -99,7 +131,12 @@ export const friendsApi = {
   acceptFriendRequest: async (requestId: string): Promise<FriendRequest> => {
     try {
       const response = await API.patch<FriendRequestResponse>(`/friends/accept-request/${requestId}`);
-      return response.data.data.friendRequest;
+      const request = response.data.data.friendRequest;
+      return {
+        ...request,
+        sender: transformUser(request.sender),
+        receiver: transformUser(request.receiver)
+      };
     } catch (error) {
       console.error('Error accepting friend request:', error);
       throw error;
@@ -110,7 +147,12 @@ export const friendsApi = {
   declineFriendRequest: async (requestId: string): Promise<FriendRequest> => {
     try {
       const response = await API.patch<FriendRequestResponse>(`/friends/decline-request/${requestId}`);
-      return response.data.data.friendRequest;
+      const request = response.data.data.friendRequest;
+      return {
+        ...request,
+        sender: transformUser(request.sender),
+        receiver: transformUser(request.receiver)
+      };
     } catch (error) {
       console.error('Error declining friend request:', error);
       throw error;
