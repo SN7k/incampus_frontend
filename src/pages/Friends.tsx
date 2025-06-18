@@ -93,6 +93,7 @@ const Friends: React.FC = () => {
     console.log('NAVIGATION: Going to profile ID:', userId);
     console.log('NAVIGATION: Current user ID:', user?.id);
     console.log('NAVIGATION: Are we viewing own profile?', userId === user?.id);
+    console.log('NAVIGATION: localStorage before setting:', localStorage.getItem('viewProfileUserId'));
     
     // Set navigation data
     localStorage.setItem('currentPage', 'profile');
@@ -100,9 +101,13 @@ const Friends: React.FC = () => {
     
     console.log('NAVIGATION: Set currentPage to profile');
     console.log('NAVIGATION: Set viewProfileUserId to:', userId);
+    console.log('NAVIGATION: localStorage after setting:', localStorage.getItem('viewProfileUserId'));
     
-    // Force a page reload to ensure the Profile component gets the correct data
-    window.location.reload();
+    // Add a small delay to ensure localStorage is set before reload
+    setTimeout(() => {
+      console.log('NAVIGATION: About to reload page, localStorage viewProfileUserId:', localStorage.getItem('viewProfileUserId'));
+      window.location.reload();
+    }, 100);
   };
   
   // Handle accepting a friend request

@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 import { Post, ProfileData as OriginalProfileData, User } from '../types/profile';
 import CreatePostModal from '../components/post/CreatePostModal';
 import { postsApi } from '../services/postsApi';
-import { friendApi } from '../services/api';
+import { friendsApi } from '../services/friendsApi';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
 type ProfileData = OriginalProfileData & { role?: string };
@@ -30,6 +30,7 @@ const Profile: React.FC = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
+  const [profileId, setProfileId] = useState<string>('');
 
   // Animation variants
   const container = {
@@ -116,53 +117,67 @@ const Profile: React.FC = () => {
     setViewingUserId(targetUserId);
   }, []); // Only run on mount
 
-  // Fetch profile, posts, and friends for the current or viewed user
-  useEffect(() => {
+  // Initialize profile data
+  React.useEffect(() => {
     const fetchData = async () => {
-      setIsLoadingProfile(true);
+      console.log('=== PROFILE INITIALIZATION DEBUG ===');
+      console.log('PROFILE: Component mounted');
+      console.log('PROFILE: Current user ID:', user?.id);
+      console.log('PROFILE: localStorage viewProfileUserId:', localStorage.getItem('viewProfileUserId'));
+      console.log('PROFILE: localStorage currentPage:', localStorage.getItem('currentPage'));
+      
+      // Check if we're viewing someone else's profile
+      const storedViewProfileUserId = localStorage.getItem('viewProfileUserId');
+      console.log('PROFILE: Stored viewProfileUserId:', storedViewProfileUserId);
+      
+      if (storedViewProfileUserId && storedViewProfileUserId !== user?.id) {
+        console.log('PROFILE: Viewing someone else\'s profile, ID:', storedViewProfileUserId);
+        setViewingUserId(storedViewProfileUserId);
+        setProfileId(storedViewProfileUserId);
+      } else {
+        console.log('PROFILE: Viewing own profile');
+        setViewingUserId(null);
+        setProfileId(user?.id || '');
+      }
+      
+      console.log('PROFILE: Final viewingUserId:', viewingUserId);
+      console.log('PROFILE: Final profileId:', profileId);
+      
+      // Rest of the existing code...
       try {
-        const userIdToFetch = viewingUserId || user?.id;
-        console.log('Profile component - userIdToFetch:', userIdToFetch);
-        console.log('Profile component - viewingUserId:', viewingUserId);
-        console.log('Profile component - user?.id:', user?.id);
-        console.log('Profile component - About to call profileApi.getUserProfile with userId:', userIdToFetch);
+        // Fetch profile data
+        const profileResponse = await profileApi.getUserProfile(profileId);
+        console.log('PROFILE: Profile API response:', profileResponse);
         
-        if (!userIdToFetch) {
-          console.log('Profile component - No userIdToFetch, returning early');
-          return;
-        }
+        // profileApi.getUserProfile returns the profile data directly
+        console.log('PROFILE: Setting profile data:', profileResponse);
+        setProfileData(profileResponse);
         
-        // Fetch profile
-        console.log('Profile component - Fetching profile for userId:', userIdToFetch);
-        const profile = await profileApi.getUserProfile(userIdToFetch);
-        console.log('Profile component - Profile fetched successfully:', profile);
-        console.log('Profile component - Profile name:', profile.name);
-        console.log('Profile component - Profile id:', profile.id);
-        setProfileData(profile);
+        // Fetch user posts
+        const postsResponse = await postsApi.getUserPosts(profileId);
+        console.log('PROFILE: Posts API response:', postsResponse);
         
-        // Fetch posts
-        console.log('Profile component - Fetching posts for userId:', userIdToFetch);
-        const posts = await postsApi.getUserPosts(userIdToFetch);
-        console.log('Profile component - Posts fetched successfully:', posts);
-        setUserPosts(posts);
+        // postsApi.getUserPosts returns the posts array directly
+        setUserPosts(postsResponse);
         
-        // Fetch friends
-        console.log('Profile component - Fetching friends');
-        const friends = await friendApi.getFriends();
-        console.log('Profile component - Friends fetched successfully:', friends);
-        setFriendsList(friends);
+        // Fetch friends list
+        const friendsResponse = await friendsApi.getFriendsList();
+        console.log('PROFILE: Friends API response:', friendsResponse);
+        
+        // friendsApi.getFriendsList returns the friends array directly
+        setFriendsList(friendsResponse);
+        
+        setIsLoadingProfile(false);
       } catch (error) {
-        console.error('Profile component - Error loading profile data:', error);
-        console.error('Profile component - Error details:', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        });
-      } finally {
+        console.error('PROFILE: Error fetching data:', error);
         setIsLoadingProfile(false);
       }
     };
-    fetchData();
-  }, [user, viewingUserId]); // Only depend on user and viewingUserId, not localStorage
+
+    if (user?.id) {
+      fetchData();
+    }
+  }, [user?.id, profileId]);
 
   // Check if friend request has already been sent when viewing another user's profile
   useEffect(() => {
@@ -171,8 +186,8 @@ const Profile: React.FC = () => {
       
       try {
         // Check sent requests to see if we already sent a request to this user
-        const sentRequests = await friendApi.getSentRequests();
-        const hasSentRequest = sentRequests.some(request => request.receiver.id === viewingUserId);
+        const sentRequests = await friendsApi.getPendingRequests();
+        const hasSentRequest = sentRequests.some((request: any) => request.receiver.id === viewingUserId);
         
         if (hasSentRequest) {
           console.log('Profile component - Friend request already sent to this user');
@@ -355,7 +370,7 @@ const Profile: React.FC = () => {
     setIsSendingRequest(true);
     try {
       console.log('Sending friend request to:', viewingUserId);
-      await friendApi.sendRequest(viewingUserId);
+      await friendsApi.sendFriendRequest(viewingUserId);
       console.log('Friend request sent successfully');
       setRequestSent(true);
       
