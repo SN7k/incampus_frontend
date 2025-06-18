@@ -7,6 +7,7 @@ interface AuthContextType extends AuthState {
   login: (identifier: string, password: string, role: 'student' | 'faculty') => Promise<void>;
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => void;
+  updateProfileState: (profileData: Partial<User>) => void;
   signup: (email: string, password: string, collegeId: string, name: string, role: 'student' | 'faculty') => Promise<any>;
   verifyOTP: (email: string, otp: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: () => {},
   updateProfile: () => {},
+  updateProfileState: () => {},
   signup: async () => ({}),
   verifyOTP: async () => {},
   resendOTP: async () => {},
@@ -247,6 +249,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Function to update profile state directly without API call
+  const updateProfileState = (profileData: Partial<User>) => {
+    if (!state.user) return;
+    
+    console.log('updateProfileState called with:', profileData);
+    console.log('Current user state:', state.user);
+    
+    const updatedUser = {
+      ...state.user,
+      ...profileData
+    };
+    
+    console.log('Updated user object:', updatedUser);
+    
+    const newState = {
+      ...state,
+      user: updatedUser
+    };
+    
+    console.log('New auth state:', newState);
+    
+    setState(newState);
+    localStorage.setItem('authState', JSON.stringify(newState));
+    
+    console.log('AuthContext state updated successfully');
+  };
+
   const clearCorruptedData = () => {
     // Clear all localStorage data
     localStorage.removeItem('authState');
@@ -269,6 +298,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       login, 
       logout, 
       updateProfile, 
+      updateProfileState,
       signup, 
       verifyOTP, 
       resendOTP,

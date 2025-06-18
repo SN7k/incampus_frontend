@@ -20,7 +20,7 @@ type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-s
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
 
 function AppContent() {
-  const { isAuthenticated, updateProfile } = useAuth();
+  const { isAuthenticated, updateProfileState } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
@@ -146,18 +146,26 @@ function AppContent() {
           bio: pendingProfileData?.bio,
           role: pendingUserData?.role || 'student'
         };
+        console.log('Setting up profile with data:', setupData);
+        
         const updatedProfile = await profileApi.setupProfile(setupData);
         console.log('Profile setup successfully with:', setupData);
+        console.log('Updated profile from backend:', updatedProfile);
         
         // Update the AuthContext with the new profile data
-        if (updateProfile) {
-          updateProfile({
-            name: updatedProfile.name,
-            avatar: updatedProfile.avatar,
-            coverPhoto: updatedProfile.coverPhoto,
-            bio: updatedProfile.bio
-          });
-        }
+        // Use updateProfileState to avoid API conflict since setupProfile already updated the backend
+        const profileUpdateData = {
+          name: updatedProfile.name,
+          avatar: updatedProfile.avatar,
+          coverPhoto: updatedProfile.coverPhoto,
+          bio: updatedProfile.bio
+        };
+        console.log('Updating AuthContext with:', profileUpdateData);
+        
+        updateProfileState(profileUpdateData);
+        
+        // Verify the update worked
+        console.log('Profile state updated successfully');
       } catch (error) {
         console.error('Failed to setup profile:', error);
         // Continue anyway, profile can be updated later
