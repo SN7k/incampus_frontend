@@ -110,6 +110,8 @@ const Profile: React.FC = () => {
   // Fetch profile, posts, and friends for the current or viewed user
   useEffect(() => {
     const fetchData = async () => {
+      if (!user) return; // Don't fetch if user is not available
+      
       setIsLoadingProfile(true);
       try {
         const targetUserId = localStorage.getItem('viewProfileUserId');
@@ -127,12 +129,12 @@ const Profile: React.FC = () => {
         // Fetch friends
         const friends = await friendApi.getFriends();
         setFriendsList(friends);
-            } catch (error) {
+      } catch (error) {
         console.error('Error loading profile data:', error);
       } finally {
-          setIsLoadingProfile(false);
-        }
-      };
+        setIsLoadingProfile(false);
+      }
+    };
     fetchData();
   }, [user]);
 
@@ -299,14 +301,29 @@ const Profile: React.FC = () => {
     }
   };
 
-  if (isLoadingProfile) {
-  return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading user data...</p>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -316,24 +333,14 @@ const Profile: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
             <div className="text-gray-500 mb-4">Profile not found</div>
-                </div>
-                </div>
-                    </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="pt-16 pb-20 md:pb-0 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
-      {/* Loading indicator */}
-      {isLoadingProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
-                </div>
-          </div>
-        )}
-      
       {/* Cover photo and profile section */}
       <motion.div 
         className="relative"
