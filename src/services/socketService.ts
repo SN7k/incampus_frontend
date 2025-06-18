@@ -69,6 +69,10 @@ export const getSocket = () => {
   return socket;
 };
 
+export const isSocketReady = () => {
+  return socket && socket.connected;
+};
+
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
@@ -82,26 +86,50 @@ export const socketEvents = {
   onFriendRequest: (callback: (data: FriendEventData) => void) => {
     console.log('SocketService: Setting up friend request listener');
     const socket = getSocket();
-    if (socket) {
+    if (socket && socket.connected) {
       socket.on('friend:request', (data: FriendEventData) => {
         console.log('SocketService: Received friend:request event:', data);
         callback(data);
       });
+      console.log('SocketService: Friend request listener set up successfully');
     } else {
-      console.error('SocketService: No socket available for friend request listener');
+      console.error('SocketService: No socket available or socket not connected for friend request listener');
+      // Retry after a short delay
+      setTimeout(() => {
+        const retrySocket = getSocket();
+        if (retrySocket && retrySocket.connected) {
+          retrySocket.on('friend:request', (data: FriendEventData) => {
+            console.log('SocketService: Received friend:request event (retry):', data);
+            callback(data);
+          });
+          console.log('SocketService: Friend request listener set up successfully (retry)');
+        }
+      }, 1000);
     }
   },
 
   onFriendAccept: (callback: (data: FriendEventData) => void) => {
     console.log('SocketService: Setting up friend accept listener');
     const socket = getSocket();
-    if (socket) {
+    if (socket && socket.connected) {
       socket.on('friend:accept', (data: FriendEventData) => {
         console.log('SocketService: Received friend:accept event:', data);
         callback(data);
       });
+      console.log('SocketService: Friend accept listener set up successfully');
     } else {
-      console.error('SocketService: No socket available for friend accept listener');
+      console.error('SocketService: No socket available or socket not connected for friend accept listener');
+      // Retry after a short delay
+      setTimeout(() => {
+        const retrySocket = getSocket();
+        if (retrySocket && retrySocket.connected) {
+          retrySocket.on('friend:accept', (data: FriendEventData) => {
+            console.log('SocketService: Received friend:accept event (retry):', data);
+            callback(data);
+          });
+          console.log('SocketService: Friend accept listener set up successfully (retry)');
+        }
+      }, 1000);
     }
   },
 
@@ -146,6 +174,18 @@ export const socketEvents = {
     const socket = getSocket();
     if (socket) {
       socket.emit('post:comment', { postId, postAuthorId });
+    }
+  },
+
+  // Test socket connectivity
+  testConnection: () => {
+    const socket = getSocket();
+    if (socket && socket.connected) {
+      console.log('SocketService: Socket is connected and ready');
+      return true;
+    } else {
+      console.log('SocketService: Socket is not connected');
+      return false;
     }
   }
 };

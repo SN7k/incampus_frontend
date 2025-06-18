@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { notificationsApi, Notification as ApiNotification } from '../services/notificationsApi';
-import { socketEvents } from '../services/socketService';
+import { socketEvents, isSocketReady } from '../services/socketService';
 
 export interface Notification {
   id: string;
@@ -195,13 +195,35 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    // Set up socket event listeners
-    console.log('NotificationContext: Setting up socket event listeners');
-    socketEvents.onFriendRequest(handleFriendRequest);
-    socketEvents.onFriendAccept(handleFriendAccept);
+    // Set up socket event listeners with retry mechanism
+    const setupSocketListeners = () => {
+      console.log('NotificationContext: Setting up socket event listeners');
+      if (!isSocketReady()) {
+        console.log('NotificationContext: Socket not ready, retrying in 1 second...');
+        setTimeout(setupSocketListeners, 1000);
+        return;
+      }
+      
+      // Test socket connection
+      socketEvents.testConnection();
+      
+      try {
+        socketEvents.onFriendRequest(handleFriendRequest);
+        socketEvents.onFriendAccept(handleFriendAccept);
+        console.log('NotificationContext: Socket event listeners set up successfully');
+      } catch (error) {
+        console.error('NotificationContext: Failed to set up socket listeners:', error);
+        // Retry after a short delay
+        setTimeout(setupSocketListeners, 1000);
+      }
+    };
+
+    // Wait a bit for socket to be initialized
+    const timer = setTimeout(setupSocketListeners, 500);
 
     // Cleanup function
     return () => {
+      clearTimeout(timer);
       console.log('NotificationContext: Cleaning up socket event listeners');
       // Note: Socket.io automatically removes listeners when component unmounts
     };
