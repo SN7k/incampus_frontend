@@ -1,23 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PullToRefresh from 'react-simple-pull-to-refresh';
-import { friendApi } from '../services/api';
+import { friendsApi, FriendRequest, FriendSuggestion } from '../services/friendsApi';
 import { User } from '../types';
 import { UserPlus, UserCheck, Users, UserMinus, Check, X } from 'lucide-react';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 type FriendTab = 'friends' | 'requests' | 'suggestions';
-
-interface FriendRequest {
-  id: string;
-  sender: User;
-  createdAt: string;
-}
-
-interface Suggestion {
-  user: User;
-  mutualFriends: number;
-}
 
 const Friends: React.FC = () => {
   const { user } = useAuth();
@@ -33,19 +22,19 @@ const Friends: React.FC = () => {
   
   const [friends, setFriends] = useState<User[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
 
   // Load data based on active tab
   const loadData = useCallback(async () => {
     try {
       if (activeTab === 'friends') {
-        const data = await friendApi.getFriends();
+        const data = await friendsApi.getFriendsList();
         setFriends(data);
       } else if (activeTab === 'requests') {
-        const data = await friendApi.getFriendRequests();
+        const data = await friendsApi.getPendingRequests();
         setFriendRequests(data);
       } else if (activeTab === 'suggestions') {
-        const data = await friendApi.getSuggestions();
+        const data = await friendsApi.getFriendSuggestions();
         setSuggestions(data);
       }
     } catch (error) {
@@ -71,7 +60,7 @@ const Friends: React.FC = () => {
       if (activeTab === 'requests') {
         const fetchRequests = async () => {
           try {
-            const data = await friendApi.getFriendRequests();
+            const data = await friendsApi.getPendingRequests();
             setFriendRequests(data);
           } catch (error) {
             console.error('Error refreshing friend requests:', error);
@@ -113,7 +102,7 @@ const Friends: React.FC = () => {
   // Handle accepting a friend request
   const handleAcceptRequest = async (requestId: string) => {
     try {
-      const result = await friendApi.acceptRequest(requestId);
+      const result = await friendsApi.acceptFriendRequest(requestId);
     const request = friendRequests.find(req => req.id === requestId);
       if (request && result) {
         setFriends(prev => [...prev, request.sender]);
@@ -127,7 +116,7 @@ const Friends: React.FC = () => {
   // Handle declining a friend request
   const handleDeclineRequest = async (requestId: string) => {
     try {
-      await friendApi.declineRequest(requestId);
+      await friendsApi.declineFriendRequest(requestId);
     setFriendRequests(prev => prev.filter(req => req.id !== requestId));
     } catch (error) {
       console.error('Error declining friend request:', error);
@@ -137,7 +126,7 @@ const Friends: React.FC = () => {
   // Handle adding a friend from suggestions
   const handleAddFriend = async (suggestionId: string) => {
     try {
-      await friendApi.sendRequest(suggestionId);
+      await friendsApi.sendFriendRequest(suggestionId);
       // Remove from suggestions
       setSuggestions(prev => prev.filter(sugg => sugg.user.id !== suggestionId));
     } catch (error) {
@@ -148,7 +137,7 @@ const Friends: React.FC = () => {
   // Handle unfriending
   const handleUnfriend = async (friendId: string) => {
     try {
-      await friendApi.unfriend(friendId);
+      await friendsApi.unfriend(friendId);
       setFriends(prev => prev.filter(friend => friend.id !== friendId));
     } catch (error) {
       console.error('Error unfriending user:', error);

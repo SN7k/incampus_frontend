@@ -4,8 +4,7 @@ import API from './api';
 
 // Helper function to transform backend data (convert _id to id)
 const transformUser = (user: any): User => {
-  console.log('TRANSFORM: Original user data:', user);
-  const transformed = {
+  return {
     id: user._id || user.id,
     name: user.name,
     universityId: user.universityId,
@@ -15,8 +14,6 @@ const transformUser = (user: any): User => {
     coverPhoto: user.coverPhoto,
     email: user.email
   };
-  console.log('TRANSFORM: Transformed user data:', transformed);
-  return transformed;
 };
 
 // Friend types
