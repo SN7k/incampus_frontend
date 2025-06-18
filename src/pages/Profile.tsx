@@ -30,6 +30,8 @@ const Profile: React.FC = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
+  const [isFriend, setIsFriend] = useState(false);
+  const [isUnfriending, setIsUnfriending] = useState(false);
 
   // Animation variants
   const container = {
@@ -238,15 +240,41 @@ const Profile: React.FC = () => {
           
           if (hasSentRequest) {
             setRequestSent(true);
+          } else {
+            setRequestSent(false);
           }
+        } else {
+          setRequestSent(false);
         }
       } catch (error) {
         console.error('Profile component - Error checking friend request status:', error);
-        // Don't throw error, just log it
+        setRequestSent(false);
       }
     };
     
     checkFriendRequestStatus();
+  }, [viewingUserId, user]);
+
+  // Check if the viewed user is a friend
+  useEffect(() => {
+    const checkFriendshipStatus = async () => {
+      if (!viewingUserId || !user) return;
+      
+      try {
+        const isUserFriend = await friendsApi.isFriend(viewingUserId);
+        setIsFriend(isUserFriend);
+        
+        // If user is a friend, they can't have a pending request
+        if (isUserFriend) {
+          setRequestSent(false);
+        }
+      } catch (error) {
+        console.error('Profile component - Error checking friendship status:', error);
+        setIsFriend(false);
+      }
+    };
+    
+    checkFriendshipStatus();
   }, [viewingUserId, user]);
 
   // Listen for post deletion events
@@ -415,6 +443,34 @@ const Profile: React.FC = () => {
   const handleConnect = async () => {
     if (!viewingUserId) return;
     
+    // If user is already a friend, unfriend them
+    if (isFriend) {
+      setIsUnfriending(true);
+      try {
+        await friendsApi.unfriend(viewingUserId);
+        setIsFriend(false);
+        setRequestSent(false);
+        
+        // Update friends list
+        const updatedFriends = await friendsApi.getFriendsList();
+        setFriendsList(updatedFriends);
+        
+        // Show success message
+        alert('Friend removed successfully!');
+      } catch (error) {
+        console.error('Error removing friend:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to remove friend';
+        alert(errorMessage);
+      } finally {
+        setIsUnfriending(false);
+      }
+      return;
+    }
+    
+    // If request is already sent, don't do anything
+    if (requestSent) return;
+    
+    // Send friend request
     setIsSendingRequest(true);
     try {
       await friendsApi.sendFriendRequest(viewingUserId);
@@ -560,19 +616,33 @@ const Profile: React.FC = () => {
                     {viewingUserId && (
                       <button 
                         onClick={handleConnect}
-                        disabled={isSendingRequest || requestSent}
+                        disabled={isSendingRequest || isUnfriending}
                         className={`flex items-center space-x-1 px-4 py-2 border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
-                          requestSent 
+                          isFriend 
+                            ? 'border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' 
+                            : requestSent 
                             ? 'border-green-600 text-green-600 bg-green-50 dark:bg-green-900/20' 
-                            : isSendingRequest
+                            : isSendingRequest || isUnfriending
                             ? 'border-gray-400 text-gray-400 cursor-not-allowed'
                             : 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
-                        {isSendingRequest ? (
+                        {isUnfriending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            <span>Removing...</span>
+                          </>
+                        ) : isSendingRequest ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                             <span>Sending...</span>
+                          </>
+                        ) : isFriend ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Connected</span>
                           </>
                         ) : requestSent ? (
                           <>

@@ -165,6 +165,17 @@ export const friendsApi = {
       console.error('Error unfriending user:', error);
       throw error;
     }
+  },
+
+  // Check if a user is in friends list
+  isFriend: async (userId: string): Promise<boolean> => {
+    try {
+      const friends = await friendsApi.getFriendsList();
+      return friends.some(friend => friend.id === userId);
+    } catch (error) {
+      console.error('Error checking if user is friend:', error);
+      return false;
+    }
   }
 };
 
