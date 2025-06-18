@@ -114,12 +114,9 @@ const Profile: React.FC = () => {
     const fetchData = async () => {
       setIsLoadingProfile(true);
       try {
-        const targetUserId = localStorage.getItem('viewProfileUserId');
-        console.log('Profile component - targetUserId from localStorage:', targetUserId);
-        setViewingUserId(targetUserId); // null if viewing own profile, userId if viewing someone else
-        
-        const userIdToFetch = targetUserId || user?.id;
+        const userIdToFetch = viewingUserId || user?.id;
         console.log('Profile component - userIdToFetch:', userIdToFetch);
+        console.log('Profile component - viewingUserId:', viewingUserId);
         console.log('Profile component - user?.id:', user?.id);
         
         if (!userIdToFetch) {
@@ -155,7 +152,14 @@ const Profile: React.FC = () => {
       }
     };
     fetchData();
-  }, [user, viewingUserId]);
+  }, [user, viewingUserId]); // Only depend on user and viewingUserId, not localStorage
+
+  // Initialize viewingUserId from localStorage on mount
+  useEffect(() => {
+    const targetUserId = localStorage.getItem('viewProfileUserId');
+    console.log('Profile component - Initial viewProfileUserId from localStorage:', targetUserId);
+    setViewingUserId(targetUserId);
+  }, []); // Only run on mount
 
   // Watch for viewProfileUserId changes via custom events
   useEffect(() => {
@@ -173,15 +177,27 @@ const Profile: React.FC = () => {
     // Listen for custom event
     window.addEventListener('viewProfileUserIdChanged', handleViewProfileUserIdChange as EventListener);
 
-    // Also check localStorage on mount
-    const targetUserId = localStorage.getItem('viewProfileUserId');
-    if (targetUserId !== viewingUserId) {
-      console.log('Profile component - Initial viewProfileUserId check, updating state');
-      setViewingUserId(targetUserId);
-    }
-
     return () => {
       window.removeEventListener('viewProfileUserIdChanged', handleViewProfileUserIdChange as EventListener);
+    };
+  }, [viewingUserId]);
+
+  // Also listen for navigation events to handle viewProfileUserId changes
+  useEffect(() => {
+    const handleNavigation = (event: CustomEvent) => {
+      if (event.detail?.page === 'profile' && event.detail?.userId) {
+        console.log('Profile component - Navigation event received with userId:', event.detail.userId);
+        const targetUserId = event.detail.userId;
+        if (targetUserId !== viewingUserId) {
+          console.log('Profile component - Updating viewingUserId from navigation event');
+          setViewingUserId(targetUserId);
+        }
+      }
+    };
+
+    window.addEventListener('navigate', handleNavigation as EventListener);
+    return () => {
+      window.removeEventListener('navigate', handleNavigation as EventListener);
     };
   }, [viewingUserId]);
 
@@ -420,16 +436,36 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="pt-16 pb-20 md:pb-0 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
-      {/* Loading indicator */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
+      {/* Debug section - remove this later */}
+      <div className="fixed top-20 left-4 z-50 bg-red-100 dark:bg-red-900 p-2 rounded text-xs">
+        <div>viewingUserId: {viewingUserId || 'null'}</div>
+        <div>user?.id: {user?.id || 'null'}</div>
+        <div>localStorage viewProfileUserId: {localStorage.getItem('viewProfileUserId') || 'null'}</div>
+        <div>profileData?.name: {profileData?.name || 'null'}</div>
+        <button 
+          onClick={() => {
+            const testUserId = 'test-user-123';
+            localStorage.setItem('viewProfileUserId', testUserId);
+            window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
+              detail: { userId: testUserId }
+            }));
+          }}
+          className="mt-1 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+        >
+          Test Navigation
+        </button>
+      </div>
+      
+      {/* Loading state */}
       {isLoadingProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
-                </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading profile...</p>
           </div>
-        )}
+        </div>
+      )}
       
       {/* Cover photo and profile section */}
       <motion.div 

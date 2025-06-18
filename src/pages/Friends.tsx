@@ -90,12 +90,16 @@ const Friends: React.FC = () => {
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
     console.log('NAVIGATION: Going to profile ID:', userId);
+    console.log('NAVIGATION: Current user ID:', user?.id);
+    console.log('NAVIGATION: Are we viewing own profile?', userId === user?.id);
     
     // Set navigation data without clearing localStorage
     localStorage.setItem('currentPage', 'profile');
     
     if (userId) {
       localStorage.setItem('viewProfileUserId', userId);
+      console.log('NAVIGATION: Set viewProfileUserId in localStorage:', userId);
+      console.log('NAVIGATION: localStorage viewProfileUserId after set:', localStorage.getItem('viewProfileUserId'));
       
       const timestamp = new Date().getTime();
       
@@ -109,6 +113,7 @@ const Friends: React.FC = () => {
       }));
       
       // Dispatch custom event for viewProfileUserId change
+      console.log('NAVIGATION: Dispatching viewProfileUserIdChanged event with userId:', userId);
       window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
         detail: { userId: userId }
       }));
@@ -125,6 +130,7 @@ const Friends: React.FC = () => {
       }));
       
       // Dispatch custom event for viewProfileUserId change
+      console.log('NAVIGATION: Dispatching viewProfileUserIdChanged event with userId: null');
       window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
         detail: { userId: null }
       }));
