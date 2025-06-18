@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { User } from '../types';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import { ArrowLeft, User as UserIcon, Lock, Trash2 } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, Lock, Trash2, Wifi } from 'lucide-react';
+import { testConnection, isSocketReady, initializeSocket } from '../services/socketService';
 
 const Settings: React.FC = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -69,6 +70,107 @@ const Settings: React.FC = () => {
         {activeTab === 'personal' && (
           <PersonalInformationTab user={user} updateProfile={updateProfile} />
         )}
+        
+        {/* Socket Test Tab */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Socket Connection Test</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Test the real-time connection</p>
+            </div>
+            <Button
+              onClick={() => {
+                console.log('Settings: Testing socket connection...');
+                console.log('Settings: User authenticated:', !!user);
+                console.log('Settings: Auth state in localStorage:', localStorage.getItem('authState'));
+                const ready = isSocketReady();
+                console.log('Settings: Socket ready:', ready);
+                if (ready) {
+                  testConnection();
+                } else {
+                  console.log('Settings: Socket not ready');
+                }
+              }}
+              className="flex items-center"
+            >
+              <Wifi size={16} className="mr-2" />
+              Test Socket
+            </Button>
+          </div>
+          <div className="mt-4">
+            <Button
+              onClick={async () => {
+                console.log('Settings: Testing API connection...');
+                try {
+                  const response = await fetch('https://incampus-backend.onrender.com');
+                  console.log('Settings: API response:', response.status, response.statusText);
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('Settings: API data:', data);
+                  }
+                } catch (error) {
+                  console.error('Settings: API test failed:', error);
+                }
+              }}
+              variant="outline"
+              className="flex items-center"
+            >
+              Test API
+            </Button>
+          </div>
+          <div className="mt-4">
+            <Button
+              onClick={async () => {
+                console.log('Settings: Testing authenticated API connection...');
+                try {
+                  const authState = localStorage.getItem('authState');
+                  const token = authState ? JSON.parse(authState).token : null;
+                  console.log('Settings: Token available:', !!token);
+                  
+                  if (!token) {
+                    console.log('Settings: No token available');
+                    return;
+                  }
+                  
+                  const response = await fetch('https://incampus-backend.onrender.com/api/profile', {
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  console.log('Settings: Authenticated API response:', response.status, response.statusText);
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('Settings: Authenticated API data:', data);
+                  }
+                } catch (error) {
+                  console.error('Settings: Authenticated API test failed:', error);
+                }
+              }}
+              variant="outline"
+              className="flex items-center"
+            >
+              Test Auth API
+            </Button>
+          </div>
+          <div className="mt-4">
+            <Button
+              onClick={() => {
+                console.log('Settings: Manually initializing socket...');
+                const socket = initializeSocket();
+                console.log('Settings: Manual socket initialization result:', !!socket);
+                if (socket) {
+                  console.log('Settings: Socket connected:', socket.connected);
+                  console.log('Settings: Socket id:', socket.id);
+                }
+              }}
+              variant="outline"
+              className="flex items-center"
+            >
+              Manual Socket Init
+            </Button>
+          </div>
+        </div>
         
         {/* Password & Security Tab */}
         {activeTab === 'password' && (

@@ -169,6 +169,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Listen for friend requests to create real-time notifications
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 5;
+
     const handleFriendRequest = (data: any) => {
       console.log('NotificationContext: Received friend request socket event:', data);
       if (user && data.fromUser) {
@@ -197,9 +200,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     // Set up socket event listeners with retry mechanism
     const setupSocketListeners = () => {
-      console.log('NotificationContext: Setting up socket event listeners');
+      console.log('NotificationContext: Setting up socket event listeners (attempt:', retryCount + 1, ')');
       if (!isSocketReady()) {
-        console.log('NotificationContext: Socket not ready, retrying in 1 second...');
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          console.error('NotificationContext: Max retries reached, giving up on socket setup');
+          return;
+        }
+        console.log('NotificationContext: Socket not ready, retrying in 1 second... (retry', retryCount, 'of', maxRetries, ')');
         setTimeout(setupSocketListeners, 1000);
         return;
       }
@@ -219,7 +227,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
 
     // Wait a bit for socket to be initialized
-    const timer = setTimeout(setupSocketListeners, 500);
+    const timer = setTimeout(setupSocketListeners, 2000);
 
     // Cleanup function
     return () => {

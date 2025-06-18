@@ -27,38 +27,72 @@ interface PostEventData {
 let socket: typeof Socket | null = null;
 
 export const initializeSocket = () => {
-  if (socket) return socket;
+  if (socket) {
+    console.log('SocketService: Socket already exists, returning existing socket');
+    return socket;
+  }
 
+  console.log('SocketService: Initializing new socket connection...');
   const token = localStorage.getItem('authState')
     ? JSON.parse(localStorage.getItem('authState')!).token
     : null;
 
+  console.log('SocketService: Auth token found:', !!token);
   if (!token) {
-    console.error('No auth token found for socket connection');
+    console.error('SocketService: No auth token found for socket connection');
     return null;
   }
 
-  socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
-    auth: { token }
+  // Log token details (without exposing the full token)
+  try {
+    const tokenParts = token.split('.');
+    if (tokenParts.length === 3) {
+      const payload = JSON.parse(atob(tokenParts[1]));
+      console.log('SocketService: Token payload:', { 
+        id: payload.id, 
+        exp: new Date(payload.exp * 1000).toISOString(),
+        iat: new Date(payload.iat * 1000).toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('SocketService: Error parsing token:', error);
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://incampus-backend.onrender.com');
+  console.log('SocketService: Connecting to:', apiUrl);
+  console.log('SocketService: Environment VITE_API_URL:', import.meta.env.VITE_API_URL);
+  console.log('SocketService: Current hostname:', window.location.hostname);
+
+  socket = io(apiUrl, {
+    auth: { token },
+    timeout: 10000, // 10 second timeout
+    forceNew: true
   });
 
   socket.on('connect', () => {
-    console.log('Socket connected');
+    console.log('SocketService: Socket connected successfully');
   });
 
   socket.on('connect_error', (error: SocketError) => {
-    console.error('Socket connection error:', error);
+    console.error('SocketService: Socket connection error:', error);
     // Attempt to reconnect if token is invalid
     if (error.message === 'Authentication error') {
+      console.log('SocketService: Authentication error, clearing auth state');
       localStorage.removeItem('authState');
       window.location.href = '/login';
     }
   });
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected');
+    console.log('SocketService: Socket disconnected');
   });
 
+  // Test response listener
+  socket.on('test:response', (data: any) => {
+    console.log('SocketService: Received test response from backend:', data);
+  });
+
+  console.log('SocketService: Socket initialization completed');
   return socket;
 };
 
@@ -69,8 +103,30 @@ export const getSocket = () => {
   return socket;
 };
 
+export const testConnection = () => {
+  if (!socket) {
+    console.log('SocketService: No socket to test');
+    return false;
+  }
+  
+  console.log('SocketService: Testing socket connection...');
+  console.log('SocketService: Socket connected:', socket.connected);
+  console.log('SocketService: Socket id:', socket.id);
+  
+  // Emit a test event
+  socket.emit('test', { message: 'Hello from frontend' });
+  
+  return socket.connected;
+};
+
 export const isSocketReady = () => {
-  return socket && socket.connected;
+  const ready = socket && socket.connected;
+  console.log('SocketService: isSocketReady check:', {
+    socketExists: !!socket,
+    socketConnected: socket?.connected,
+    ready: ready
+  });
+  return ready;
 };
 
 export const disconnectSocket = () => {

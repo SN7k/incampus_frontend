@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { initializeSocket, disconnectSocket } from './services/socketService';
+import { initializeSocket, disconnectSocket, testConnection } from './services/socketService';
 import LoginForm from './components/auth/LoginForm';
 import SignupForm from './components/auth/SignupForm';
 import OtpVerification from './components/auth/OtpVerification';
@@ -226,9 +226,20 @@ function AppContent() {
   
   // Initialize socket connection when user is authenticated
   React.useEffect(() => {
+    console.log('App: Socket initialization effect triggered, isAuthenticated:', isAuthenticated);
+    console.log('App: Auth state in localStorage:', localStorage.getItem('authState'));
     if (isAuthenticated) {
-      initializeSocket();
+      console.log('App: Initializing socket connection...');
+      const socket = initializeSocket();
+      console.log('App: Socket initialization result:', !!socket);
+      
+      // Test the connection after a short delay
+      setTimeout(() => {
+        console.log('App: Testing socket connection...');
+        testConnection();
+      }, 3000);
     } else {
+      console.log('App: User not authenticated, disconnecting socket...');
       disconnectSocket();
     }
   }, [isAuthenticated]);
