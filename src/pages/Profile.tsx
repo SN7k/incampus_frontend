@@ -147,12 +147,14 @@ const Profile: React.FC = () => {
         // Fetch user posts
         try {
           const postsResponse = await postsApi.getUserPosts(targetProfileId);
+          console.log('PROFILE: Raw posts response:', postsResponse);
           // Normalize posts: ensure each post has a 'user' field and 'createdAt' as Date
           const normalizedPosts = postsResponse.map(post => ({
             ...post,
             user: post.user || (post as any).author,
             createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
           }));
+          console.log('PROFILE: Normalized posts:', normalizedPosts);
           setUserPosts(normalizedPosts);
         } catch (error) {
           console.error('PROFILE: Error fetching posts:', error);
@@ -512,6 +514,11 @@ const Profile: React.FC = () => {
     }
   };
 
+  // Debug activeTab changes
+  useEffect(() => {
+    console.log('PROFILE: Active tab changed to:', activeTab);
+  }, [activeTab]);
+
   if (isLoadingProfile) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -703,7 +710,10 @@ const Profile: React.FC = () => {
                   <motion.div 
                     variants={item} 
                     className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800/40 dark:to-blue-700/30 px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md"
-                    onClick={() => setActiveTab('memories')}
+                    onClick={() => {
+                      console.log('PROFILE: Memories tab clicked');
+                      setActiveTab('memories');
+                    }}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}
@@ -717,7 +727,10 @@ const Profile: React.FC = () => {
                   <motion.div 
                     variants={item} 
                     className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-800/70 dark:to-purple-700/60 px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md"
-                    onClick={() => setActiveTab('friends')}
+                    onClick={() => {
+                      console.log('PROFILE: Friends tab clicked');
+                      setActiveTab('friends');
+                    }}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}
@@ -801,7 +814,10 @@ const Profile: React.FC = () => {
         >
           <div className="flex flex-wrap justify-center sm:justify-start border-b dark:border-gray-700">
             <button 
-              onClick={() => setActiveTab('memories')}
+              onClick={() => {
+                console.log('PROFILE: Memories tab clicked');
+                setActiveTab('memories');
+              }}
               className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'memories' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
             >
               <BookOpen size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
@@ -817,7 +833,10 @@ const Profile: React.FC = () => {
               )}
             </button>
             <button 
-              onClick={() => setActiveTab('collections')}
+              onClick={() => {
+                console.log('PROFILE: Collections tab clicked');
+                setActiveTab('collections');
+              }}
               className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'collections' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
             >
               <Bookmark size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
@@ -833,7 +852,10 @@ const Profile: React.FC = () => {
               )}
             </button>
             <button 
-              onClick={() => setActiveTab('friends')}
+              onClick={() => {
+                console.log('PROFILE: Friends tab clicked');
+                setActiveTab('friends');
+              }}
               className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'friends' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
             >
               <Users size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
@@ -849,7 +871,10 @@ const Profile: React.FC = () => {
               )}
             </button>
             <button 
-              onClick={() => setActiveTab('about')}
+              onClick={() => {
+                console.log('PROFILE: About tab clicked');
+                setActiveTab('about');
+              }}
               className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'about' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
             >
               <Link size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
@@ -883,41 +908,44 @@ const Profile: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
               >
-              {userPosts.length > 0 ? (
-                <div className="space-y-6">
-                  {userPosts.map((post) => (
-                    <motion.div key={post.id} variants={item}>
-                      <PostCard post={post} />
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <motion.div 
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center transition-colors duration-200"
-                  variants={item}
-                >
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
-                    <BookOpen size={24} className="text-blue-800 dark:text-blue-300" />
+              {(() => {
+                console.log('PROFILE: Rendering memories tab, userPosts:', userPosts);
+                return userPosts.length > 0 ? (
+                  <div className="space-y-6">
+                    {userPosts.map((post) => (
+                      <motion.div key={post.id} variants={item}>
+                        <PostCard post={post} />
+                      </motion.div>
+                    ))}
                   </div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                      {!viewingUserId ? 'No memories shared yet' : 'No memories shared yet'}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
-                      {!viewingUserId ? 'Start sharing your university moments with friends!' : 'This user hasn\'t shared any memories yet.'}
-                    </p>
-                  <div className="flex justify-center w-full">
-                      {!viewingUserId && (
-                        <Button 
-                          variant="primary" 
-                          size="lg"
-                          onClick={() => setIsCreatePostModalOpen(true)}
-                        >
-                      Share Your First Memory
-                    </Button>
-                      )}
-                  </div>
-                </motion.div>
-              )}
+                ) : (
+                  <motion.div 
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center transition-colors duration-200"
+                    variants={item}
+                  >
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                      <BookOpen size={24} className="text-blue-800 dark:text-blue-300" />
+                    </div>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                        {!viewingUserId ? 'No memories shared yet' : 'No memories shared yet'}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        {!viewingUserId ? 'Start sharing your university moments with friends!' : 'This user hasn\'t shared any memories yet.'}
+                      </p>
+                    <div className="flex justify-center w-full">
+                        {!viewingUserId && (
+                          <Button 
+                            variant="primary" 
+                            size="lg"
+                            onClick={() => setIsCreatePostModalOpen(true)}
+                          >
+                        Share Your First Memory
+                      </Button>
+                        )}
+                    </div>
+                  </motion.div>
+                );
+              })()}
               </motion.div>
           )}
 
@@ -947,11 +975,14 @@ const Profile: React.FC = () => {
               </div>
               {/* Extract all images from user posts */}
               {(() => {
+                console.log('PROFILE: Rendering collections tab, userPosts:', userPosts);
                 // Get all images from user posts
                 const allImages = userPosts
                   .filter(post => post.images && post.images.length > 0)
                   .flatMap(post => post.images || [])
                   .filter(image => image.type === 'image');
+                
+                console.log('PROFILE: Filtered images:', allImages);
                 
                 if (allImages.length === 0) {
                   return (
