@@ -25,7 +25,7 @@ const Profile: React.FC = () => {
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [editFormData, setEditFormData] = useState<Partial<ProfileData>>({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
