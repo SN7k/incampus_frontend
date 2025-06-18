@@ -1033,21 +1033,23 @@ const Profile: React.FC = () => {
                         whileHover={{ scale: 1.02 }}
                       >
                         <img 
-                                src={getAvatarUrl(friend.avatar, friend.name)}
-                          alt={friend.name}
+                          src={getAvatarUrl(friend?.avatar, friend?.name || 'User')}
+                          alt={friend?.name || 'User'}
                           className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-2 sm:mr-3 object-cover"
                         />
                         <div>
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{friend.name}</h4>
-                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{friend.universityId}</p>
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{friend?.name || 'User'}</h4>
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{friend?.universityId || 'Unknown'}</p>
                         </div>
                         <div className="ml-auto flex items-center space-x-2">
                           <button 
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                             onClick={() => {
                               // Navigate to friend's profile
-                                    localStorage.setItem('viewProfileUserId', friend.id);
-                                    window.location.reload();
+                              if (friend?.id) {
+                                localStorage.setItem('viewProfileUserId', friend.id);
+                                window.location.reload();
+                              }
                             }}
                           >
                             View Profile
