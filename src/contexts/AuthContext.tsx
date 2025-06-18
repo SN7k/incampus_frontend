@@ -10,6 +10,7 @@ interface AuthContextType extends AuthState {
   signup: (email: string, password: string, collegeId: string, name: string, role: 'student' | 'faculty') => Promise<any>;
   verifyOTP: (email: string, otp: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
+  clearCorruptedData: () => void;
 }
 
 const initialState: AuthState = {
@@ -26,7 +27,8 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: () => {},
   signup: async () => ({}),
   verifyOTP: async () => {},
-  resendOTP: async () => {}
+  resendOTP: async () => {},
+  clearCorruptedData: () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -37,9 +39,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const savedAuth = localStorage.getItem('authState');
     if (savedAuth) {
       try {
-        return JSON.parse(savedAuth) as AuthState;
+        const parsedAuth = JSON.parse(savedAuth) as AuthState;
+        
+        // Validate the parsed data structure
+        if (parsedAuth && typeof parsedAuth === 'object') {
+          // Check if user object has required properties
+          if (parsedAuth.user && typeof parsedAuth.user === 'object') {
+            const user = parsedAuth.user;
+            
+            // Ensure avatar has proper structure
+            if (user.avatar && typeof user.avatar === 'object') {
+              if (!user.avatar.url || typeof user.avatar.url !== 'string') {
+                console.warn('Invalid avatar structure, resetting to default');
+                user.avatar = { url: '' };
+              }
+            } else if (user.avatar && typeof user.avatar === 'string') {
+              // Convert string avatar to object format
+              user.avatar = { url: user.avatar };
+            } else {
+              // Set default avatar if missing
+              user.avatar = { url: '' };
+            }
+            
+            // Ensure other required fields exist
+            if (!user.name || typeof user.name !== 'string') {
+              user.name = 'User';
+            }
+            if (!user.id || typeof user.id !== 'string') {
+              console.warn('Invalid user ID, clearing auth state');
+              return initialState;
+            }
+            
+            return parsedAuth;
+          } else if (parsedAuth.user === null) {
+            // Valid null user state
+            return parsedAuth;
+          }
+        }
+        
+        console.warn('Invalid auth state structure, clearing');
+        localStorage.removeItem('authState');
+        return initialState;
       } catch (e) {
         console.error('Failed to parse saved auth state', e);
+        localStorage.removeItem('authState');
         return initialState;
       }
     }
@@ -85,12 +128,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await authApi.login(identifier, password, role);
       
+      // Validate the response data before storing
+      if (!response.data || !response.data.user || !response.data.token) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // Ensure user data has proper structure
+      const userData = response.data.user;
+      
+      // Validate and fix avatar structure
+      if (userData.avatar && typeof userData.avatar === 'object') {
+        if (!userData.avatar.url || typeof userData.avatar.url !== 'string') {
+          userData.avatar = { url: '' };
+        }
+      } else if (userData.avatar && typeof userData.avatar === 'string') {
+        userData.avatar = { url: userData.avatar };
+      } else {
+        userData.avatar = { url: '' };
+      }
+      
+      // Ensure other required fields
+      if (!userData.name || typeof userData.name !== 'string') {
+        userData.name = 'User';
+      }
+      if (!userData.id || typeof userData.id !== 'string') {
+        throw new Error('Invalid user data received');
+      }
+      
       // Store token
       tokenService.setToken(response.data.token);
       
       const newState = {
         isAuthenticated: true,
-        user: response.data.user,
+        user: userData,
         loading: false,
         error: null
       };
@@ -99,6 +169,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('authState', JSON.stringify(newState));
       localStorage.setItem('currentPage', 'feed');
     } catch (error: any) {
+      // Clear any corrupted data
+      localStorage.removeItem('authState');
+      localStorage.removeItem('currentPage');
+      
       setState({
         isAuthenticated: false,
         user: null,
@@ -173,6 +247,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const clearCorruptedData = () => {
+    // Clear all localStorage data
+    localStorage.removeItem('authState');
+    localStorage.removeItem('currentPage');
+    localStorage.removeItem('previousPage');
+    localStorage.removeItem('viewProfileUserId');
+    
+    // Clear token
+    tokenService.removeToken();
+    
+    // Reset state
+    setState(initialState);
+    
+    console.log('Corrupted data cleared, please login again');
+  };
+
   return (
     <AuthContext.Provider value={{ 
       ...state, 
@@ -181,7 +271,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateProfile, 
       signup, 
       verifyOTP, 
-      resendOTP 
+      resendOTP,
+      clearCorruptedData
     }}>
       {children}
     </AuthContext.Provider>

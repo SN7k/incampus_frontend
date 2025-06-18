@@ -20,7 +20,7 @@ type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-s
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
 
 function AppContent() {
-  const { isAuthenticated, user, loading, updateProfile } = useAuth();
+  const { isAuthenticated, updateProfile } = useAuth();
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
@@ -32,29 +32,6 @@ function AppContent() {
   
   // State to track friend requests
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
-  
-  // Add loading state for initial auth check
-  const [isInitializing, setIsInitializing] = useState(true);
-  
-  // Check if auth state is being loaded from localStorage
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitializing(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show loading screen while initializing
-  if (isInitializing || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
   
   // Update friend requests state when they change
   React.useEffect(() => {
@@ -217,13 +194,8 @@ function AppContent() {
     if (!isAuthenticated) {
       // When user logs out, reset to login page
       setRegistrationStep('login');
-    } else {
-      // When user is authenticated and not in registration flow, reset registration step
-      if (registrationStep === 'login' || registrationStep === 'signup') {
-        setRegistrationStep('login');
-      }
     }
-  }, [isAuthenticated, registrationStep]);
+  }, [isAuthenticated]);
   
   // If user is not authenticated, show auth forms
   if (!isAuthenticated) {
@@ -270,7 +242,7 @@ function AppContent() {
   }
 
   // If user is authenticated but still in registration flow, show registration steps
-  if (isAuthenticated && (registrationStep === 'otp' || registrationStep === 'profile-setup' || registrationStep === 'friend-suggestions')) {
+  if (isAuthenticated && (registrationStep !== 'login' && registrationStep !== 'signup')) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-800 to-blue-600 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center px-4 transition-colors duration-200">
         {registrationStep === 'otp' && pendingUserData && (

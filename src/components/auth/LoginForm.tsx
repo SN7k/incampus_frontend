@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 type UserRole = 'student' | 'faculty';
 
@@ -10,103 +11,133 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
-  const [role, setRole] = useState<UserRole>('student');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState('');
-  const [loading, setLoading] = useState(false);
-  
-  const { login } = useAuth();
+  const { login, loading, error, clearCorruptedData } = useAuth();
+  const [formData, setFormData] = useState({
+    identifier: '',
+    password: '',
+    role: 'student' as UserRole
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showClearDataOption, setShowClearDataOption] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    setLoading(true);
     try {
-      await login(identifier, password, role);
-    } catch (error: unknown) {
-      setFormError('Login failed.');
-    } finally {
-      setLoading(false);
+      await login(formData.identifier, formData.password, formData.role);
+    } catch (error) {
+      // If login fails, show option to clear data
+      setShowClearDataOption(true);
     }
+  };
+
+  const handleClearData = () => {
+    clearCorruptedData();
+    setShowClearDataOption(false);
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full">
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-400 mb-2">Welcome to InCampus</h2>
-        <p className="text-gray-600 dark:text-gray-400">Sign in with your university credentials</p>
+        <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-400 mb-2">Welcome Back</h2>
+        <p className="text-gray-600 dark:text-gray-400">Sign in to your InCampus account</p>
       </div>
       
-      
-      <form onSubmit={handleSubmit}>
-        {(formError) && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4">
-            {formError}
-          </div>
-        )}
-        
-        <div className="flex space-x-4 mb-4">
-          <button
-            type="button"
-            onClick={() => setRole('student')}
-            className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-              role === 'student'
-                ? 'bg-blue-800 text-white dark:bg-blue-700'
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-            }`}
-          >
-            Student
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('faculty')}
-            className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-              role === 'faculty'
-                ? 'bg-blue-800 text-white dark:bg-blue-700'
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-            }`}
-          >
-            Faculty
-          </button>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email/University ID Field */}
+        <div>
+          <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email or University ID
+          </label>
+          <input
+            type="text"
+            id="identifier"
+            value={formData.identifier}
+            onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            placeholder="Enter your email or university ID"
+            required
+          />
         </div>
-        
-        <Input
-          label={role === 'student' ? "Student ID or Email" : "Email"}
-          placeholder={role === 'student' ? "BWU/ABC/00/000 or your email" : "Enter your email"}
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          fullWidth
-        />
-        
-        <Input
-          label="Password"
-          type="password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          fullWidth
-        />
-        
-        <div className="flex items-center justify-between mb-6 mt-2">
-          <div className="flex items-center">
-            <input 
-              id="remember-me" 
-              type="checkbox" 
-              className="h-4 w-4 text-blue-800 dark:text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+
+        {/* Password Field */}
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Enter your password"
+              required
             />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              Remember me
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Role Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            I am a:
+          </label>
+          <div className="flex space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="role"
+                value="student"
+                checked={formData.role === 'student'}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Student</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="role"
+                value="faculty"
+                checked={formData.role === 'faculty'}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Faculty</span>
             </label>
           </div>
-          
-          <div className="text-sm">
-            <a href="#" className="text-blue-800 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
-              Forgot password?
-            </a>
-          </div>
         </div>
-        
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-center">
+            <AlertCircle size={20} className="mr-2" />
+            {error}
+          </div>
+        )}
+
+        {/* Clear Data Option */}
+        {showClearDataOption && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 px-4 py-3 rounded-lg">
+            <p className="text-sm mb-2">Having trouble logging in? Your stored data might be corrupted.</p>
+            <button
+              type="button"
+              onClick={handleClearData}
+              className="text-sm underline hover:no-underline"
+            >
+              Clear stored data and try again
+            </button>
+          </div>
+        )}
+
+        {/* Submit Button */}
         <Button
           type="submit"
           loading={loading}
@@ -117,14 +148,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         </Button>
       </form>
       
-      <div className="mt-6 text-center text-sm">
-        <button
-          type="button"
-          onClick={onShowSignup}
-          className="text-blue-800 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-        >
-          Don't have an account? Sign up
-        </button>
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Don't have an account?{' '}
+          <button
+            onClick={onShowSignup}
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            Sign up
+          </button>
+        </p>
       </div>
     </div>
   );
