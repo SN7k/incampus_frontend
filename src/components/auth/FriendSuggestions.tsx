@@ -12,9 +12,10 @@ interface FriendSuggestion {
 
 interface FriendSuggestionsProps {
   onComplete: (followedUsers: string[]) => void;
+  onSkip?: () => void;
 }
 
-const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => {
+const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete, onSkip }) => {
   const [suggestions, setSuggestions] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -126,7 +127,7 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete }) => 
       
       <div className="flex justify-between items-center">
         <button
-          onClick={() => onComplete([])}
+          onClick={() => onSkip ? onSkip() : onComplete([])}
           disabled={loading}
           className="text-gray-500 dark:text-gray-400 text-sm hover:text-blue-800 dark:hover:text-blue-400"
         >

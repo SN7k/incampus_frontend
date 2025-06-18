@@ -132,8 +132,16 @@ function AppContent() {
     setRegistrationStep('friend-suggestions');
   };
   
+  const handleSkipFriendSuggestions = () => {
+    console.log('User skipped friend suggestions');
+    // Call the same handler as completing with no followed users
+    handleFriendSuggestionsComplete([]);
+  };
+  
   const handleFriendSuggestionsComplete = async (followedUsers: string[]) => {
     try {
+      console.log('Friend suggestions completed with followed users:', followedUsers);
+      
       // Since the user is already authenticated after OTP verification,
       // we just need to update their profile and redirect to feed
       
@@ -169,24 +177,34 @@ function AppContent() {
       } catch (error) {
         console.error('Failed to setup profile:', error);
         // Continue anyway, profile can be updated later
+        // Don't let profile setup failure prevent navigation to feed
       }
       
       // Store followed users (in a real app, this would be sent to backend)
       console.log('Followed users:', followedUsers);
       
+      // Clear pending data first
+      setPendingUserData(null);
+      setPendingProfileData(null);
+      
+      // Reset registration step to login to exit the registration flow
+      setRegistrationStep('login');
+      
       // Set current page to feed
       setCurrentPage('feed');
       localStorage.setItem('currentPage', 'feed');
       
-      // Clear pending data
-      setPendingUserData(null);
-      setPendingProfileData(null);
+      console.log('Successfully navigated to feed');
       
     } catch (error) {
       console.error('Failed to complete registration:', error);
-      // If there's an error, just redirect to feed anyway
+      // If there's an error, clear pending data and redirect to feed anyway
+      setPendingUserData(null);
+      setPendingProfileData(null);
+      setRegistrationStep('login');
       setCurrentPage('feed');
       localStorage.setItem('currentPage', 'feed');
+      console.log('Error occurred but still navigated to feed');
     }
   };
 
@@ -243,6 +261,7 @@ function AppContent() {
         {registrationStep === 'friend-suggestions' && pendingUserData && pendingProfileData && (
           <FriendSuggestions
             onComplete={handleFriendSuggestionsComplete}
+            onSkip={handleSkipFriendSuggestions}
           />
         )}
       </div>
@@ -276,6 +295,7 @@ function AppContent() {
         {registrationStep === 'friend-suggestions' && pendingUserData && pendingProfileData && (
           <FriendSuggestions
             onComplete={handleFriendSuggestionsComplete}
+            onSkip={handleSkipFriendSuggestions}
           />
         )}
       </div>
