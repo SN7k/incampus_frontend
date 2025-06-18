@@ -27,7 +27,12 @@ const Feed: React.FC = () => {
       
       // Get feed posts from API
       const feedPosts = await postsApi.getFeedPosts();
-      setPosts(feedPosts);
+      // Normalize posts: ensure each post has a 'user' field
+      const normalizedPosts = feedPosts.map(post => ({
+        ...post,
+        user: post.user || (post as any).author
+      }));
+      setPosts(normalizedPosts);
     } catch (error: unknown) {
       console.error('Error loading posts:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load posts';
@@ -76,7 +81,7 @@ const Feed: React.FC = () => {
       console.log('New post detected:', post);
       
       // Add the new post to the beginning of the feed
-      setPosts(currentPosts => [post, ...currentPosts]);
+      setPosts(currentPosts => [{ ...post, user: post.user || (post as any).author }, ...currentPosts]);
     };
     
     window.addEventListener('postCreated', handlePostCreated as EventListener);
