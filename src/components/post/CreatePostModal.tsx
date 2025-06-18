@@ -82,6 +82,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       
       const newPost = await postsApi.createPost(postData);
       
+      // Normalize for frontend: ensure 'user' field exists
+      if ((newPost as any)?.author && !(newPost as any)?.user) {
+        (newPost as any).user = (newPost as any).author;
+      }
+      
       // Dispatch event to notify other components about the new post
       window.dispatchEvent(new CustomEvent('postCreated', { 
         detail: { post: newPost } 
