@@ -234,12 +234,12 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         )}
         
         {/* Post Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-center pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-8">
             <button
               onClick={handleLike}
               disabled={loading}
-              className={`flex items-center space-x-1 transition-colors ${
+              className={`flex items-center space-x-2 transition-colors ${
                 isLiked 
                   ? 'text-red-500 dark:text-red-400' 
                   : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
@@ -249,15 +249,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               <span className="text-sm font-medium">{likeCount}</span>
             </button>
             
-            <button className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+            <button className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
               <Share2 className="h-5 w-5" />
               <span className="text-sm font-medium">Share</span>
             </button>
-          </div>
-          
-          {/* Comments count */}
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {post.comments.length} comment{post.comments.length !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
