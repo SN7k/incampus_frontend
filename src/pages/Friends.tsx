@@ -252,43 +252,41 @@ const Friends: React.FC = () => {
                       </div>
                     ) : (
                       friends.map(friend => (
-                        <div key={friend.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                            <div className="flex items-center space-x-4">
-                              <img
-                                src={getAvatarUrl(friend.avatar, friend.name)}
-                                alt={friend.name} 
-                                className="w-12 h-12 rounded-full object-cover"
-                              />
-                              <div>
-                                <h3 className="font-medium text-gray-900 dark:text-white">{friend.name}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {friend.role === 'faculty' ? 'Faculty' : 'Student'}
-                                </p>
-                              </div>
+                        <div key={friend.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <img
+                              src={getAvatarUrl(friend.avatar, friend.name)}
+                              alt={friend.name} 
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h3 className="font-medium text-gray-900 dark:text-white">{friend.name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {friend.role === 'faculty' ? 'Faculty' : 'Student'}
+                              </p>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <button 
-                                onClick={() => {
-                                  if (!friend.id) {
-                                    console.error('FRIENDS: Friend ID is undefined!');
-                                    return;
-                                  }
-                                  navigateToProfile(friend.id);
-                                }}
-                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
-                              >
-                                View Profile
-                                </button>
-                                    <button 
-                                      onClick={() => handleUnfriend(friend.id)}
-                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                                      >
-                                <UserMinus className="w-5 h-5" />
-                                    </button>
-                                  </div>
                           </div>
-                        </div>
+                          <div className="flex items-center space-x-2">
+                              <button 
+                              onClick={() => {
+                                if (!friend.id) {
+                                  console.error('FRIENDS: Friend ID is undefined!');
+                                  return;
+                                }
+                                navigateToProfile(friend.id);
+                              }}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                            >
+                              View Profile
+                              </button>
+                                  <button 
+                                    onClick={() => handleUnfriend(friend.id)}
+                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                                    >
+                              <UserMinus className="w-5 h-5" />
+                                  </button>
+                                </div>
+                            </div>
                       ))
                     )}
                   </div>
@@ -312,37 +310,35 @@ const Friends: React.FC = () => {
                       ) : (
                         <div className="space-y-3">
                           {friendRequests.map(request => (
-                            <div key={request.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                                <div className="flex items-center space-x-4">
-                                  <img
-                                    src={getAvatarUrl(request.sender.avatar, request.sender.name)}
-                                    alt={request.sender.name}
-                                    className="w-12 h-12 rounded-full object-cover"
-                                  />
-                                  <div>
-                                    <h3 className="font-medium text-gray-900 dark:text-white">{request.sender.name}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                      {request.sender.role === 'faculty' ? 'Faculty' : 'Student'}
-                                    </p>
-                                  </div>
+                            <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <img
+                                  src={getAvatarUrl(request.sender.avatar, request.sender.name)}
+                                  alt={request.sender.name}
+                                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-medium text-gray-900 dark:text-white truncate">{request.sender.name}</h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                    {request.sender.role === 'faculty' ? 'Faculty' : 'Student'}
+                                  </p>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <button 
-                                    onClick={() => handleAcceptRequest(request.id)}
-                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                                  >
-                                    <Check className="w-4 h-4 inline mr-1" />
-                                    Accept
-                                  </button>
-                                  <button 
-                                    onClick={() => handleDeclineRequest(request.id)}
-                                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                                  >
-                                    <X className="w-4 h-4 inline mr-1" />
-                                    Decline
-                                  </button>
-                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 flex-shrink-0 ml-3">
+                                <button 
+                                  onClick={() => handleAcceptRequest(request.id)}
+                                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                >
+                                  <Check className="w-4 h-4 inline mr-1" />
+                                  Accept
+                                </button>
+                                <button 
+                                  onClick={() => handleDeclineRequest(request.id)}
+                                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                >
+                                  <X className="w-4 h-4 inline mr-1" />
+                                  Decline
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -366,45 +362,43 @@ const Friends: React.FC = () => {
                       ) : (
                         <div className="space-y-3">
                           {sentRequests.map(request => (
-                            <div key={request.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                                <div className="flex items-center space-x-4">
-                                  <img
-                                    src={getAvatarUrl(request.receiver.avatar, request.receiver.name)}
-                                    alt={request.receiver.name}
-                                    className="w-12 h-12 rounded-full object-cover"
-                                  />
-                                  <div>
-                                    <h3 className="font-medium text-gray-900 dark:text-white">{request.receiver.name}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                      {request.receiver.role === 'faculty' ? 'Faculty' : 'Student'}
-                                    </p>
-                                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                                      Pending response
-                                    </p>
-                                  </div>
+                            <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <img
+                                  src={getAvatarUrl(request.receiver.avatar, request.receiver.name)}
+                                  alt={request.receiver.name}
+                                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-medium text-gray-900 dark:text-white truncate">{request.receiver.name}</h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                    {request.receiver.role === 'faculty' ? 'Faculty' : 'Student'}
+                                  </p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                                    Pending response
+                                  </p>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <button
-                                    onClick={() => {
-                                      if (!request.receiver.id) {
-                                        console.error('FRIENDS: Receiver ID is undefined!');
-                                        return;
-                                      }
-                                      navigateToProfile(request.receiver.id);
-                                    }}
-                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
-                                  >
-                                    View Profile
-                                  </button>
-                                  <button 
-                                    onClick={() => handleCancelRequest(request.id)}
-                                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                                  >
-                                    <X className="w-4 h-4 inline mr-1" />
-                                    Cancel
-                                  </button>
-                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 flex-shrink-0 ml-3">
+                                <button
+                                  onClick={() => {
+                                    if (!request.receiver.id) {
+                                      console.error('FRIENDS: Receiver ID is undefined!');
+                                      return;
+                                    }
+                                    navigateToProfile(request.receiver.id);
+                                  }}
+                                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                                >
+                                  View Profile
+                                </button>
+                                <button 
+                                  onClick={() => handleCancelRequest(request.id)}
+                                  className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                >
+                                  <X className="w-4 h-4 inline mr-1" />
+                                  Cancel
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -426,50 +420,48 @@ const Friends: React.FC = () => {
                       </div>
                     ) : (
                       suggestions.map(suggestion => (
-                        <div key={suggestion.user.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                            <div className="flex items-center space-x-4">
-                              <img
-                                src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
-                                alt={suggestion.user.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                              />
-                              <div>
-                                <h3 className="font-medium text-gray-900 dark:text-white">{suggestion.user.name}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {suggestion.user.role === 'faculty' ? 'Faculty' : 'Student'}
-                                </p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500">
-                                  {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
-                                </p>
-                                  </div>
+                        <div key={suggestion.user.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <img
+                              src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
+                              alt={suggestion.user.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h3 className="font-medium text-gray-900 dark:text-white">{suggestion.user.name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {suggestion.user.role === 'faculty' ? 'Faculty' : 'Student'}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
+                              </p>
                                 </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => {
-                                  if (!suggestion.user.id) {
-                                    console.error('FRIENDS: Suggestion user ID is undefined!');
-                                    return;
-                                  }
-                                  navigateToProfile(suggestion.user.id);
-                                }}
-                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
-                              >
-                                View Profile
-                              </button>
-                                  <button 
-                                onClick={() => handleAddFriend(suggestion.user.id)}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                              >
-                                <UserPlus className="w-4 h-4 inline mr-1" />
-                                Add Friend
-                                  </button>
-                                </div>
-                          </div>
+                              </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => {
+                                if (!suggestion.user.id) {
+                                  console.error('FRIENDS: Suggestion user ID is undefined!');
+                                  return;
+                                }
+                                navigateToProfile(suggestion.user.id);
+                              }}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                            >
+                              View Profile
+                            </button>
+                                <button 
+                              onClick={() => handleAddFriend(suggestion.user.id)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                            >
+                              <UserPlus className="w-4 h-4 inline mr-1" />
+                              Add Friend
+                                </button>
+                              </div>
                         </div>
                       ))
-                      )}
-                    </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
