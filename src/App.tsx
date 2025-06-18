@@ -330,11 +330,14 @@ function AppContent() {
           </button>
           <button 
             onClick={() => {
+              console.log('APP: Profile button clicked');
               setCurrentPage('profile');
               localStorage.setItem('currentPage', 'profile');
               // Always clear viewProfileUserId to show the current user's profile
               localStorage.removeItem('viewProfileUserId');
+              console.log('APP: Cleared viewProfileUserId from localStorage');
               // Dispatch a custom event to notify Profile component
+              console.log('APP: Dispatching profileNavigation event');
               window.dispatchEvent(new CustomEvent('profileNavigation', { 
                 detail: { action: 'viewOwnProfile' } 
               }));

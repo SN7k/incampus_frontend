@@ -170,7 +170,60 @@ const Profile: React.FC = () => {
     if (user?.id) {
       fetchData();
     }
-  }, [user?.id]); // Remove profileId dependency to avoid double execution
+  }, [user?.id]);
+
+  // Listen for navigation events to view own profile
+  useEffect(() => {
+    const handleProfileNavigation = (event: CustomEvent) => {
+      console.log('PROFILE: Received profileNavigation event:', event.detail);
+      if (event.detail?.action === 'viewOwnProfile') {
+        console.log('PROFILE: Clearing viewingUserId and loading current user profile');
+        // Clear viewingUserId to show current user's profile
+        setViewingUserId(null);
+        // Reload profile data for current user
+        if (user?.id) {
+          const fetchCurrentUserProfile = async () => {
+            try {
+              setIsLoadingProfile(true);
+              const profileResponse = await profileApi.getUserProfile(user.id);
+              setProfileData(profileResponse);
+              
+              // Fetch user posts
+              try {
+                const postsResponse = await postsApi.getUserPosts(user.id);
+                setUserPosts(postsResponse);
+              } catch (error) {
+                console.error('PROFILE: Error fetching posts:', error);
+                setUserPosts([]);
+              }
+              
+              // Fetch friends list
+              try {
+                const friendsResponse = await friendsApi.getFriendsList();
+                setFriendsList(friendsResponse);
+              } catch (error) {
+                console.error('PROFILE: Error fetching friends:', error);
+                setFriendsList([]);
+              }
+              
+              setIsLoadingProfile(false);
+              console.log('PROFILE: Successfully loaded current user profile');
+            } catch (error) {
+              console.error('PROFILE: Error fetching current user profile:', error);
+              setIsLoadingProfile(false);
+            }
+          };
+          fetchCurrentUserProfile();
+        }
+      }
+    };
+
+    window.addEventListener('profileNavigation', handleProfileNavigation as EventListener);
+    
+    return () => {
+      window.removeEventListener('profileNavigation', handleProfileNavigation as EventListener);
+    };
+  }, [user?.id]);
 
   // Check if friend request has already been sent when viewing another user's profile
   useEffect(() => {

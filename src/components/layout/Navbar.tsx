@@ -32,14 +32,22 @@ const Navbar: React.FC = () => {
 
   // Navigation functions to different pages
   const navigateToProfile = () => {
+    console.log('NAVBAR: navigateToProfile called');
     // Close the dropdown menu
     setIsDropdownOpen(false);
     
     // Always clear any stored profile ID to ensure we show the user's own profile
     localStorage.removeItem('viewProfileUserId');
+    console.log('NAVBAR: Cleared viewProfileUserId from localStorage');
     
     // Set current page to profile
     localStorage.setItem('currentPage', 'profile');
+    
+    // Dispatch a custom event to notify Profile component
+    console.log('NAVBAR: Dispatching profileNavigation event');
+    window.dispatchEvent(new CustomEvent('profileNavigation', { 
+      detail: { action: 'viewOwnProfile' } 
+    }));
     
     // Use window object to trigger a custom event that App.tsx can listen for
     window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'profile' } }));
