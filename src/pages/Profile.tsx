@@ -625,15 +625,15 @@ const Profile: React.FC = () => {
                       <button 
                         onClick={handleConnect}
                         disabled={isSendingRequest || isUnfriending}
-                        className={`flex items-center space-x-1 px-4 py-2 border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
-                          isFriend 
-                            ? 'border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' 
-                            : requestSent 
-                            ? 'border-green-600 text-green-600 bg-green-50 dark:bg-green-900/20' 
+                        className={`flex items-center space-x-1 px-4 py-2 border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
+                          ${isFriend
+                            ? 'bg-green-600 text-white border-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400'
+                            : requestSent
+                            ? 'border-green-600 text-green-600 bg-green-50 dark:bg-green-900/20'
                             : isSendingRequest || isUnfriending
                             ? 'border-gray-400 text-gray-400 cursor-not-allowed'
-                            : 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                        }`}
+                            : 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'}
+                        `}
                       >
                         {isUnfriending ? (
                           <>
