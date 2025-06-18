@@ -457,9 +457,6 @@ const Profile: React.FC = () => {
         // Update friends list
         const updatedFriends = await friendsApi.getFriendsList();
         setFriendsList(updatedFriends);
-        
-        // Show success message
-        alert('Friend removed successfully!');
       } catch (error) {
         console.error('Error removing friend:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to remove friend';
@@ -483,9 +480,6 @@ const Profile: React.FC = () => {
       const result = await friendsApi.sendFriendRequest(viewingUserId);
       console.log('Profile: Friend request sent successfully:', result);
       setRequestSent(true);
-      
-      // Show success message
-      alert('Friend request sent successfully!');
       
       // Dispatch event to update friend requests count
       window.dispatchEvent(new CustomEvent('friendRequestsChange', { 
@@ -627,7 +621,7 @@ const Profile: React.FC = () => {
                         disabled={isSendingRequest || isUnfriending}
                         className={`flex items-center space-x-1 px-4 py-2 border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
                           ${isFriend
-                            ? 'bg-green-600 text-white border-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400'
+                            ? 'bg-transparent text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
                             : requestSent
                             ? 'border-green-600 text-green-600 bg-green-50 dark:bg-green-900/20'
                             : isSendingRequest || isUnfriending
