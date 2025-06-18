@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { profileApi } from '../services/profileApi';
 import { motion, AnimatePresence } from 'framer-motion';
-import PullToRefresh from 'react-simple-pull-to-refresh';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { School, MapPin, Edit, Camera, BookOpen, Users, X, Save } from 'lucide-react';
+import { School, MapPin, Edit, Camera, BookOpen, Users, Award, Bookmark, Link, Heart, X, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Post, ProfileData as OriginalProfileData, User } from '../types/profile';
 import CreatePostModal from '../components/post/CreatePostModal';
@@ -16,17 +15,101 @@ type ProfileData = OriginalProfileData & { role?: string };
 
 const Profile: React.FC = () => {
   const { user, updateProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState<'memories' | 'collections' | 'friends' | 'about'>('memories');
+  const [searchQuery, setSearchQuery] = useState('');
   const [friendsList, setFriendsList] = useState<User[]>([]);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [editFormData, setEditFormData] = useState<Partial<ProfileData>>({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
+  const [isUnfriending, setIsUnfriending] = useState(false);
+
+  // Animation variants
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+  
+  // Function to get profile likes from localStorage
+  const getProfileLikes = (profileId: string) => {
+    try {
+      const profileLikesStr = localStorage.getItem('profileLikes');
+      if (profileLikesStr) {
+        const profileLikes = JSON.parse(profileLikesStr);
+        return profileLikes[profileId] || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error getting profile likes:', error);
+      return 0;
+    }
+  };
+  
+  // Function to check if the current user has liked a profile
+  const hasUserLikedProfile = useCallback((profileId: string) => {
+    try {
+      const userLikesStr = localStorage.getItem('userProfileLikes');
+      if (userLikesStr && user) {
+        const userLikes = JSON.parse(userLikesStr);
+        return userLikes[`${user.id}_${profileId}`] || false;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking if user liked profile:', error);
+      return false;
+    }
+  }, [user]);
+  
+  // Function to update profile likes in localStorage
+  const updateProfileLikes = (profileId: string, newCount: number, hasLiked: boolean) => {
+    try {
+      // Update profile likes count
+      const profileLikesStr = localStorage.getItem('profileLikes');
+      const profileLikes = profileLikesStr ? JSON.parse(profileLikesStr) : {};
+      profileLikes[profileId] = newCount;
+      localStorage.setItem('profileLikes', JSON.stringify(profileLikes));
+      
+      // Update user's like status for this profile
+      if (user) {
+        const userLikesStr = localStorage.getItem('userProfileLikes');
+        const userLikes = userLikesStr ? JSON.parse(userLikesStr) : {};
+        userLikes[`${user.id}_${profileId}`] = hasLiked;
+        localStorage.setItem('userProfileLikes', JSON.stringify(userLikes));
+      }
+    } catch (error) {
+      console.error('Error updating profile likes:', error);
+    }
+  };
+      
+      // Load profile likes when viewing a profile
+  useEffect(() => {
+      const targetProfileId = viewingUserId || (user ? user.id : '');
+      if (targetProfileId) {
+        const likes = getProfileLikes(targetProfileId);
+        const userHasLiked = hasUserLikedProfile(targetProfileId);
+        setLikeCount(likes);
+        setHasLiked(userHasLiked);
+      }
+  }, [viewingUserId, user, hasUserLikedProfile]);
 
   // Initialize viewingUserId from localStorage on mount
   useEffect(() => {
@@ -153,7 +236,7 @@ const Profile: React.FC = () => {
         // Check sent requests to see if we already sent a request to this user
         const sentRequests = await friendsApi.getPendingRequests();
         if (sentRequests && Array.isArray(sentRequests)) {
-          const hasSentRequest = sentRequests.some((request: { receiver?: { id: string } }) => request.receiver && request.receiver.id === viewingUserId);
+          const hasSentRequest = sentRequests.some((request: any) => request.receiver && request.receiver.id === viewingUserId);
           
           if (hasSentRequest) {
             setRequestSent(true);
@@ -336,6 +419,27 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        // Upload cover photo to backend
+        const { coverPhotoUrl } = await profileApi.uploadCoverPhoto(file);
+        
+        // Update local profile data
+        setProfileData(prev => prev ? { ...prev, coverPhoto: { url: coverPhotoUrl } } : null);
+        
+        // Update auth context
+        updateProfile({
+          coverPhoto: { url: coverPhotoUrl }
+        });
+      } catch (error) {
+        console.error('Failed to upload cover photo:', error);
+        alert('Failed to upload cover photo. Please try again.');
+      }
+    }
+  };
+
   const handleConnect = async () => {
     if (!viewingUserId) return;
     
@@ -344,6 +448,7 @@ const Profile: React.FC = () => {
     // If user is already a friend, unfriend them
     if (isFriend) {
       console.log('Profile: User is already a friend, unfriending...');
+      setIsUnfriending(true);
       try {
         await friendsApi.unfriend(viewingUserId);
         setIsFriend(false);
@@ -356,6 +461,8 @@ const Profile: React.FC = () => {
         console.error('Error removing friend:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to remove friend';
         alert(errorMessage);
+      } finally {
+        setIsUnfriending(false);
       }
       return;
     }
@@ -368,6 +475,7 @@ const Profile: React.FC = () => {
     
     // Send friend request
     console.log('Profile: Sending friend request...');
+    setIsSendingRequest(true);
     try {
       const result = await friendsApi.sendFriendRequest(viewingUserId);
       console.log('Profile: Friend request sent successfully:', result);
@@ -381,61 +489,9 @@ const Profile: React.FC = () => {
       console.error('Error sending friend request:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send friend request';
       alert(errorMessage);
+    } finally {
+      setIsSendingRequest(false);
     }
-  };
-
-  // Handle refresh function for pull-to-refresh
-  const handleRefresh = async () => {
-    try {
-      // Check if we're viewing someone else's profile
-      const storedViewProfileUserId = localStorage.getItem('viewProfileUserId');
-      
-      let targetProfileId = '';
-      
-      if (storedViewProfileUserId && storedViewProfileUserId !== user?.id) {
-        targetProfileId = storedViewProfileUserId;
-      } else {
-        targetProfileId = user?.id || '';
-      }
-      
-      if (!targetProfileId) return;
-      
-      setIsLoadingProfile(true);
-      
-      // Fetch profile data
-      const profileResponse = await profileApi.getUserProfile(targetProfileId);
-      setProfileData(profileResponse);
-      
-      // Fetch user posts
-      try {
-        const postsResponse = await postsApi.getUserPosts(targetProfileId);
-        setUserPosts(postsResponse);
-      } catch (error) {
-        console.error('PROFILE: Error fetching posts:', error);
-        setUserPosts([]);
-      }
-      
-      // Fetch friends list
-      try {
-        const friendsResponse = await friendsApi.getFriendsList();
-        setFriendsList(friendsResponse);
-      } catch (error) {
-        console.error('PROFILE: Error fetching friends:', error);
-        setFriendsList([]);
-      }
-      
-      setIsLoadingProfile(false);
-    } catch (error) {
-      console.error('PROFILE: Error refreshing data:', error);
-      setIsLoadingProfile(false);
-    }
-  };
-
-  // Handle back to my profile navigation
-  const handleBackToMyProfile = () => {
-    localStorage.removeItem('viewProfileUserId');
-    localStorage.setItem('currentPage', 'profile');
-    window.location.href = '/profile';
   };
 
   if (isLoadingProfile) {
@@ -463,165 +519,692 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <PullToRefresh onRefresh={handleRefresh}>
-        <div className="max-w-4xl mx-auto">
-          {/* Profile Header */}
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg mb-6 overflow-hidden">
-            <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
-              {/* Cover Photo Placeholder */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Camera className="h-12 w-12 text-white opacity-50" />
-              </div>
-            </div>
-            
-            <div className="relative px-6 pb-6">
-              {/* Profile Picture */}
-              <div className="absolute -top-16 left-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
+      {/* Cover photo and profile section */}
+      <motion.div 
+        className="relative"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="h-48 sm:h-56 md:h-72 w-full bg-gradient-to-r from-blue-800 to-blue-600 overflow-hidden relative">
+          {profileData?.coverPhoto?.url && (
+            <img 
+              src={profileData.coverPhoto.url} 
+              alt="Cover" 
+              className="w-full h-full object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+          {!viewingUserId && (
+          <label htmlFor="cover-photo-upload" className="absolute top-4 right-4 bg-black bg-opacity-40 text-white p-2 rounded-full hover:bg-opacity-60 transition-all cursor-pointer">
+            <Camera size={18} />
+          </label>
+          )}
+          <input 
+            id="cover-photo-upload"
+            type="file" 
+            accept="image/*"
+            className="hidden"
+            onChange={handleCoverPhotoChange}
+          />
+        </div>
+        
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg -mt-16 sm:-mt-20 relative z-10 p-4 sm:p-6 transition-colors duration-200"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="flex flex-col md:flex-row">
+              {/* Profile picture */}
+              <div className="flex-shrink-0 -mt-14 sm:-mt-16 md:-mt-20 mb-4 md:mb-0 md:mr-6">
                 <div className="relative">
-                  <img
+                  <motion.img 
                     src={getAvatarUrl(profileData?.avatar, profileData?.name || '')}
-                    alt="Profile"
-                    className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 object-cover"
+                    alt={profileData?.name} 
+                    className="w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-full border-4 border-white dark:border-gray-700 object-cover shadow-lg"
+                    whileHover={{ scale: 1.05 }}
                   />
-                  {viewingUserId === user?.id && (
-                    <button
-                      onClick={handleEditProfile}
-                      className="absolute bottom-2 right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                  )}
                 </div>
               </div>
               
-              {/* Profile Info */}
-              <div className="ml-40 pt-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {profileData?.name || 'Loading...'}
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      @{profileData?.name?.toLowerCase().replace(/\s+/g, '') || 'loading'}
-                    </p>
+              {/* Profile info */}
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-start lg:items-center justify-between mb-4 sm:mb-5">
+                  <div className="max-w-full md:max-w-[70%]">
+                    <motion.h1 
+                      className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center flex-wrap"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      {profileData?.name}
+                      {profileData?.role && (
+                        <span className="ml-2 text-xs font-medium px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                          {profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1)}
+                        </span>
+                      )}
+                    </motion.h1>
+                    <div className="text-gray-600 dark:text-gray-300 flex flex-wrap items-center mt-2 sm:mt-3 gap-2 sm:gap-3">
+                      <span className="flex items-center text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
+                        <School size={16} className="mr-1.5 text-blue-800" />
+                        <span className="truncate max-w-[120px] sm:max-w-none">{profileData?.universityId}</span>
+                      </span>
+                      {profileData?.location && (
+                      <span className="flex items-center text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
+                        <MapPin size={16} className="mr-1.5 text-blue-800" />
+                          <span className="truncate max-w-[140px] sm:max-w-none">{profileData.location}</span>
+                      </span>
+                      )}
+                    </div>
                   </div>
                   
-                  {/* Connect Button for other profiles */}
-                  {viewingUserId && viewingUserId !== user?.id && (
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleConnect}
-                        variant={isFriend ? "outline" : "primary"}
-                        className={`${
-                          isFriend 
-                            ? "bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50" 
-                            : ""
-                        }`}
+                  <div className="mt-4 md:mt-1 lg:mt-0 flex justify-start md:justify-end">
+                    {/* Edit Profile Button - Only show for own profile */}
+                    {!viewingUserId && (
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                        onClick={handleEditProfile}
                       >
-                        {isFriend ? 'Connected' : 'Connect'}
+                        <Edit size={16} />
+                        <span>Edit Profile</span>
                       </Button>
-                    </div>
-                  )}
-                  
-                  {/* Back to My Profile Button */}
-                  {viewingUserId && viewingUserId !== user?.id && (
-                    <Button
-                      onClick={handleBackToMyProfile}
-                      variant="outline"
-                      className="ml-2"
-                    >
-                      Back to My Profile
-                    </Button>
-                  )}
+                    )}
+                    
+                    {/* Connect Button - Only show for other profiles */}
+                    {viewingUserId && (
+                      <button 
+                        onClick={handleConnect}
+                        disabled={isSendingRequest || isUnfriending}
+                        className={`flex items-center space-x-1 px-4 py-2 border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
+                          ${isFriend
+                            ? 'bg-transparent text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                            : requestSent
+                            ? 'border-green-600 text-green-600 bg-green-50 dark:bg-green-900/20'
+                            : isSendingRequest || isUnfriending
+                            ? 'border-gray-400 text-gray-400 cursor-not-allowed'
+                            : 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'}
+                        `}
+                      >
+                        {isUnfriending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            <span>Removing...</span>
+                          </>
+                        ) : isSendingRequest ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            <span>Sending...</span>
+                          </>
+                        ) : isFriend ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Connected</span>
+                          </>
+                        ) : requestSent ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Request Sent</span>
+                          </>
+                        ) : (
+                          <>
+                            <Users size={16} />
+                            <span>Connect</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    
+                  </div>
                 </div>
                 
-                {/* Bio */}
                 {profileData?.bio && (
-                  <p className="mt-3 text-gray-700 dark:text-gray-300">
+                  <motion.p 
+                    className="text-gray-700 dark:text-gray-300 mb-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
                     {profileData.bio}
-                  </p>
+                  </motion.p>
                 )}
                 
-                {/* Profile Stats */}
-                <div className="mt-4 flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>{friendsList.length} friends</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="h-4 w-4" />
-                    <span>{userPosts.length} posts</span>
-                  </div>
-                </div>
-                
-                {/* Location and School */}
-                <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  {profileData?.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{profileData.location}</span>
-                    </div>
-                  )}
-                  {profileData?.universityId && (
-                    <div className="flex items-center gap-1">
-                      <School className="h-4 w-4" />
-                      <span>{profileData.universityId}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Create Post Section */}
-          {viewingUserId === user?.id && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-4">
-              <div className="flex items-center gap-3">
-                <img
-                  src={getAvatarUrl(user?.avatar, user?.name || '')}
-                  alt="Your avatar"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <button
-                  onClick={() => setIsCreatePostModalOpen(true)}
-                  className="flex-1 text-left text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                <motion.div 
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-6 sm:mb-8 md:mb-0"
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
                 >
-                  What's on your mind?
-                </button>
+                  <motion.div 
+                    variants={item} 
+                    className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800/40 dark:to-blue-700/30 px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md"
+                    onClick={() => setActiveTab('memories')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="flex items-center text-blue-600 dark:text-blue-200 mb-2">
+                      <BookOpen size={16} className="mr-2" />
+                      <span className="text-xs sm:text-sm font-medium">Memories</span>
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-blue-700 dark:text-blue-100">{userPosts.length}</div>
+                  </motion.div>
+                  <motion.div 
+                    variants={item} 
+                    className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-800/70 dark:to-purple-700/60 px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md"
+                    onClick={() => setActiveTab('friends')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="flex items-center text-blue-600 dark:text-blue-200 mb-2">
+                      <Users size={16} className="mr-2" />
+                      <span className="text-xs sm:text-sm font-medium">Friends</span>
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-blue-700 dark:text-blue-100">{friendsList.length}</div>
+                  </motion.div>
+                  <motion.div 
+                    variants={item} 
+                    className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800/70 dark:to-amber-700/60 px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md"
+                    onClick={() => setActiveTab('about')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="flex items-center text-amber-600 dark:text-amber-200 mb-2">
+                      <Award size={16} className="mr-2" />
+                      <span className="text-xs sm:text-sm font-medium">Year</span>
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-amber-700 dark:text-amber-100">
+                      {(() => {
+                        // Extract year from university ID (e.g., 'BWU/BCA/20/001' -> '20')
+                        const extractYear = (universityId: string): string => {
+                          const parts = universityId.split('/');
+                          return parts.length >= 3 ? `20${parts[2]}` : '2024';
+                        };
+                        
+                        return extractYear(profileData?.universityId || 'BWU/BCA/20/001');
+                      })()} 
+                    </div>
+                  </motion.div>
+                  <motion.div 
+                    variants={item} 
+                    className={`px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md ${hasLiked ? 'bg-gradient-to-br from-emerald-200 to-emerald-300 dark:from-emerald-600 dark:to-emerald-500' : 'bg-gradient-to-br from-emerald-50/80 to-emerald-100/70 dark:from-emerald-800/40 dark:to-emerald-700/30'}`}
+                    onClick={() => {
+                      const targetProfileId = viewingUserId || (user ? user.id : '');
+                      if (!targetProfileId || !user) return;
+                      
+                      if (hasLiked) {
+                        const newCount = likeCount - 1;
+                        setLikeCount(newCount);
+                        setHasLiked(false);
+                        updateProfileLikes(targetProfileId, newCount, false);
+                      } else {
+                        const newCount = likeCount + 1;
+                        setLikeCount(newCount);
+                        setHasLiked(true);
+                        updateProfileLikes(targetProfileId, newCount, true);
+                      }
+                    }}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className={`flex items-center mb-2 ${hasLiked ? 'text-emerald-700 dark:text-emerald-100' : 'text-emerald-600/90 dark:text-emerald-200/90'}`}>
+                      <Heart 
+                        size={16} 
+                        className={`mr-2 ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} 
+                      />
+                      <span className="text-xs sm:text-sm font-medium">Likes</span>
+                    </div>
+                    <div className={`text-lg sm:text-2xl font-bold ${hasLiked ? 'text-emerald-800 dark:text-white' : 'text-emerald-700/90 dark:text-emerald-100/90'}`}>{likeCount}</div>
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
+          </motion.div>
+        </div>
+      </motion.div>
+      
+      {/* Tabs and content */}
+      <div className="container mx-auto px-2 sm:px-4 mt-4 sm:mt-6">
+        <motion.div 
+          className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-sm sm:shadow-md mb-4 sm:mb-6 overflow-hidden transition-colors duration-200"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="flex flex-wrap justify-center sm:justify-start border-b dark:border-gray-700">
+            <button 
+              onClick={() => setActiveTab('memories')}
+              className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'memories' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
+            >
+              <BookOpen size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
+              Memories
+              {activeTab === 'memories' && (
+                <motion.div 
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"
+                  layoutId="activeTabIndicator"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveTab('collections')}
+              className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'collections' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
+            >
+              <Bookmark size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
+              Collections
+              {activeTab === 'collections' && (
+                <motion.div 
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"
+                  layoutId="activeTabIndicator"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveTab('friends')}
+              className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'friends' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
+            >
+              <Users size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
+              Friends
+              {activeTab === 'friends' && (
+                <motion.div 
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"
+                  layoutId="activeTabIndicator"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveTab('about')}
+              className={`relative flex-1 sm:flex-none min-w-0 px-4 sm:px-6 py-3 sm:py-4 ${activeTab === 'about' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'} flex items-center justify-center text-sm sm:text-sm md:text-base transition-all duration-200`}
+            >
+              <Link size={16} className="hidden sm:inline mr-1.5 sm:mr-2" />
+              About
+              {activeTab === 'about' && (
+                <motion.div 
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"
+                  layoutId="activeTabIndicator"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+            </button>
+          </div>
+        </motion.div>
+        
+        {/* Content section */}
+        <motion.div 
+          className="max-w-2xl mx-auto"
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
+          <AnimatePresence mode="wait">
+          {activeTab === 'memories' && (
+              <motion.div 
+                key="memories"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+              {userPosts.length > 0 ? (
+                <div className="space-y-6">
+                  {userPosts.map((post) => (
+                    <motion.div key={post.id} variants={item}>
+                      <PostCard post={post} />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <motion.div 
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center transition-colors duration-200"
+                  variants={item}
+                >
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                    <BookOpen size={24} className="text-blue-800 dark:text-blue-300" />
+                  </div>
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                      {!viewingUserId ? 'No memories shared yet' : 'No memories shared yet'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                      {!viewingUserId ? 'Start sharing your university moments with friends!' : 'This user hasn\'t shared any memories yet.'}
+                    </p>
+                  <div className="flex justify-center w-full">
+                      {!viewingUserId && (
+                        <Button 
+                          variant="primary" 
+                          size="lg"
+                          onClick={() => setIsCreatePostModalOpen(true)}
+                        >
+                      Share Your First Memory
+                    </Button>
+                      )}
+                  </div>
+                </motion.div>
+              )}
+              </motion.div>
           )}
 
-          {/* Posts Section */}
-          <div className="space-y-6">
-            <AnimatePresence>
-              {userPosts.map((post) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <PostCard
-                    post={post}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            
-            {userPosts.length === 0 && !isLoadingProfile && (
-              <div className="text-center py-12">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  {viewingUserId === user?.id ? "You haven't posted anything yet." : "No posts yet."}
-                </p>
+          {activeTab === 'collections' && (
+            <motion.div 
+                key="collections"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Photo Gallery</h3>
+                    {!viewingUserId && (
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCreatePostModalOpen(true)}
+                  >
+                    <Camera size={16} className="mr-2" />
+                    Add Photo
+                  </Button>
+                </div>
+                    )}
               </div>
-            )}
-          </div>
-        </div>
-      </PullToRefresh>
+              {/* Extract all images from user posts */}
+              {(() => {
+                // Get all media from user posts
+                const allMedia = userPosts
+                  .filter(post => post.media && post.media.length > 0)
+                  .flatMap(post => post.media || [])
+                  .filter(media => media.type === 'image');
+                
+                if (allMedia.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                        <Bookmark size={24} className="text-blue-800 dark:text-blue-300" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No Photos Yet</h3>
+                          <p className="text-gray-600 dark:text-gray-300 mb-4">
+                            {!viewingUserId ? 'Share posts with photos to see them in your gallery' : 'This user hasn\'t shared any photos yet.'}
+                          </p>
+                      <div className="flex justify-center w-full">
+                            {!viewingUserId && (
+                        <Button 
+                          variant="primary" 
+                          size="sm" 
+                          className="sm:text-base sm:px-4 sm:py-2"
+                          onClick={() => setIsCreatePostModalOpen(true)}
+                        >
+                          Share Your First Photo
+                        </Button>
+                            )}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+                    {allMedia.map((media, index) => (
+                      <motion.div 
+                        key={media.id || index}
+                        className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <img 
+                          src={media.url} 
+                          alt="Gallery image" 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                );
+              })()} 
+                </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'friends' && (
+            <motion.div 
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200"
+              variants={item}
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-0">
+                  {viewingUserId ? 'Friends' : 'Your Friends'}
+                    {friendsList.length > 0 && (
+                      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({friendsList.length})</span>
+                  )}
+                </h3>
+                <div className="w-full sm:w-auto relative">
+                  <div className="relative w-full sm:w-64">
+                    <input
+                      type="text"
+                      placeholder="Search friends..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm"
+                    />
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+                {(() => {
+                  const filteredFriends = friendsList.filter(friend => 
+                    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    friend.universityId?.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  
+                  if (filteredFriends.length > 0) {
+                    return (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
+                    {filteredFriends.map((friend) => (
+                      <motion.div 
+                        key={friend.id}
+                        className="flex items-center p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <img 
+                                src={getAvatarUrl(friend.avatar, friend.name)}
+                          alt={friend.name}
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-2 sm:mr-3 object-cover"
+                        />
+                        <div>
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{friend.name}</h4>
+                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{friend.universityId}</p>
+                        </div>
+                        <div className="ml-auto flex items-center space-x-2">
+                          <button 
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                            onClick={() => {
+                              // Navigate to friend's profile
+                                    localStorage.setItem('viewProfileUserId', friend.id);
+                                    window.location.reload();
+                            }}
+                          >
+                            View Profile
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </>
+                    );
+                  } else {
+                    return (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users size={24} className="text-gray-500 dark:text-gray-400" />
+                  </div>
+                  {searchQuery ? (
+                    <>
+                      <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">No results found</h4>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">Try a different search term</p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
+                        {viewingUserId ? 'No friends yet' : 'You have no friends yet'}
+                      </h4>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        {viewingUserId ? 
+                          'This user hasn\'t connected with anyone yet' : 
+                          'Connect with other students to see them here'}
+                      </p>
+                    </>
+                  )}
+                </div>
+                    );
+                  }
+                })()}
+              
+              {!viewingUserId && (
+                <div className="mt-6 flex justify-center w-full">
+                  <Button 
+                    variant="primary" 
+                    size="md"
+                    onClick={() => {
+                        // Navigate to Friends page
+                      localStorage.setItem('currentPage', 'friends');
+                        window.location.href = '/friends';
+                    }}
+                  >
+                    Find More Friends
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === 'about' && (
+            <motion.div 
+                key="about"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+            >
+              <div className="space-y-6">
+                  {/* Education */}
+                  {profileData?.education && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Education</h4>
+                  <div className="flex items-start">
+                    <School size={18} className="text-gray-500 dark:text-gray-400 mt-0.5 mr-2" />
+                    <div>
+                          <p className="text-gray-800 dark:text-gray-200 font-medium">{profileData.education.degree}</p>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">{profileData.education.institution}</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">{profileData.education.years}</p>
+                    </div>
+                  </div>
+                </div>
+                  )}
+                
+                  {/* Location */}
+                  {profileData?.location && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Location</h4>
+                  <div className="flex items-center">
+                    <MapPin size={18} className="text-gray-500 dark:text-gray-400 mr-2" />
+                        <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">{profileData.location}</p>
+                  </div>
+                </div>
+                  )}
+                
+                  {/* Skills */}
+                  {profileData?.skills && profileData.skills.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Skills</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                        {profileData.skills.map((skill, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+                        <p className="text-gray-800 dark:text-gray-200 font-medium">{skill.name}</p>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 mt-1 rounded-full">
+                          <div 
+                            className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full" 
+                            style={{ width: `${skill.proficiency}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                  )}
+                
+                  {/* Achievements */}
+                  {profileData?.achievements && profileData.achievements.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Achievements & Awards</h4>
+                  <div className="space-y-2">
+                        {profileData.achievements.map((achievement, index) => (
+                      <div key={index} className="flex items-start">
+                        <Award size={18} className="text-blue-500 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+                        <div>
+                          <p className="text-gray-800 dark:text-gray-200 font-medium">{achievement.title}</p>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">{achievement.description} ({achievement.year})</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                  )}
+                
+                  {/* Interests */}
+                  {profileData?.interests && profileData.interests.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Hobbies & Interests</h4>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4 mt-2">
+                        {profileData.interests.map((interest, index) => (
+                      <span 
+                        key={index}
+                        className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                  )}
+              </div>
+            </motion.div>
+          )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+                
+      {/* Create Post Modal */}
+      <CreatePostModal 
+        isOpen={isCreatePostModalOpen} 
+        onClose={() => setIsCreatePostModalOpen(false)}
+      />
 
       {/* Edit Profile Modal */}
       <AnimatePresence>
@@ -866,16 +1449,6 @@ const Profile: React.FC = () => {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* Create Post Modal */}
-      <AnimatePresence>
-        {isCreatePostModalOpen && (
-          <CreatePostModal
-            isOpen={isCreatePostModalOpen}
-            onClose={() => setIsCreatePostModalOpen(false)}
-          />
         )}
       </AnimatePresence>
     </div>
