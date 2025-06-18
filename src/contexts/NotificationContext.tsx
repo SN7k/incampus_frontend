@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { notificationsApi, Notification as ApiNotification } from '../services/notificationsApi';
 
 export interface Notification {
   id: string;
@@ -21,6 +22,7 @@ interface NotificationContextType {
   markAllAsRead: () => void;
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   clearNotification: (id: string) => void;
+  refreshNotifications: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -43,41 +45,105 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
-  // Load notifications from localStorage on initial render
+  // Convert API notification to frontend notification format
+  const convertApiNotification = (apiNotif: ApiNotification): Notification => {
+    let message = '';
+    let type: Notification['type'] = 'system';
+
+    switch (apiNotif.type) {
+      case 'friend_request':
+        message = `${apiNotif.sender.name} sent you a friend request`;
+        type = 'friend_request';
+        break;
+      case 'friend_accepted':
+        message = `${apiNotif.sender.name} accepted your friend request`;
+        type = 'friend_request';
+        break;
+      case 'like':
+        message = `${apiNotif.sender.name} liked your post`;
+        type = 'like';
+        break;
+      case 'comment':
+        message = `${apiNotif.sender.name} commented on your post`;
+        type = 'comment';
+        break;
+      default:
+        message = 'You have a new notification';
+        type = 'system';
+    }
+
+    return {
+      id: apiNotif.id,
+      type,
+      message,
+      timestamp: new Date(apiNotif.createdAt).getTime(),
+      read: apiNotif.isRead,
+      userId: apiNotif.sender.id,
+      postId: apiNotif.post,
+      avatar: apiNotif.sender.avatar
+    };
+  };
+
+  // Fetch notifications from backend
+  const fetchNotifications = async () => {
+    if (!user) return;
+    
+    try {
+      console.log('Fetching notifications from backend...');
+      const apiNotifications = await notificationsApi.getNotifications();
+      const convertedNotifications = apiNotifications.map(convertApiNotification);
+      setNotifications(convertedNotifications);
+      setUnreadCount(convertedNotifications.filter(notif => !notif.read).length);
+      console.log('Fetched notifications:', convertedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Load notifications from backend on initial render and when user changes
   useEffect(() => {
     if (user) {
-      const storedNotifications = localStorage.getItem(`notifications_${user.id}`);
-      if (storedNotifications) {
-        const parsedNotifications = JSON.parse(storedNotifications);
-        setNotifications(parsedNotifications);
-        setUnreadCount(parsedNotifications.filter((notif: Notification) => !notif.read).length);
-      } else {
-        // Generate some initial notifications if none exist
-        const initialNotifications: Notification[] = [
-          {
-            id: '1',
-            type: 'system',
-            message: 'Welcome to InCampus! Start connecting with your classmates.',
-            timestamp: Date.now() - 3600000, // 1 hour ago
-            read: false
-          }
-        ];
-        setNotifications(initialNotifications);
-        setUnreadCount(1);
-        localStorage.setItem(`notifications_${user.id}`, JSON.stringify(initialNotifications));
-      }
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
     }
   }, [user]);
 
-  // Save notifications to localStorage whenever they change
-  useEffect(() => {
-    if (user && notifications.length > 0) {
-      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications));
-      setUnreadCount(notifications.filter(notif => !notif.read).length);
-    }
-  }, [notifications, user]);
+  // Refresh notifications
+  const refreshNotifications = () => {
+    fetchNotifications();
+  };
 
-  // Add a new notification
+  // Mark a notification as read
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, read: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  // Add a new notification (for real-time updates)
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
@@ -87,30 +153,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
 
     setNotifications(prev => [newNotification, ...prev]);
-  };
-
-  // Mark a notification as read
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  // Mark all notifications as read
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, read: true }))
-    );
+    setUnreadCount(prev => prev + 1);
   };
 
   // Clear a notification
-  const clearNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  const clearNotification = async (id: string) => {
+    try {
+      await notificationsApi.deleteNotification(id);
+      setNotifications(prev => prev.filter(notif => notif.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
-  // Listen for friend requests to create notifications
+  // Listen for friend requests to create real-time notifications
   useEffect(() => {
     const handleFriendRequest = (event: CustomEvent) => {
       const { fromUser, toUser, requestType, fromUserName, fromUserAvatar } = event.detail;
@@ -132,7 +188,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
   }, [user]);
 
-  // Listen for post likes to create notifications
+  // Listen for post likes to create real-time notifications
   useEffect(() => {
     const handlePostLike = (event: CustomEvent) => {
       const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
@@ -152,7 +208,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
   }, [user]);
 
-  // Listen for post comments to create notifications
+  // Listen for post comments to create real-time notifications
   useEffect(() => {
     const handlePostComment = (event: CustomEvent) => {
       const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
@@ -180,7 +236,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     markAsRead,
     markAllAsRead,
     addNotification,
-    clearNotification
+    clearNotification,
+    refreshNotifications
   };
 
   return (

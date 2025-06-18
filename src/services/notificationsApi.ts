@@ -44,7 +44,9 @@ export const notificationsApi = {
   // Mark notification as read
   markAsRead: async (notificationId: string): Promise<Notification> => {
     try {
-      const response = await API.patch<NotificationResponse>(`/notifications/${notificationId}/read`);
+      const response = await API.patch<NotificationResponse>('/notifications/mark-as-read', {
+        notificationIds: [notificationId]
+      });
       return response.data.data.notification;
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -55,7 +57,7 @@ export const notificationsApi = {
   // Mark all notifications as read
   markAllAsRead: async (): Promise<{ status: string; message: string }> => {
     try {
-      const response = await API.patch<{ status: string; message: string }>('/notifications/read-all');
+      const response = await API.patch<{ status: string; message: string }>('/notifications/mark-all-as-read');
       return response.data;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
@@ -77,8 +79,8 @@ export const notificationsApi = {
   // Get unread count
   getUnreadCount: async (): Promise<number> => {
     try {
-      const response = await API.get<{ status: string; data: { count: number } }>('/notifications/unread-count');
-      return response.data.data.count;
+      const response = await API.get<{ status: string; data: { pagination: { unreadCount: number } } }>('/notifications');
+      return response.data.data.pagination.unreadCount;
     } catch (error) {
       console.error('Error fetching unread count:', error);
       throw error;

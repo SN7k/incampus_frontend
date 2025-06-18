@@ -110,8 +110,8 @@ export const friendApi = {
   // Get friend requests (received)
   getFriendRequests: async (): Promise<{id: string, sender: User, createdAt: string}[]> => {
     try {
-      const response = await API.get<{status: string, data: {requests: {id: string, sender: User, createdAt: string}[]}}>('/friends/requests');
-      return response.data.data.requests;
+      const response = await API.get<{status: string, data: {pendingRequests: {id: string, sender: User, createdAt: string}[]}}>('/friends/pending-requests');
+      return response.data.data.pendingRequests;
     } catch (error) {
       console.error('Error fetching friend requests:', error);
       throw error;
@@ -121,8 +121,8 @@ export const friendApi = {
   // Get sent friend requests
   getSentRequests: async (): Promise<{id: string, receiver: User, createdAt: string}[]> => {
     try {
-      const response = await API.get<{status: string, data: {requests: {id: string, receiver: User, createdAt: string}[]}}>('/friends/sent');
-      return response.data.data.requests;
+      const response = await API.get<{status: string, data: {sentRequests: {id: string, receiver: User, createdAt: string}[]}}>('/friends/sent-requests');
+      return response.data.data.sentRequests;
     } catch (error) {
       console.error('Error fetching sent requests:', error);
       throw error;
@@ -132,8 +132,8 @@ export const friendApi = {
   // Get friend suggestions
   getSuggestions: async (): Promise<{user: User, mutualFriends: number}[]> => {
     try {
-      const response = await API.get<{status: string, data: {suggestions: {user: User, mutualFriends: number}[]}}>('/friends/suggestions');
-      return response.data.data.suggestions;
+      const response = await API.get<{status: string, data: User[]}>('/friends/suggestions');
+      return response.data.data.map(user => ({ user, mutualFriends: 0 }));
     } catch (error) {
       console.error('Error fetching friend suggestions:', error);
       throw error;
@@ -154,7 +154,7 @@ export const friendApi = {
   // Accept friend request
   acceptRequest: async (requestId: string): Promise<{id: string, sender: User}> => {
     try {
-      const response = await API.patch<{status: string, data: {friendRequest: {id: string, sender: User}}}>(`/friends/requests/${requestId}/accept`);
+      const response = await API.patch<{status: string, data: {friendRequest: {id: string, sender: User}}}>(`/friends/accept-request/${requestId}`);
       return response.data.data.friendRequest;
     } catch (error) {
       console.error('Error accepting friend request:', error);
@@ -165,7 +165,7 @@ export const friendApi = {
   // Decline friend request
   declineRequest: async (requestId: string): Promise<{id: string}> => {
     try {
-      const response = await API.patch<{status: string, data: {friendRequest: {id: string}}}>(`/friends/requests/${requestId}/decline`);
+      const response = await API.patch<{status: string, data: {friendRequest: {id: string}}}>(`/friends/decline-request/${requestId}`);
       return response.data.data.friendRequest;
     } catch (error) {
       console.error('Error declining friend request:', error);

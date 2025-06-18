@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { friendApi } from '../services/api';
 import { User } from '../types';
-import { UserPlus, UserCheck, Users, UserMinus, Check, X } from 'lucide-react';
+import { UserPlus, UserCheck, Users, UserMinus, Check, X, RefreshCw } from 'lucide-react';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
 type FriendTab = 'friends' | 'requests' | 'suggestions';
@@ -59,6 +59,28 @@ const Friends: React.FC = () => {
     });
     window.dispatchEvent(event);
   }, [friendRequests]);
+  
+  // Refresh friend requests when notifications change
+  useEffect(() => {
+    const handleNotificationChange = () => {
+      if (activeTab === 'requests') {
+        const fetchRequests = async () => {
+          try {
+            const data = await friendApi.getFriendRequests();
+            setFriendRequests(data);
+          } catch (error) {
+            console.error('Error refreshing friend requests:', error);
+          }
+        };
+        fetchRequests();
+      }
+    };
+
+    window.addEventListener('notificationChange', handleNotificationChange);
+    return () => {
+      window.removeEventListener('notificationChange', handleNotificationChange);
+    };
+  }, [activeTab]);
   
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
@@ -137,14 +159,43 @@ const Friends: React.FC = () => {
     }
   };
 
+  // Refresh current tab data
+  const handleRefresh = async () => {
+    try {
+      if (activeTab === 'friends') {
+        const data = await friendApi.getFriends();
+        setFriends(data);
+      } else if (activeTab === 'requests') {
+        const data = await friendApi.getFriendRequests();
+        setFriendRequests(data);
+      } else if (activeTab === 'suggestions') {
+        const data = await friendApi.getSuggestions();
+        setSuggestions(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20">
       <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Friends</h1>
-          <p className="text-gray-600 dark:text-gray-400">Connect with your classmates and faculty</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Friends</h1>
+              <p className="text-gray-600 dark:text-gray-400">Connect with your classmates and faculty</p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
           </div>
+        </div>
 
           {/* Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
