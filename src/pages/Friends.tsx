@@ -27,14 +27,18 @@ const Friends: React.FC = () => {
   // Load data based on active tab
   const loadData = useCallback(async () => {
     try {
+      console.log('Friends: Loading data for tab:', activeTab);
       if (activeTab === 'friends') {
         const data = await friendsApi.getFriendsList();
+        console.log('Friends: Loaded friends data:', data);
         setFriends(data);
       } else if (activeTab === 'requests') {
         const data = await friendsApi.getPendingRequests();
+        console.log('Friends: Loaded pending requests data:', data);
         setFriendRequests(data);
       } else if (activeTab === 'suggestions') {
         const data = await friendsApi.getFriendSuggestions();
+        console.log('Friends: Loaded suggestions data:', data);
         setSuggestions(data);
       }
     } catch (error) {
@@ -115,9 +119,12 @@ const Friends: React.FC = () => {
   // Handle adding a friend from suggestions
   const handleAddFriend = async (suggestionId: string) => {
     try {
+      console.log('Friends: Sending friend request to suggestion ID:', suggestionId);
       await friendsApi.sendFriendRequest(suggestionId);
+      console.log('Friends: Friend request sent successfully');
       // Remove from suggestions
       setSuggestions(prev => prev.filter(sugg => sugg.user.id !== suggestionId));
+      console.log('Friends: Removed suggestion from list');
     } catch (error) {
       console.error('Error sending friend request:', error);
     }

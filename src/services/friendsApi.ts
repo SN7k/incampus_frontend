@@ -43,7 +43,7 @@ interface FriendsResponse {
 interface FriendRequestsResponse {
   status: string;
   data: {
-    requests: FriendRequest[];
+    pendingRequests: FriendRequest[];
   };
 }
 
@@ -78,13 +78,18 @@ export const friendsApi = {
   // Get pending friend requests (both sent and received)
   getPendingRequests: async (): Promise<FriendRequest[]> => {
     try {
+      console.log('FriendsApi: Fetching pending requests...');
       const response = await API.get<FriendRequestsResponse>('/friends/pending-requests');
-      const requests = response.data.data.requests || [];
-      return requests.map(request => ({
+      console.log('FriendsApi: Pending requests response:', response.data);
+      const requests = response.data.data.pendingRequests || [];
+      console.log('FriendsApi: Parsed requests:', requests);
+      const transformedRequests = requests.map(request => ({
         ...request,
         sender: transformUser(request.sender),
         receiver: transformUser(request.receiver)
       }));
+      console.log('FriendsApi: Transformed requests:', transformedRequests);
+      return transformedRequests;
     } catch (error) {
       console.error('Error fetching pending requests:', error);
       return []; // Return empty array on error
@@ -115,11 +120,14 @@ export const friendsApi = {
       });
       console.log('FriendsApi: Friend request response:', response.data);
       const request = response.data.data.friendRequest;
-      return {
+      console.log('FriendsApi: Parsed friend request:', request);
+      const transformedRequest = {
         ...request,
         sender: transformUser(request.sender),
         receiver: transformUser(request.receiver)
       };
+      console.log('FriendsApi: Transformed friend request:', transformedRequest);
+      return transformedRequest;
     } catch (error) {
       console.error('FriendsApi: Error sending friend request:', error);
       throw error;
