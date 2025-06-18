@@ -143,7 +143,7 @@ export const friendApi = {
   // Send friend request
   sendRequest: async (receiverId: string): Promise<{id: string, receiver: User}> => {
     try {
-      const response = await API.post<{status: string, data: {friendRequest: {id: string, receiver: User}}}>('/friends/requests', { receiverId });
+      const response = await API.post<{status: string, data: {friendRequest: {id: string, receiver: User}}}>('/friends/send-request', { receiverId });
       return response.data.data.friendRequest;
     } catch (error) {
       console.error('Error sending friend request:', error);

@@ -28,6 +28,8 @@ const Profile: React.FC = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<ProfileData>>({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
   // Animation variants
   const container = {
@@ -317,6 +319,28 @@ const Profile: React.FC = () => {
     };
   }, [user]);
 
+  // Check if friend request has already been sent when viewing another user's profile
+  useEffect(() => {
+    const checkFriendRequestStatus = async () => {
+      if (!viewingUserId || !user) return;
+      
+      try {
+        // Check sent requests to see if we already sent a request to this user
+        const sentRequests = await friendApi.getSentRequests();
+        const hasSentRequest = sentRequests.some(request => request.receiver.id === viewingUserId);
+        
+        if (hasSentRequest) {
+          console.log('Profile component - Friend request already sent to this user');
+          setRequestSent(true);
+        }
+      } catch (error) {
+        console.error('Profile component - Error checking friend request status:', error);
+      }
+    };
+    
+    checkFriendRequestStatus();
+  }, [viewingUserId, user]);
+
   // Listen for post deletion events
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
@@ -480,6 +504,32 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleConnect = async () => {
+    if (!viewingUserId || !user) return;
+    
+    setIsSendingRequest(true);
+    try {
+      console.log('Sending friend request to:', viewingUserId);
+      await friendApi.sendRequest(viewingUserId);
+      console.log('Friend request sent successfully');
+      setRequestSent(true);
+      
+      // Show success message
+      alert('Friend request sent successfully!');
+      
+      // Dispatch event to update friend requests count
+      window.dispatchEvent(new CustomEvent('friendRequestsChange', { 
+        detail: { hasRequests: true } 
+      }));
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send friend request';
+      alert(errorMessage);
+    } finally {
+      setIsSendingRequest(false);
+    }
+  };
+
   if (isLoadingProfile) {
   return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -612,10 +662,34 @@ const Profile: React.FC = () => {
                     {/* Connect Button - Only show for other profiles */}
                     {viewingUserId && (
                       <button 
-                        className="flex items-center space-x-1 px-4 py-2 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                        onClick={handleConnect}
+                        disabled={isSendingRequest || requestSent}
+                        className={`flex items-center space-x-1 px-4 py-2 border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
+                          requestSent 
+                            ? 'border-green-600 text-green-600 bg-green-50 dark:bg-green-900/20' 
+                            : isSendingRequest
+                            ? 'border-gray-400 text-gray-400 cursor-not-allowed'
+                            : 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                        }`}
                       >
-                        <Users size={16} />
-                        <span>Connect</span>
+                        {isSendingRequest ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            <span>Sending...</span>
+                          </>
+                        ) : requestSent ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Request Sent</span>
+                          </>
+                        ) : (
+                          <>
+                            <Users size={16} />
+                            <span>Connect</span>
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
