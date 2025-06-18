@@ -89,12 +89,15 @@ const Friends: React.FC = () => {
   
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
+    console.log('=== FRIENDS NAVIGATION DEBUG ===');
     console.log('NAVIGATION: Going to profile ID:', userId);
     console.log('NAVIGATION: Current user ID:', user?.id);
     console.log('NAVIGATION: Are we viewing own profile?', userId === user?.id);
+    console.log('NAVIGATION: localStorage before setting:', localStorage.getItem('viewProfileUserId'));
     
     // Set navigation data without clearing localStorage
     localStorage.setItem('currentPage', 'profile');
+    console.log('NAVIGATION: Set currentPage to profile');
     
     if (userId) {
       localStorage.setItem('viewProfileUserId', userId);
@@ -104,6 +107,7 @@ const Friends: React.FC = () => {
       const timestamp = new Date().getTime();
       
       // Dispatch navigation event
+      console.log('NAVIGATION: Dispatching navigate event');
       window.dispatchEvent(new CustomEvent('navigate', { 
         detail: { 
           page: 'profile', 
@@ -117,6 +121,8 @@ const Friends: React.FC = () => {
       window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
         detail: { userId: userId }
       }));
+      
+      console.log('=== END FRIENDS NAVIGATION DEBUG ===');
     } else {
       console.log('NAVIGATION: Going to own profile');
       // Remove viewProfileUserId if going to own profile

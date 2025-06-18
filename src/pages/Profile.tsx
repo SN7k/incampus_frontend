@@ -167,20 +167,27 @@ const Profile: React.FC = () => {
   // Watch for viewProfileUserId changes via custom events
   useEffect(() => {
     const handleViewProfileUserIdChange = (event: CustomEvent) => {
+      console.log('=== PROFILE EVENT DEBUG ===');
       const { userId } = event.detail;
       console.log('Profile component - Received viewProfileUserIdChanged event:', userId);
       console.log('Profile component - Current viewingUserId state:', viewingUserId);
+      console.log('Profile component - Event detail:', event.detail);
       
       if (userId !== viewingUserId) {
         console.log('Profile component - viewProfileUserId changed, updating state');
         setViewingUserId(userId);
+      } else {
+        console.log('Profile component - viewProfileUserId unchanged, no update needed');
       }
+      console.log('=== END PROFILE EVENT DEBUG ===');
     };
 
     // Listen for custom event
+    console.log('Profile component - Adding viewProfileUserIdChanged event listener');
     window.addEventListener('viewProfileUserIdChanged', handleViewProfileUserIdChange as EventListener);
 
     return () => {
+      console.log('Profile component - Removing viewProfileUserIdChanged event listener');
       window.removeEventListener('viewProfileUserIdChanged', handleViewProfileUserIdChange as EventListener);
     };
   }, [viewingUserId]);
@@ -188,18 +195,25 @@ const Profile: React.FC = () => {
   // Also listen for navigation events to handle viewProfileUserId changes
   useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
+      console.log('=== PROFILE NAVIGATION DEBUG ===');
+      console.log('Profile component - Navigation event received:', event.detail);
       if (event.detail?.page === 'profile' && event.detail?.userId) {
         console.log('Profile component - Navigation event received with userId:', event.detail.userId);
         const targetUserId = event.detail.userId;
         if (targetUserId !== viewingUserId) {
           console.log('Profile component - Updating viewingUserId from navigation event');
           setViewingUserId(targetUserId);
+        } else {
+          console.log('Profile component - viewingUserId unchanged from navigation event');
         }
       }
+      console.log('=== END PROFILE NAVIGATION DEBUG ===');
     };
 
+    console.log('Profile component - Adding navigate event listener');
     window.addEventListener('navigate', handleNavigation as EventListener);
     return () => {
+      console.log('Profile component - Removing navigate event listener');
       window.removeEventListener('navigate', handleNavigation as EventListener);
     };
   }, [viewingUserId]);

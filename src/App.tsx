@@ -48,12 +48,16 @@ function AppContent() {
     };
   }, []);
   
-  // Listen for navigation events from Navbar
+  // Listen for navigation events
   React.useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
+      console.log('=== APP NAVIGATION DEBUG ===');
+      console.log('App component - Navigation event received:', event.detail);
       if (event.detail?.page) {
+        console.log('App component - Setting currentPage to:', event.detail.page);
         setCurrentPage(event.detail.page);
       }
+      console.log('=== END APP NAVIGATION DEBUG ===');
     };
     
     window.addEventListener('navigate', handleNavigation as EventListener);
@@ -347,7 +351,10 @@ function AppContent() {
       </div>
       
       {isAuthenticated && currentPage === 'feed' && <Feed />}
-      {isAuthenticated && currentPage === 'profile' && <Profile />}
+      {isAuthenticated && currentPage === 'profile' && (() => {
+        console.log('App component - Rendering Profile component, currentPage:', currentPage);
+        return <Profile />;
+      })()}
       {isAuthenticated && currentPage === 'friends' && <Friends />}
       {isAuthenticated && currentPage === 'settings' && <Settings />}
 
