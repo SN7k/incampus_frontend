@@ -27,10 +27,11 @@ const Feed: React.FC = () => {
       
       // Get feed posts from API
       const feedPosts = await postsApi.getFeedPosts();
-      // Normalize posts: ensure each post has a 'user' field
+      // Normalize posts: ensure each post has a 'user' field and 'createdAt' as Date
       const normalizedPosts = feedPosts.map(post => ({
         ...post,
-        user: post.user || (post as any).author
+        user: post.user || (post as any).author,
+        createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
       }));
       setPosts(normalizedPosts);
     } catch (error: unknown) {
@@ -81,7 +82,11 @@ const Feed: React.FC = () => {
       console.log('New post detected:', post);
       
       // Add the new post to the beginning of the feed
-      setPosts(currentPosts => [{ ...post, user: post.user || (post as any).author }, ...currentPosts]);
+      setPosts(currentPosts => [{
+        ...post,
+        user: post.user || (post as any).author,
+        createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
+      }, ...currentPosts]);
     };
     
     window.addEventListener('postCreated', handlePostCreated as EventListener);
