@@ -30,7 +30,6 @@ const Profile: React.FC = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
-  const [profileId, setProfileId] = useState<string>('');
 
   // Animation variants
   const container = {
@@ -113,59 +112,53 @@ const Profile: React.FC = () => {
   // Initialize viewingUserId from localStorage on mount
   useEffect(() => {
     const targetUserId = localStorage.getItem('viewProfileUserId');
-    console.log('Profile component - Initial viewProfileUserId from localStorage:', targetUserId);
     setViewingUserId(targetUserId);
   }, []); // Only run on mount
 
   // Initialize profile data
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
-      console.log('=== PROFILE INITIALIZATION DEBUG ===');
-      console.log('PROFILE: Component mounted');
-      console.log('PROFILE: Current user ID:', user?.id);
-      console.log('PROFILE: localStorage viewProfileUserId:', localStorage.getItem('viewProfileUserId'));
-      console.log('PROFILE: localStorage currentPage:', localStorage.getItem('currentPage'));
-      
       // Check if we're viewing someone else's profile
       const storedViewProfileUserId = localStorage.getItem('viewProfileUserId');
-      console.log('PROFILE: Stored viewProfileUserId:', storedViewProfileUserId);
+      
+      let targetProfileId = '';
       
       if (storedViewProfileUserId && storedViewProfileUserId !== user?.id) {
-        console.log('PROFILE: Viewing someone else\'s profile, ID:', storedViewProfileUserId);
         setViewingUserId(storedViewProfileUserId);
-        setProfileId(storedViewProfileUserId);
+        targetProfileId = storedViewProfileUserId;
       } else {
-        console.log('PROFILE: Viewing own profile');
         setViewingUserId(null);
-        setProfileId(user?.id || '');
+        targetProfileId = user?.id || '';
       }
       
-      console.log('PROFILE: Final viewingUserId:', viewingUserId);
-      console.log('PROFILE: Final profileId:', profileId);
+      // Only proceed if we have a valid profile ID
+      if (!targetProfileId) {
+        setIsLoadingProfile(false);
+        return;
+      }
       
-      // Rest of the existing code...
       try {
         // Fetch profile data
-        const profileResponse = await profileApi.getUserProfile(profileId);
-        console.log('PROFILE: Profile API response:', profileResponse);
-        
-        // profileApi.getUserProfile returns the profile data directly
-        console.log('PROFILE: Setting profile data:', profileResponse);
+        const profileResponse = await profileApi.getUserProfile(targetProfileId);
         setProfileData(profileResponse);
         
         // Fetch user posts
-        const postsResponse = await postsApi.getUserPosts(profileId);
-        console.log('PROFILE: Posts API response:', postsResponse);
-        
-        // postsApi.getUserPosts returns the posts array directly
-        setUserPosts(postsResponse);
+        try {
+          const postsResponse = await postsApi.getUserPosts(targetProfileId);
+          setUserPosts(postsResponse);
+        } catch (error) {
+          console.error('PROFILE: Error fetching posts:', error);
+          setUserPosts([]); // Set empty array on error
+        }
         
         // Fetch friends list
-        const friendsResponse = await friendsApi.getFriendsList();
-        console.log('PROFILE: Friends API response:', friendsResponse);
-        
-        // friendsApi.getFriendsList returns the friends array directly
-        setFriendsList(friendsResponse);
+        try {
+          const friendsResponse = await friendsApi.getFriendsList();
+          setFriendsList(friendsResponse);
+        } catch (error) {
+          console.error('PROFILE: Error fetching friends:', error);
+          setFriendsList([]); // Set empty array on error
+        }
         
         setIsLoadingProfile(false);
       } catch (error) {
@@ -177,7 +170,7 @@ const Profile: React.FC = () => {
     if (user?.id) {
       fetchData();
     }
-  }, [user?.id, profileId]);
+  }, [user?.id]); // Remove profileId dependency to avoid double execution
 
   // Check if friend request has already been sent when viewing another user's profile
   useEffect(() => {
@@ -187,14 +180,16 @@ const Profile: React.FC = () => {
       try {
         // Check sent requests to see if we already sent a request to this user
         const sentRequests = await friendsApi.getPendingRequests();
-        const hasSentRequest = sentRequests.some((request: any) => request.receiver.id === viewingUserId);
-        
-        if (hasSentRequest) {
-          console.log('Profile component - Friend request already sent to this user');
-          setRequestSent(true);
+        if (sentRequests && Array.isArray(sentRequests)) {
+          const hasSentRequest = sentRequests.some((request: any) => request.receiver && request.receiver.id === viewingUserId);
+          
+          if (hasSentRequest) {
+            setRequestSent(true);
+          }
         }
       } catch (error) {
         console.error('Profile component - Error checking friend request status:', error);
+        // Don't throw error, just log it
       }
     };
     
@@ -365,13 +360,11 @@ const Profile: React.FC = () => {
   };
 
   const handleConnect = async () => {
-    if (!viewingUserId || !user) return;
+    if (!viewingUserId) return;
     
     setIsSendingRequest(true);
     try {
-      console.log('Sending friend request to:', viewingUserId);
       await friendsApi.sendFriendRequest(viewingUserId);
-      console.log('Friend request sent successfully');
       setRequestSent(true);
       
       // Show success message
@@ -391,71 +384,31 @@ const Profile: React.FC = () => {
   };
 
   if (isLoadingProfile) {
-  return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
-          </div>
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl flex items-center space-x-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <p className="text-gray-700 dark:text-gray-300">Loading profile...</p>
         </div>
+      </div>
     );
   }
 
-  if (!profileData) {
+  // Only show "Profile not found" if we're not loading and have no data
+  if (!isLoadingProfile && !profileData) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
             <div className="text-gray-500 mb-4">Profile not found</div>
-                </div>
-                </div>
-                    </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
-      {/* Debug section - remove this later */}
-      <div className="fixed top-20 left-4 z-50 bg-red-100 dark:bg-red-900 p-2 rounded text-xs">
-        <div>viewingUserId: {viewingUserId || 'null'}</div>
-        <div>user?.id: {user?.id || 'null'}</div>
-        <div>localStorage viewProfileUserId: {localStorage.getItem('viewProfileUserId') || 'null'}</div>
-        <div>profileData?.name: {profileData?.name || 'null'}</div>
-        <button 
-          onClick={() => {
-            const testUserId = 'test-user-123';
-            localStorage.setItem('viewProfileUserId', testUserId);
-            window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
-              detail: { userId: testUserId }
-            }));
-          }}
-          className="mt-1 px-2 py-1 bg-blue-500 text-white rounded text-xs"
-        >
-          Test Navigation
-        </button>
-        {viewingUserId && viewingUserId !== user?.id && (
-          <button 
-            onClick={() => {
-              localStorage.removeItem('viewProfileUserId');
-              window.location.reload();
-            }}
-            className="mt-1 px-2 py-1 bg-green-500 text-white rounded text-xs"
-          >
-            Back to My Profile
-          </button>
-        )}
-      </div>
-      
-      {/* Loading state */}
-      {isLoadingProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading profile...</p>
-          </div>
-        </div>
-      )}
-      
       {/* Cover photo and profile section */}
       <motion.div 
         className="relative"

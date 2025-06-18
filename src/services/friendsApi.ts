@@ -67,11 +67,11 @@ export const friendsApi = {
   getFriendsList: async (): Promise<User[]> => {
     try {
       const response = await API.get<FriendsResponse>('/friends/friends-list');
-      const friends = response.data.data.friends;
+      const friends = response.data.data.friends || [];
       return friends.map(transformUser);
     } catch (error) {
       console.error('Error fetching friends list:', error);
-      throw error;
+      return []; // Return empty array on error
     }
   },
 
@@ -79,7 +79,7 @@ export const friendsApi = {
   getPendingRequests: async (): Promise<FriendRequest[]> => {
     try {
       const response = await API.get<FriendRequestsResponse>('/friends/pending-requests');
-      const requests = response.data.data.requests;
+      const requests = response.data.data.requests || [];
       return requests.map(request => ({
         ...request,
         sender: transformUser(request.sender),
@@ -87,7 +87,7 @@ export const friendsApi = {
       }));
     } catch (error) {
       console.error('Error fetching pending requests:', error);
-      throw error;
+      return []; // Return empty array on error
     }
   },
 
@@ -95,14 +95,14 @@ export const friendsApi = {
   getFriendSuggestions: async (): Promise<FriendSuggestion[]> => {
     try {
       const response = await API.get<FriendSuggestionsResponse>('/friends/suggestions');
-      const suggestions = response.data.data.suggestions;
+      const suggestions = response.data.data.suggestions || [];
       return suggestions.map(suggestion => ({
         ...suggestion,
         user: transformUser(suggestion.user)
       }));
     } catch (error) {
       console.error('Error fetching friend suggestions:', error);
-      throw error;
+      return []; // Return empty array on error
     }
   },
 

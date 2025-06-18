@@ -78,23 +78,12 @@ const Friends: React.FC = () => {
   
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
-    console.log('=== FRIENDS NAVIGATION DEBUG ===');
-    console.log('NAVIGATION: Going to profile ID:', userId);
-    console.log('NAVIGATION: Current user ID:', user?.id);
-    console.log('NAVIGATION: Are we viewing own profile?', userId === user?.id);
-    console.log('NAVIGATION: localStorage before setting:', localStorage.getItem('viewProfileUserId'));
-    
     // Set navigation data
     localStorage.setItem('currentPage', 'profile');
     localStorage.setItem('viewProfileUserId', userId);
     
-    console.log('NAVIGATION: Set currentPage to profile');
-    console.log('NAVIGATION: Set viewProfileUserId to:', userId);
-    console.log('NAVIGATION: localStorage after setting:', localStorage.getItem('viewProfileUserId'));
-    
     // Add a small delay to ensure localStorage is set before reload
     setTimeout(() => {
-      console.log('NAVIGATION: About to reload page, localStorage viewProfileUserId:', localStorage.getItem('viewProfileUserId'));
       window.location.reload();
     }, 100);
   };
@@ -252,8 +241,6 @@ const Friends: React.FC = () => {
                           <div className="flex items-center space-x-2">
                               <button 
                               onClick={() => {
-                                console.log('FRIENDS: View Profile clicked for friend:', friend);
-                                console.log('FRIENDS: Friend ID:', friend.id);
                                 if (!friend.id) {
                                   console.error('FRIENDS: Friend ID is undefined!');
                                   return;
@@ -357,8 +344,6 @@ const Friends: React.FC = () => {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => {
-                                console.log('FRIENDS: View Profile clicked for suggestion:', suggestion.user);
-                                console.log('FRIENDS: Suggestion user ID:', suggestion.user.id);
                                 if (!suggestion.user.id) {
                                   console.error('FRIENDS: Suggestion user ID is undefined!');
                                   return;

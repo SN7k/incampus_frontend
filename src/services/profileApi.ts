@@ -16,11 +16,7 @@ export const getMyProfile = async (): Promise<ProfileData> => {
  * @returns Profile data for the specified user
  */
 export const getUserProfile = async (userId: string): Promise<ProfileData> => {
-  console.log('profileApi.getUserProfile - calling with userId:', userId);
   const response = await API.get<{ status: string; data: ProfileData }>(`/profile/${userId}`);
-  console.log('profileApi.getUserProfile - raw response:', response);
-  console.log('profileApi.getUserProfile - response.data:', response.data);
-  console.log('profileApi.getUserProfile - returning:', response.data.data);
   return response.data.data;
 };
 
