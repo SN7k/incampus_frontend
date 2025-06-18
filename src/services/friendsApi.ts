@@ -81,6 +81,13 @@ export const friendsApi = {
       console.log('FriendsApi: Fetching pending requests...');
       const response = await API.get<FriendRequestsResponse>('/friends/pending-requests');
       console.log('FriendsApi: Pending requests response:', response.data);
+      console.log('FriendsApi: Response data structure:', {
+        status: response.data.status,
+        hasData: !!response.data.data,
+        dataKeys: response.data.data ? Object.keys(response.data.data) : 'no data',
+        pendingRequests: response.data.data?.pendingRequests,
+        requests: (response.data.data as any)?.requests
+      });
       const requests = response.data.data.pendingRequests || [];
       console.log('FriendsApi: Parsed requests:', requests);
       const transformedRequests = requests.map(request => ({
@@ -99,12 +106,17 @@ export const friendsApi = {
   // Get friend suggestions
   getFriendSuggestions: async (): Promise<FriendSuggestion[]> => {
     try {
+      console.log('FriendsApi: Fetching friend suggestions...');
       const response = await API.get<FriendSuggestionsResponse>('/friends/suggestions');
+      console.log('FriendsApi: Suggestions response:', response.data);
       const suggestions = response.data.data.suggestions || [];
-      return suggestions.map(suggestion => ({
+      console.log('FriendsApi: Parsed suggestions:', suggestions);
+      const transformedSuggestions = suggestions.map(suggestion => ({
         ...suggestion,
         user: transformUser(suggestion.user)
       }));
+      console.log('FriendsApi: Transformed suggestions:', transformedSuggestions);
+      return transformedSuggestions;
     } catch (error) {
       console.error('Error fetching friend suggestions:', error);
       return []; // Return empty array on error
