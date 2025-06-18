@@ -113,26 +113,45 @@ const Profile: React.FC = () => {
       setIsLoadingProfile(true);
       try {
         const targetUserId = localStorage.getItem('viewProfileUserId');
+        console.log('Profile component - targetUserId from localStorage:', targetUserId);
         setViewingUserId(targetUserId); // null if viewing own profile, userId if viewing someone else
         
         const userIdToFetch = targetUserId || user?.id;
-        if (!userIdToFetch) return;
+        console.log('Profile component - userIdToFetch:', userIdToFetch);
+        console.log('Profile component - user?.id:', user?.id);
+        
+        if (!userIdToFetch) {
+          console.log('Profile component - No userIdToFetch, returning early');
+          return;
+        }
         
         // Fetch profile
+        console.log('Profile component - Fetching profile for userId:', userIdToFetch);
         const profile = await profileApi.getUserProfile(userIdToFetch);
+        console.log('Profile component - Profile fetched successfully:', profile);
         setProfileData(profile);
+        
         // Fetch posts
+        console.log('Profile component - Fetching posts for userId:', userIdToFetch);
         const posts = await postsApi.getUserPosts(userIdToFetch);
+        console.log('Profile component - Posts fetched successfully:', posts);
         setUserPosts(posts);
+        
         // Fetch friends
+        console.log('Profile component - Fetching friends');
         const friends = await friendApi.getFriends();
+        console.log('Profile component - Friends fetched successfully:', friends);
         setFriendsList(friends);
-            } catch (error) {
-        console.error('Error loading profile data:', error);
+      } catch (error) {
+        console.error('Profile component - Error loading profile data:', error);
+        console.error('Profile component - Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
       } finally {
-          setIsLoadingProfile(false);
-        }
-      };
+        setIsLoadingProfile(false);
+      }
+    };
     fetchData();
   }, [user]);
 

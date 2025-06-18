@@ -224,6 +224,8 @@ const Feed: React.FC = () => {
                       <button
                         onClick={() => {
                           // Navigate to user profile
+                          console.log('Feed - View Profile clicked for user:', suggestedUser);
+                          console.log('Feed - User ID being set:', suggestedUser.id);
                           localStorage.setItem('viewProfileUserId', suggestedUser.id);
                           window.dispatchEvent(new CustomEvent('navigate', { 
                             detail: { page: 'profile', userId: suggestedUser.id } 
