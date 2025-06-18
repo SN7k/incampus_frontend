@@ -4,6 +4,7 @@ import { friendApi } from '../services/api';
 import { User } from '../types';
 import { UserPlus, UserCheck, Users, UserMinus, Check, X } from 'lucide-react';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 type FriendTab = 'friends' | 'requests' | 'suggestions';
 
@@ -19,6 +20,7 @@ interface Suggestion {
 }
 
 const Friends: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<FriendTab>(() => {
     const savedTab = localStorage.getItem('friendsActiveTab');
     if (savedTab) {
@@ -94,17 +96,21 @@ const Friends: React.FC = () => {
     
     if (userId) {
       localStorage.setItem('viewProfileUserId', userId);
-      console.log('NAVIGATION: Set viewProfileUserId in localStorage:', userId);
       
       const timestamp = new Date().getTime();
-      console.log('NAVIGATION: Dispatching event with timestamp:', timestamp);
       
+      // Dispatch navigation event
       window.dispatchEvent(new CustomEvent('navigate', { 
         detail: { 
           page: 'profile', 
           userId: userId,
           timestamp: timestamp
         } 
+      }));
+      
+      // Dispatch custom event for viewProfileUserId change
+      window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
+        detail: { userId: userId }
       }));
     } else {
       console.log('NAVIGATION: Going to own profile');
@@ -116,6 +122,11 @@ const Friends: React.FC = () => {
           page: 'profile',
           timestamp: new Date().getTime()
         } 
+      }));
+      
+      // Dispatch custom event for viewProfileUserId change
+      window.dispatchEvent(new CustomEvent('viewProfileUserIdChanged', {
+        detail: { userId: null }
       }));
     }
   };

@@ -347,9 +347,7 @@ function AppContent() {
       </div>
       
       {isAuthenticated && currentPage === 'feed' && <Feed />}
-      {isAuthenticated && currentPage === 'profile' && (
-        <Profile key={localStorage.getItem('viewProfileUserId') || 'own-profile'} />
-      )}
+      {isAuthenticated && currentPage === 'profile' && <Profile />}
       {isAuthenticated && currentPage === 'friends' && <Friends />}
       {isAuthenticated && currentPage === 'settings' && <Settings />}
 
