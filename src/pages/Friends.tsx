@@ -22,6 +22,7 @@ const Friends: React.FC = () => {
   
   const [friends, setFriends] = useState<User[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
 
   // Load data based on active tab
@@ -33,9 +34,15 @@ const Friends: React.FC = () => {
         console.log('Friends: Loaded friends data:', data);
         setFriends(data);
       } else if (activeTab === 'requests') {
-        const data = await friendsApi.getPendingRequests();
-        console.log('Friends: Loaded pending requests data:', data);
-        setFriendRequests(data);
+        // Load both received and sent requests
+        const [receivedData, sentData] = await Promise.all([
+          friendsApi.getPendingRequests(),
+          friendsApi.getSentRequests()
+        ]);
+        console.log('Friends: Loaded received requests data:', receivedData);
+        console.log('Friends: Loaded sent requests data:', sentData);
+        setFriendRequests(receivedData);
+        setSentRequests(sentData);
       } else if (activeTab === 'suggestions') {
         const data = await friendsApi.getFriendSuggestions();
         console.log('Friends: Loaded suggestions data:', data);
@@ -64,8 +71,12 @@ const Friends: React.FC = () => {
       if (activeTab === 'requests') {
         const fetchRequests = async () => {
           try {
-            const data = await friendsApi.getPendingRequests();
-            setFriendRequests(data);
+            const [receivedData, sentData] = await Promise.all([
+              friendsApi.getPendingRequests(),
+              friendsApi.getSentRequests()
+            ]);
+            setFriendRequests(receivedData);
+            setSentRequests(sentData);
           } catch (error) {
             console.error('Error refreshing friend requests:', error);
           }
@@ -113,6 +124,16 @@ const Friends: React.FC = () => {
     setFriendRequests(prev => prev.filter(req => req.id !== requestId));
     } catch (error) {
       console.error('Error declining friend request:', error);
+    }
+  };
+
+  // Handle canceling a sent friend request
+  const handleCancelRequest = async (requestId: string) => {
+    try {
+      await friendsApi.cancelSentRequest(requestId);
+      setSentRequests(prev => prev.filter(req => req.id !== requestId));
+    } catch (error) {
+      console.error('Error canceling sent friend request:', error);
     }
   };
 
@@ -272,50 +293,118 @@ const Friends: React.FC = () => {
                 )}
 
                 {activeTab === 'requests' && (
-                        <div className="space-y-4">
-                    {friendRequests.length === 0 ? (
-                      <div className="text-center py-8">
-                        <UserPlus className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No friend requests</h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          You don't have any pending friend requests.
-                        </p>
-                      </div>
-                    ) : (
-                      friendRequests.map(request => (
-                        <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex items-center space-x-4">
-                            <img
-                              src={getAvatarUrl(request.sender.avatar, request.sender.name)}
-                              alt={request.sender.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                            <div>
-                              <h3 className="font-medium text-gray-900 dark:text-white">{request.sender.name}</h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {request.sender.role === 'faculty' ? 'Faculty' : 'Student'}
+                        <div className="space-y-6">
+                    {/* Received Requests Section */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Received Requests ({friendRequests.length})
+                      </h3>
+                      {friendRequests.length === 0 ? (
+                        <div className="text-center py-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <UserPlus className="mx-auto h-8 w-8 text-gray-400" />
+                          <h4 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No received requests</h4>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            You don't have any pending friend requests.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {friendRequests.map(request => (
+                            <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <img
+                                  src={getAvatarUrl(request.sender.avatar, request.sender.name)}
+                                  alt={request.sender.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                                <div>
+                                  <h3 className="font-medium text-gray-900 dark:text-white">{request.sender.name}</h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {request.sender.role === 'faculty' ? 'Faculty' : 'Student'}
                                   </p>
                                 </div>
                               </div>
-                          <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2">
                                 <button 
                                   onClick={() => handleAcceptRequest(request.id)}
-                              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
                                 >
-                              <Check className="w-4 h-4 inline mr-1" />
-                              Accept
+                                  <Check className="w-4 h-4 inline mr-1" />
+                                  Accept
                                 </button>
                                 <button 
                                   onClick={() => handleDeclineRequest(request.id)}
-                              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
                                 >
-                              <X className="w-4 h-4 inline mr-1" />
-                              Decline
+                                  <X className="w-4 h-4 inline mr-1" />
+                                  Decline
                                 </button>
                               </div>
+                            </div>
+                          ))}
                         </div>
-                      ))
                       )}
+                    </div>
+
+                    {/* Sent Requests Section */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Sent Requests ({sentRequests.length})
+                      </h3>
+                      {sentRequests.length === 0 ? (
+                        <div className="text-center py-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <UserPlus className="mx-auto h-8 w-8 text-gray-400" />
+                          <h4 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No sent requests</h4>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            You haven't sent any friend requests yet.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {sentRequests.map(request => (
+                            <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <img
+                                  src={getAvatarUrl(request.receiver.avatar, request.receiver.name)}
+                                  alt={request.receiver.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                                <div>
+                                  <h3 className="font-medium text-gray-900 dark:text-white">{request.receiver.name}</h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {request.receiver.role === 'faculty' ? 'Faculty' : 'Student'}
+                                  </p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                                    Pending response
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => {
+                                    if (!request.receiver.id) {
+                                      console.error('FRIENDS: Receiver ID is undefined!');
+                                      return;
+                                    }
+                                    navigateToProfile(request.receiver.id);
+                                  }}
+                                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                                >
+                                  View Profile
+                                </button>
+                                <button 
+                                  onClick={() => handleCancelRequest(request.id)}
+                                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                >
+                                  <X className="w-4 h-4 inline mr-1" />
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     </div>
                 )}
 

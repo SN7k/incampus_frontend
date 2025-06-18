@@ -47,6 +47,13 @@ interface FriendRequestsResponse {
   };
 }
 
+interface SentRequestsResponse {
+  status: string;
+  data: {
+    sentRequests: FriendRequest[];
+  };
+}
+
 interface FriendSuggestionsResponse {
   status: string;
   data: {
@@ -99,6 +106,27 @@ export const friendsApi = {
       return transformedRequests;
     } catch (error) {
       console.error('Error fetching pending requests:', error);
+      return []; // Return empty array on error
+    }
+  },
+
+  // Get sent friend requests
+  getSentRequests: async (): Promise<FriendRequest[]> => {
+    try {
+      console.log('FriendsApi: Fetching sent requests...');
+      const response = await API.get<SentRequestsResponse>('/friends/sent-requests');
+      console.log('FriendsApi: Sent requests response:', response.data);
+      const requests = response.data.data.sentRequests || [];
+      console.log('FriendsApi: Parsed sent requests:', requests);
+      const transformedRequests = requests.map(request => ({
+        ...request,
+        sender: transformUser(request.sender),
+        receiver: transformUser(request.receiver)
+      }));
+      console.log('FriendsApi: Transformed sent requests:', transformedRequests);
+      return transformedRequests;
+    } catch (error) {
+      console.error('Error fetching sent requests:', error);
       return []; // Return empty array on error
     }
   },
@@ -174,6 +202,17 @@ export const friendsApi = {
       };
     } catch (error) {
       console.error('Error declining friend request:', error);
+      throw error;
+    }
+  },
+
+  // Cancel sent friend request
+  cancelSentRequest: async (requestId: string): Promise<{ status: string; message: string }> => {
+    try {
+      const response = await API.delete<{ status: string; message: string }>(`/friends/cancel-request/${requestId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error canceling sent friend request:', error);
       throw error;
     }
   },
