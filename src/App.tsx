@@ -334,6 +334,10 @@ function AppContent() {
               localStorage.setItem('currentPage', 'profile');
               // Clear any stored profile ID to ensure we show the user's own profile
               localStorage.removeItem('viewProfileUserId');
+              // Dispatch a custom event to notify Profile component
+              window.dispatchEvent(new CustomEvent('profileNavigation', { 
+                detail: { action: 'viewOwnProfile' } 
+              }));
             }}
             className={`px-4 py-2 ${currentPage === 'profile' ? 'text-blue-800 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
           >
@@ -343,7 +347,9 @@ function AppContent() {
       </div>
       
       {isAuthenticated && currentPage === 'feed' && <Feed />}
-      {isAuthenticated && currentPage === 'profile' && <Profile />}
+      {isAuthenticated && currentPage === 'profile' && (
+        <Profile key={localStorage.getItem('viewProfileUserId') || 'own-profile'} />
+      )}
       {isAuthenticated && currentPage === 'friends' && <Friends />}
       {isAuthenticated && currentPage === 'settings' && <Settings />}
 

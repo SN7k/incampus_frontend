@@ -206,6 +206,117 @@ const Profile: React.FC = () => {
     };
   }, [user]);
 
+  // Listen for localStorage changes to handle viewProfileUserId clearing
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'viewProfileUserId') {
+        console.log('Profile component - viewProfileUserId changed in localStorage:', e.newValue);
+        const targetUserId = e.newValue; // null when cleared
+        setViewingUserId(targetUserId);
+        
+        // Re-fetch data when viewProfileUserId changes
+        const fetchData = async () => {
+          setIsLoadingProfile(true);
+          try {
+            const userIdToFetch = targetUserId || user?.id;
+            console.log('Profile component - Re-fetching after localStorage change for userId:', userIdToFetch);
+            
+            if (!userIdToFetch) {
+              console.log('Profile component - No userIdToFetch after localStorage change, returning early');
+              return;
+            }
+            
+            // Fetch profile
+            const profile = await profileApi.getUserProfile(userIdToFetch);
+            console.log('Profile component - Profile re-fetched after localStorage change:', profile);
+            setProfileData(profile);
+            
+            // Fetch posts
+            const posts = await postsApi.getUserPosts(userIdToFetch);
+            console.log('Profile component - Posts re-fetched after localStorage change:', posts);
+            setUserPosts(posts);
+            
+            // Fetch friends
+            const friends = await friendApi.getFriends();
+            console.log('Profile component - Friends re-fetched after localStorage change:', friends);
+            setFriendsList(friends);
+          } catch (error) {
+            console.error('Profile component - Error re-fetching after localStorage change:', error);
+          } finally {
+            setIsLoadingProfile(false);
+          }
+        };
+        fetchData();
+      }
+    };
+    
+    // Listen for storage events (for cross-tab changes)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check localStorage on component mount and when user changes
+    const checkLocalStorage = () => {
+      const targetUserId = localStorage.getItem('viewProfileUserId');
+      if (targetUserId !== viewingUserId) {
+        console.log('Profile component - viewProfileUserId mismatch, updating state');
+        setViewingUserId(targetUserId);
+      }
+    };
+    
+    checkLocalStorage();
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [user, viewingUserId]);
+
+  // Listen for profile navigation events
+  useEffect(() => {
+    const handleProfileNavigation = (event: CustomEvent) => {
+      if (event.detail?.action === 'viewOwnProfile') {
+        console.log('Profile component - Received viewOwnProfile event');
+        setViewingUserId(null); // Clear viewing user ID
+        
+        // Re-fetch current user's profile data
+        const fetchOwnProfile = async () => {
+          setIsLoadingProfile(true);
+          try {
+            if (!user?.id) {
+              console.log('Profile component - No current user ID available');
+              return;
+            }
+            
+            console.log('Profile component - Fetching own profile for userId:', user.id);
+            
+            // Fetch profile
+            const profile = await profileApi.getUserProfile(user.id);
+            console.log('Profile component - Own profile fetched successfully:', profile);
+            setProfileData(profile);
+            
+            // Fetch posts
+            const posts = await postsApi.getUserPosts(user.id);
+            console.log('Profile component - Own posts fetched successfully:', posts);
+            setUserPosts(posts);
+            
+            // Fetch friends
+            const friends = await friendApi.getFriends();
+            console.log('Profile component - Friends fetched successfully:', friends);
+            setFriendsList(friends);
+          } catch (error) {
+            console.error('Profile component - Error fetching own profile:', error);
+          } finally {
+            setIsLoadingProfile(false);
+          }
+        };
+        fetchOwnProfile();
+      }
+    };
+    
+    window.addEventListener('profileNavigation', handleProfileNavigation as EventListener);
+    return () => {
+      window.removeEventListener('profileNavigation', handleProfileNavigation as EventListener);
+    };
+  }, [user]);
+
   // Listen for post deletion events
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
