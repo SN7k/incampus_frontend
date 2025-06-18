@@ -249,7 +249,7 @@ export const useSocket = () => {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      const socket = initializeSocket();
+      initializeSocket();
       return () => {
         disconnectSocket();
       };
