@@ -323,12 +323,12 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         )}
       </div>
       
-      {/* Post content */}
+      {/* Post content (always render) */}
       <div className="px-4 py-2">
-        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line break-words">{post.content}</p>
+        <p className="text-gray-800 dark:text-gray-100 whitespace-pre-line break-words">{post.content}</p>
       </div>
       
-      {/* Post media */}
+      {/* Post media (optional) */}
       {post.images && post.images.length > 0 && (
         <div className="w-full">
           {post.images[0].type === 'image' && (
