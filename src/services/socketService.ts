@@ -33,10 +33,7 @@ export const initializeSocket = () => {
   }
 
   console.log('SocketService: Initializing new socket connection...');
-  const token = localStorage.getItem('authState')
-    ? JSON.parse(localStorage.getItem('authState')!).token
-    : null;
-
+  const token = localStorage.getItem('token');
   console.log('SocketService: Auth token found:', !!token);
   if (!token) {
     console.error('SocketService: No auth token found for socket connection');

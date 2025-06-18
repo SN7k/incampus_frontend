@@ -83,6 +83,7 @@ const Settings: React.FC = () => {
                 console.log('Settings: Testing socket connection...');
                 console.log('Settings: User authenticated:', !!user);
                 console.log('Settings: Auth state in localStorage:', localStorage.getItem('authState'));
+                console.log('Settings: Token in localStorage:', localStorage.getItem('token'));
                 const ready = isSocketReady();
                 console.log('Settings: Socket ready:', ready);
                 if (ready) {
@@ -123,8 +124,7 @@ const Settings: React.FC = () => {
               onClick={async () => {
                 console.log('Settings: Testing authenticated API connection...');
                 try {
-                  const authState = localStorage.getItem('authState');
-                  const token = authState ? JSON.parse(authState).token : null;
+                  const token = localStorage.getItem('token');
                   console.log('Settings: Token available:', !!token);
                   
                   if (!token) {
