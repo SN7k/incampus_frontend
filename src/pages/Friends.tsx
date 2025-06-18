@@ -89,7 +89,7 @@ const Friends: React.FC = () => {
   const navigateToProfile = (userId: string) => {
     console.log('NAVIGATION: Going to profile ID:', userId);
     
-    localStorage.clear();
+    // Set navigation data without clearing localStorage
     localStorage.setItem('currentPage', 'profile');
     
     if (userId) {
@@ -108,6 +108,9 @@ const Friends: React.FC = () => {
       }));
     } else {
       console.log('NAVIGATION: Going to own profile');
+      // Remove viewProfileUserId if going to own profile
+      localStorage.removeItem('viewProfileUserId');
+      
       window.dispatchEvent(new CustomEvent('navigate', { 
         detail: { 
           page: 'profile',
