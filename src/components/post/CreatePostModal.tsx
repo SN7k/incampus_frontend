@@ -76,7 +76,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       // Create post with content and media
       const postData = {
         content: content.trim(),
-        image: mediaFiles[0] || null, // For now, just use the first file
+        images: mediaFiles.length > 0 ? mediaFiles : null, // Send all selected files
         visibility: 'public' as const
       };
       

@@ -6,7 +6,7 @@ import { Post } from '../types';
  */
 export interface CreatePostData {
   content: string;
-  image?: File | null;
+  images?: File[] | null;
   visibility?: 'public' | 'friends' | 'private';
 }
 
@@ -55,11 +55,15 @@ export const getUserPosts = async (userId: string): Promise<Post[]> => {
  * @returns Created post
  */
 export const createPost = async (postData: CreatePostData): Promise<Post> => {
-  // If there's an image, use FormData
-  if (postData.image) {
+  // If there are images, use FormData
+  if (postData.images && postData.images.length > 0) {
     const formData = new FormData();
     formData.append('content', postData.content);
-    formData.append('image', postData.image);
+    
+    // Append each image with the field name 'images'
+    postData.images.forEach((image) => {
+      formData.append('images', image);
+    });
     
     if (postData.visibility) {
       formData.append('visibility', postData.visibility);
@@ -74,7 +78,7 @@ export const createPost = async (postData: CreatePostData): Promise<Post> => {
     return response.data.data.post;
   }
   
-  // No image, use regular JSON
+  // No images, use regular JSON
   const response = await API.post<PostResponse>('/posts', postData);
   return response.data.data.post;
 };
