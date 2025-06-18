@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { useSocket } from './services/socketService';
 import LoginForm from './components/auth/LoginForm';
 import SignupForm from './components/auth/SignupForm';
 import OtpVerification from './components/auth/OtpVerification';
@@ -32,6 +33,9 @@ function AppContent() {
   
   // State to track friend requests
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
+  
+  // Initialize socket connection for real-time notifications
+  useSocket();
   
   // Update friend requests state when they change
   React.useEffect(() => {

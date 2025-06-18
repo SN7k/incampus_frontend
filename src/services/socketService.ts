@@ -80,16 +80,28 @@ export const disconnectSocket = () => {
 export const socketEvents = {
   // Friend events
   onFriendRequest: (callback: (data: FriendEventData) => void) => {
+    console.log('SocketService: Setting up friend request listener');
     const socket = getSocket();
     if (socket) {
-      socket.on('friend:request', callback);
+      socket.on('friend:request', (data: FriendEventData) => {
+        console.log('SocketService: Received friend:request event:', data);
+        callback(data);
+      });
+    } else {
+      console.error('SocketService: No socket available for friend request listener');
     }
   },
 
   onFriendAccept: (callback: (data: FriendEventData) => void) => {
+    console.log('SocketService: Setting up friend accept listener');
     const socket = getSocket();
     if (socket) {
-      socket.on('friend:accept', callback);
+      socket.on('friend:accept', (data: FriendEventData) => {
+        console.log('SocketService: Received friend:accept event:', data);
+        callback(data);
+      });
+    } else {
+      console.error('SocketService: No socket available for friend accept listener');
     }
   },
 

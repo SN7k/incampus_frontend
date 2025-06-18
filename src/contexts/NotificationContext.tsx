@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { notificationsApi, Notification as ApiNotification } from '../services/notificationsApi';
+import { socketEvents } from '../services/socketService';
 
 export interface Notification {
   id: string;
@@ -168,63 +169,77 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Listen for friend requests to create real-time notifications
   useEffect(() => {
-    const handleFriendRequest = (event: CustomEvent) => {
-      const { fromUser, toUser, requestType, fromUserName, fromUserAvatar } = event.detail;
-      if (user && ((requestType === 'new' && toUser === user.id) || (requestType === 'accepted' && toUser === user.id))) {
-        const message = requestType === 'new'
-          ? `${fromUserName || 'Someone'} sent you a friend request`
-          : `${fromUserName || 'Someone'} accepted your friend request`;
+    const handleFriendRequest = (data: any) => {
+      console.log('NotificationContext: Received friend request socket event:', data);
+      if (user && data.fromUser) {
+        console.log('NotificationContext: Adding friend request notification for user:', user.id);
         addNotification({
           type: 'friend_request',
-          message,
-          userId: fromUser,
-          avatar: fromUserAvatar
+          message: `${data.fromUser.name} sent you a friend request`,
+          userId: data.fromUser.id,
+          avatar: data.fromUser.avatar
         });
       }
     };
-    window.addEventListener('friendRequest', handleFriendRequest as EventListener);
+
+    const handleFriendAccept = (data: any) => {
+      console.log('NotificationContext: Received friend accept socket event:', data);
+      if (user && data.fromUser) {
+        console.log('NotificationContext: Adding friend accept notification for user:', user.id);
+        addNotification({
+          type: 'friend_request',
+          message: `${data.fromUser.name} accepted your friend request`,
+          userId: data.fromUser.id,
+          avatar: data.fromUser.avatar
+        });
+      }
+    };
+
+    // Set up socket event listeners
+    console.log('NotificationContext: Setting up socket event listeners');
+    socketEvents.onFriendRequest(handleFriendRequest);
+    socketEvents.onFriendAccept(handleFriendAccept);
+
+    // Cleanup function
     return () => {
-      window.removeEventListener('friendRequest', handleFriendRequest as EventListener);
+      console.log('NotificationContext: Cleaning up socket event listeners');
+      // Note: Socket.io automatically removes listeners when component unmounts
     };
   }, [user]);
 
   // Listen for post likes to create real-time notifications
   useEffect(() => {
-    const handlePostLike = (event: CustomEvent) => {
-      const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
-      if (user && postAuthorId === user.id && fromUser !== user.id) {
+    const handlePostLike = (data: any) => {
+      if (user && data.fromUser && data.postId) {
         addNotification({
           type: 'like',
-          message: `${fromUserName || 'Someone'} liked your post`,
-          userId: fromUser,
-          postId,
-          avatar: fromUserAvatar
+          message: `${data.fromUser.name} liked your post`,
+          userId: data.fromUser.id,
+          postId: data.postId,
+          avatar: data.fromUser.avatar
         });
       }
     };
-    window.addEventListener('postLike', handlePostLike as EventListener);
-    return () => {
-      window.removeEventListener('postLike', handlePostLike as EventListener);
-    };
-  }, [user]);
 
-  // Listen for post comments to create real-time notifications
-  useEffect(() => {
-    const handlePostComment = (event: CustomEvent) => {
-      const { fromUser, postId, postAuthorId, fromUserName, fromUserAvatar } = event.detail;
-      if (user && postAuthorId === user.id && fromUser !== user.id) {
+    const handlePostComment = (data: any) => {
+      if (user && data.fromUser && data.postId) {
         addNotification({
           type: 'comment',
-          message: `${fromUserName || 'Someone'} commented on your post`,
-          userId: fromUser,
-          postId,
-          avatar: fromUserAvatar
+          message: `${data.fromUser.name} commented on your post`,
+          userId: data.fromUser.id,
+          postId: data.postId,
+          avatar: data.fromUser.avatar
         });
       }
     };
-    window.addEventListener('postComment', handlePostComment as EventListener);
+
+    // Set up socket event listeners
+    socketEvents.onPostLike(handlePostLike);
+    socketEvents.onPostComment(handlePostComment);
+
+    // Cleanup function
     return () => {
-      window.removeEventListener('postComment', handlePostComment as EventListener);
+      // Note: Socket.io automatically removes listeners when component unmounts
     };
   }, [user]);
 

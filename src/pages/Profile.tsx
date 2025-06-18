@@ -443,8 +443,11 @@ const Profile: React.FC = () => {
   const handleConnect = async () => {
     if (!viewingUserId) return;
     
+    console.log('Profile: handleConnect called for user:', viewingUserId);
+    
     // If user is already a friend, unfriend them
     if (isFriend) {
+      console.log('Profile: User is already a friend, unfriending...');
       setIsUnfriending(true);
       try {
         await friendsApi.unfriend(viewingUserId);
@@ -468,12 +471,17 @@ const Profile: React.FC = () => {
     }
     
     // If request is already sent, don't do anything
-    if (requestSent) return;
+    if (requestSent) {
+      console.log('Profile: Friend request already sent');
+      return;
+    }
     
     // Send friend request
+    console.log('Profile: Sending friend request...');
     setIsSendingRequest(true);
     try {
-      await friendsApi.sendFriendRequest(viewingUserId);
+      const result = await friendsApi.sendFriendRequest(viewingUserId);
+      console.log('Profile: Friend request sent successfully:', result);
       setRequestSent(true);
       
       // Show success message

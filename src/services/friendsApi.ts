@@ -109,9 +109,11 @@ export const friendsApi = {
   // Send friend request
   sendFriendRequest: async (receiverId: string): Promise<FriendRequest> => {
     try {
+      console.log('FriendsApi: Sending friend request to:', receiverId);
       const response = await API.post<FriendRequestResponse>('/friends/send-request', {
         receiverId
       });
+      console.log('FriendsApi: Friend request response:', response.data);
       const request = response.data.data.friendRequest;
       return {
         ...request,
@@ -119,7 +121,7 @@ export const friendsApi = {
         receiver: transformUser(request.receiver)
       };
     } catch (error) {
-      console.error('Error sending friend request:', error);
+      console.error('FriendsApi: Error sending friend request:', error);
       throw error;
     }
   },
