@@ -155,6 +155,57 @@ const Profile: React.FC = () => {
     fetchData();
   }, [user]);
 
+  // Listen for navigation events and localStorage changes to refresh profile data
+  useEffect(() => {
+    const handleNavigation = (event: CustomEvent) => {
+      if (event.detail?.page === 'profile') {
+        console.log('Profile component - Navigation event received for profile page');
+        // Trigger a re-fetch by updating the viewingUserId state
+        const targetUserId = localStorage.getItem('viewProfileUserId');
+        setViewingUserId(targetUserId);
+        
+        // Re-fetch data
+        const fetchData = async () => {
+          setIsLoadingProfile(true);
+          try {
+            const userIdToFetch = targetUserId || user?.id;
+            console.log('Profile component - Re-fetching for userId:', userIdToFetch);
+            
+            if (!userIdToFetch) {
+              console.log('Profile component - No userIdToFetch for re-fetch, returning early');
+              return;
+            }
+            
+            // Fetch profile
+            const profile = await profileApi.getUserProfile(userIdToFetch);
+            console.log('Profile component - Profile re-fetched successfully:', profile);
+            setProfileData(profile);
+            
+            // Fetch posts
+            const posts = await postsApi.getUserPosts(userIdToFetch);
+            console.log('Profile component - Posts re-fetched successfully:', posts);
+            setUserPosts(posts);
+            
+            // Fetch friends
+            const friends = await friendApi.getFriends();
+            console.log('Profile component - Friends re-fetched successfully:', friends);
+            setFriendsList(friends);
+          } catch (error) {
+            console.error('Profile component - Error re-fetching profile data:', error);
+          } finally {
+            setIsLoadingProfile(false);
+          }
+        };
+        fetchData();
+      }
+    };
+    
+    window.addEventListener('navigate', handleNavigation as EventListener);
+    return () => {
+      window.removeEventListener('navigate', handleNavigation as EventListener);
+    };
+  }, [user]);
+
   // Listen for post deletion events
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
