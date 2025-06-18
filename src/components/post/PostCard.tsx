@@ -121,9 +121,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
+    // Ensure we have a Date object
+    const dateObj = date instanceof Date ? date : new Date(date);
+    
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      return 'Unknown time';
+    }
+    
     const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
     
     if (diffInSeconds < 60) {
       return 'Just now';
@@ -137,7 +145,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       const days = Math.floor(diffInSeconds / 86400);
       return `${days}d ago`;
     } else {
-      return date.toLocaleDateString();
+      return dateObj.toLocaleDateString();
     }
   };
 

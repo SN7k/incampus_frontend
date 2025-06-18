@@ -147,7 +147,13 @@ const Profile: React.FC = () => {
         // Fetch user posts
         try {
           const postsResponse = await postsApi.getUserPosts(targetProfileId);
-          setUserPosts(postsResponse);
+          // Normalize posts: ensure each post has a 'user' field and 'createdAt' as Date
+          const normalizedPosts = postsResponse.map(post => ({
+            ...post,
+            user: post.user || (post as any).author,
+            createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
+          }));
+          setUserPosts(normalizedPosts);
         } catch (error) {
           console.error('PROFILE: Error fetching posts:', error);
           setUserPosts([]); // Set empty array on error
@@ -193,7 +199,13 @@ const Profile: React.FC = () => {
               // Fetch user posts
               try {
                 const postsResponse = await postsApi.getUserPosts(user.id);
-                setUserPosts(postsResponse);
+                // Normalize posts: ensure each post has a 'user' field and 'createdAt' as Date
+                const normalizedPosts = postsResponse.map(post => ({
+                  ...post,
+                  user: post.user || (post as any).author,
+                  createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
+                }));
+                setUserPosts(normalizedPosts);
               } catch (error) {
                 console.error('PROFILE: Error fetching posts:', error);
                 setUserPosts([]);
@@ -294,7 +306,13 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const handlePostCreated = (event: CustomEvent) => {
       const { post } = event.detail;
-      setUserPosts(currentPosts => [post, ...currentPosts]);
+      // Normalize the new post: ensure it has a 'user' field and 'createdAt' as Date
+      const normalizedPost = {
+        ...post,
+        user: post.user || (post as any).author,
+        createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
+      };
+      setUserPosts(currentPosts => [normalizedPost, ...currentPosts]);
     };
     
     window.addEventListener('postCreated', handlePostCreated as EventListener);
