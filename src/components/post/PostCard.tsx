@@ -44,7 +44,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   // Navigate to user profile
   const navigateToProfile = () => {
-    const isCurrentUser = currentUser && post.user.id === currentUser.id;
+    const isCurrentUser = currentUser && post.user?.id === currentUser.id;
     
     // First, clear any existing localStorage data to prevent conflicts
     localStorage.removeItem('activeProfileTab'); // Clear any active tab selection
@@ -54,11 +54,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     
     if (!isCurrentUser) {
       // Store the target user ID if it's not the current user
-      localStorage.setItem('viewProfileUserId', post.user.id);
-      
-      // If this is a faculty profile, store a special ID
-      if (post.user.role === 'faculty') {
-        localStorage.setItem('viewProfileUserId', 'faculty-1');
+      if (post.user?.id) {
+        localStorage.setItem('viewProfileUserId', post.user.id);
+        
+        // If this is a faculty profile, store a special ID
+        if (post.user?.role === 'faculty') {
+          localStorage.setItem('viewProfileUserId', 'faculty-1');
+        }
       }
     } else {
       // Clear any stored user ID if viewing own profile
@@ -102,7 +104,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   // Handle delete post
   const handleDeletePost = async () => {
-    if (!currentUser || post.user.id !== currentUser.id) return;
+    if (!currentUser || post.user?.id !== currentUser.id) return;
     
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
@@ -146,8 +148,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img
-              src={getAvatarUrl(post.user.avatar, post.user.name)}
-              alt={post.user.name}
+              src={getAvatarUrl(post.user?.avatar, post.user?.name || 'User')}
+              alt={post.user?.name || 'User'}
               className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
               onClick={navigateToProfile}
             />
@@ -156,7 +158,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 onClick={navigateToProfile}
               >
-                {post.user.name}
+                {post.user?.name || 'User'}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {formatDate(post.createdAt)}
@@ -165,7 +167,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
           
           {/* Post Menu */}
-          {currentUser && post.user.id === currentUser.id && (
+          {currentUser && post.user?.id === currentUser.id && (
             <div className="relative">
               <button
                 ref={buttonRef}

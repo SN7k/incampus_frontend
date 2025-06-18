@@ -88,7 +88,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
           </div>
           <div className="space-y-2">
             {filteredUsers.map(user => {
-              const userType = getUserType(user.id);
+              const userType = getUserType(user?.id || '');
               let statusBadge = null;
               
               // Determine badge based on user type
@@ -114,15 +114,15 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
               
               return (
                 <div 
-                  key={user.id}
+                  key={user?.id || 'unknown'}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
-                  onClick={() => onUserClick(parseInt(user.id))}
+                  onClick={() => user?.id && onUserClick(parseInt(user.id))}
                 >
                   <div className="flex items-center">
-                    <img src={getAvatarUrl(user.avatar, user.name)} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                    <img src={getAvatarUrl(user?.avatar, user?.name || 'User')} alt={user?.name || 'User'} className="w-8 h-8 rounded-full object-cover" />
                     <div className="ml-2">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.role === 'faculty' ? 'Faculty' : 'Computer Science'}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name || 'User'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role === 'faculty' ? 'Faculty' : 'Computer Science'}</p>
                     </div>
                   </div>
                   {statusBadge}

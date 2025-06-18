@@ -91,22 +91,22 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete, onSki
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {filteredSuggestions.map(user => (
           <div 
-            key={user.id}
+            key={user?.id || 'unknown'}
             className={`p-4 rounded-lg border ${
-              selectedUsers.includes(user.id)
+              selectedUsers.includes(user?.id || '')
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                 : 'border-gray-200 dark:border-gray-700'
             } transition-colors duration-200 cursor-pointer`}
-            onClick={() => toggleUserSelection(user.id)}
+            onClick={() => user?.id && toggleUserSelection(user.id)}
           >
             <div className="flex items-center">
               <div className="relative">
                 <img 
-                  src={getAvatarUrl(user.avatar, user.name)} 
-                  alt={user.name} 
+                  src={getAvatarUrl(user?.avatar, user?.name || 'User')} 
+                  alt={user?.name || 'User'} 
                   className="w-12 h-12 rounded-full object-cover"
                 />
-                {selectedUsers.includes(user.id) && (
+                {selectedUsers.includes(user?.id || '') && (
                   <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-gray-800">
                     <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"></path>
@@ -115,9 +115,9 @@ const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({ onComplete, onSki
                 )}
               </div>
               <div className="ml-3">
-                <div className="font-medium text-gray-900 dark:text-gray-100">{user.name}</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">{user?.name || 'User'}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {user.role === 'faculty' ? 'Faculty' : 'Student'} • {user.role === 'faculty' ? 'Department' : 'Batch'} {user.universityId.split('/')[2]}
+                  {user?.role === 'faculty' ? 'Faculty' : 'Student'} • {user?.role === 'faculty' ? 'Department' : 'Batch'} {user?.universityId?.split('/')[2] || 'Unknown'}
                 </div>
               </div>
             </div>

@@ -155,22 +155,22 @@ const FriendsList: React.FC = () => {
                   </p>
                 ) : (
                   friends.map(friend => (
-                    <div key={friend.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={friend?.id || 'unknown'} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
-                          src={getAvatarUrl(friend.avatar, friend.name)}
-                          alt={friend.name}
+                          src={getAvatarUrl(friend?.avatar, friend?.name || 'User')}
+                          alt={friend?.name || 'User'}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div className="ml-3">
-                          <p className="font-medium text-gray-800 dark:text-white">{friend.name}</p>
+                          <p className="font-medium text-gray-800 dark:text-white">{friend?.name || 'User'}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {friend.role === 'faculty' ? 'Faculty' : 'Student'}
+                            {friend?.role === 'faculty' ? 'Faculty' : 'Student'}
                           </p>
                         </div>
                       </div>
                       <button
-                        onClick={() => handleUnfriend(friend.id)}
+                        onClick={() => friend?.id && handleUnfriend(friend.id)}
                         className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
                         title="Unfriend"
                       >
@@ -190,30 +190,30 @@ const FriendsList: React.FC = () => {
                   </p>
                 ) : (
                   requests.map(request => (
-                    <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={request?.id || 'unknown'} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
-                          src={getAvatarUrl(request.sender.avatar, request.sender.name)}
-                          alt={request.sender.name}
+                          src={getAvatarUrl(request?.sender?.avatar, request?.sender?.name || 'User')}
+                          alt={request?.sender?.name || 'User'}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div className="ml-3">
-                          <p className="font-medium text-gray-800 dark:text-white">{request.sender.name}</p>
+                          <p className="font-medium text-gray-800 dark:text-white">{request?.sender?.name || 'User'}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {request.sender.role === 'faculty' ? 'Faculty' : 'Student'}
+                            {request?.sender?.role === 'faculty' ? 'Faculty' : 'Student'}
                           </p>
                         </div>
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleAcceptRequest(request.id)}
+                          onClick={() => request?.id && handleAcceptRequest(request.id)}
                           className="p-2 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full"
                           title="Accept"
                         >
                           <Check size={18} />
                         </button>
                         <button
-                          onClick={() => handleDeclineRequest(request.id)}
+                          onClick={() => request?.id && handleDeclineRequest(request.id)}
                           className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full"
                           title="Decline"
                         >
@@ -234,22 +234,22 @@ const FriendsList: React.FC = () => {
                   </p>
                 ) : (
                   suggestions.map(suggestion => (
-                    <div key={suggestion.user.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={suggestion?.user?.id || 'unknown'} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center">
                         <img
-                          src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
-                          alt={suggestion.user.name}
+                          src={getAvatarUrl(suggestion?.user?.avatar, suggestion?.user?.name || 'User')}
+                          alt={suggestion?.user?.name || 'User'}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div className="ml-3">
-                          <p className="font-medium text-gray-800 dark:text-white">{suggestion.user.name}</p>
+                          <p className="font-medium text-gray-800 dark:text-white">{suggestion?.user?.name || 'User'}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
+                            {suggestion?.mutualFriends || 0} mutual {(suggestion?.mutualFriends || 0) === 1 ? 'friend' : 'friends'}
                           </p>
                         </div>
                       </div>
                       <button
-                        onClick={() => handleAddFriend(suggestion.user.id)}
+                        onClick={() => suggestion?.user?.id && handleAddFriend(suggestion.user.id)}
                         className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full"
                         title="Add Friend"
                       >

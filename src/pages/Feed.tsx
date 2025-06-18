@@ -215,25 +215,29 @@ const Feed: React.FC = () => {
                 
                 <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => (
-                    <div key={suggestedUser.id} className="flex items-center justify-between">
+                    <div key={suggestedUser?.id || 'unknown'} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)}
-                          alt={suggestedUser.name}
+                          src={getAvatarUrl(suggestedUser?.avatar, suggestedUser?.name || 'User')}
+                          alt={suggestedUser?.name || 'User'}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {suggestedUser.name}
+                            {suggestedUser?.name || 'User'}
                           </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {suggestedUser.universityId}
+                            {suggestedUser?.universityId || 'Unknown'}
                           </p>
                         </div>
                       </div>
                       <button
                         onClick={() => {
                           // Navigate to user profile
+                          if (!suggestedUser?.id) {
+                            console.error('Feed - Suggested user ID is undefined!');
+                            return;
+                          }
                           console.log('Feed - View Profile clicked for user:', suggestedUser);
                           console.log('Feed - User ID being set:', suggestedUser.id);
                           localStorage.setItem('viewProfileUserId', suggestedUser.id);
