@@ -4,6 +4,7 @@ import { Bell, X, CheckCheck, Trash2, UserPlus, Heart, MessageCircle } from 'luc
 import { useNotifications, Notification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import Button from '../ui/Button';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 const NotificationPanel: React.FC = () => {
   const { 
@@ -120,7 +121,7 @@ const NotificationPanel: React.FC = () => {
                     <div className="flex-shrink-0 mr-3">
                       {notification.avatar ? (
                         <img
-                          src={notification.avatar}
+                          src={getAvatarUrl(notification.avatar, 'User')}
                           alt="User"
                           className="w-10 h-10 rounded-full object-cover"
                         />

@@ -11,7 +11,7 @@ export interface Notification {
   read: boolean;
   userId?: string; // ID of the user who triggered the notification
   postId?: string; // ID of the post related to the notification
-  avatar?: string; // Avatar of the user who triggered the notification
+  avatar?: string | { url: string; publicId?: string }; // Avatar of the user who triggered the notification
 }
 
 interface NotificationContextType {
