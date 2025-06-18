@@ -62,11 +62,11 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         )
         .map((user: User) => ({
           type: 'user' as const,
-          id: user._id,
+          id: user.id,
           title: user.name,
           subtitle: user.universityId,
           avatar: user.avatar,
-          url: `/profile/${user._id}`
+          url: `/profile/${user.id}`
         }));
 
       // Search posts
@@ -76,25 +76,25 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         )
         .map((post: Post) => ({
           type: 'post' as const,
-          id: post._id,
-          title: post.author.name,
+          id: post.id,
+          title: post.user.name,
           subtitle: post.content.length > 60 ? post.content.substring(0, 60) + '...' : post.content,
-          avatar: post.author.avatar,
-          url: `/post/${post._id}`
+          avatar: post.user.avatar,
+          url: `/post/${post.id}`
         }));
 
       // Search comments
       const commentResults = posts
         .flatMap((post: Post) => 
           post.comments
-            .filter((comment: any) => comment.text.toLowerCase().includes(normalizedQuery))
+            .filter((comment: any) => comment.content.toLowerCase().includes(normalizedQuery))
             .map((comment: any) => ({
               type: 'comment' as const,
-              id: comment._id,
+              id: comment.id,
               title: comment.user.name,
-              subtitle: comment.text.length > 60 ? comment.text.substring(0, 60) + '...' : comment.text,
+              subtitle: comment.content.length > 60 ? comment.content.substring(0, 60) + '...' : comment.content,
               avatar: comment.user.avatar,
-              url: `/post/${post._id}`
+              url: `/post/${post.id}`
             }))
         );
 

@@ -37,7 +37,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   
   // Filter users based on search query only (not by active tab)
   const filteredUsers = users
-    .filter(user => user._id !== currentUserId) // Exclude current user
+    .filter(user => user.id !== currentUserId) // Exclude current user
     .filter(user => 
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
@@ -50,7 +50,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
   
   // Determine user type for each filtered user
   const getUserType = (userId: string) => {
-    if (friends.some(friend => friend._id === userId)) {
+    if (friends.some(friend => friend.id === userId)) {
       return 'friend';
     } else if (friendRequests.some(req => req.id === userId)) {
       return 'request';
@@ -88,7 +88,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
           </div>
           <div className="space-y-2">
             {filteredUsers.map(user => {
-              const userType = getUserType(user._id);
+              const userType = getUserType(user.id);
               let statusBadge = null;
               
               // Determine badge based on user type
@@ -114,9 +114,9 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
               
               return (
                 <div 
-                  key={user._id}
+                  key={user.id}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
-                  onClick={() => onUserClick(parseInt(user._id))}
+                  onClick={() => onUserClick(parseInt(user.id))}
                 >
                   <div className="flex items-center">
                     <img src={getAvatarUrl(user.avatar, user.name)} alt={user.name} className="w-8 h-8 rounded-full object-cover" />

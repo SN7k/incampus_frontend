@@ -121,7 +121,7 @@ const Friends: React.FC = () => {
     try {
       await friendApi.sendRequest(suggestionId);
       // Remove from suggestions
-      setSuggestions(prev => prev.filter(sugg => sugg.user._id !== suggestionId));
+      setSuggestions(prev => prev.filter(sugg => sugg.user.id !== suggestionId));
     } catch (error) {
       console.error('Error sending friend request:', error);
     }
@@ -131,7 +131,7 @@ const Friends: React.FC = () => {
   const handleUnfriend = async (friendId: string) => {
     try {
       await friendApi.unfriend(friendId);
-      setFriends(prev => prev.filter(friend => friend._id !== friendId));
+      setFriends(prev => prev.filter(friend => friend.id !== friendId));
     } catch (error) {
       console.error('Error unfriending user:', error);
     }
@@ -203,7 +203,7 @@ const Friends: React.FC = () => {
                   </div>
                 ) : (
                   friends.map(friend => (
-                    <div key={friend._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={friend.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <img
                           src={getAvatarUrl(friend.avatar, friend.name)}
@@ -219,13 +219,13 @@ const Friends: React.FC = () => {
                       </div>
                       <div className="flex items-center space-x-2">
                           <button 
-                          onClick={() => navigateToProfile(friend._id)}
+                          onClick={() => navigateToProfile(friend.id)}
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                         >
                           View Profile
                           </button>
                               <button 
-                                onClick={() => handleUnfriend(friend._id)}
+                                onClick={() => handleUnfriend(friend.id)}
                           className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                               >
                           <UserMinus className="w-5 h-5" />
@@ -297,7 +297,7 @@ const Friends: React.FC = () => {
                   </div>
                 ) : (
                   suggestions.map(suggestion => (
-                    <div key={suggestion.user._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={suggestion.user.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <img
                           src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
@@ -316,13 +316,13 @@ const Friends: React.FC = () => {
                           </div>
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => navigateToProfile(suggestion.user._id)}
+                          onClick={() => navigateToProfile(suggestion.user.id)}
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                         >
                           View Profile
                         </button>
                             <button 
-                          onClick={() => handleAddFriend(suggestion.user._id)}
+                          onClick={() => handleAddFriend(suggestion.user.id)}
                           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
                         >
                           <UserPlus className="w-4 h-4 inline mr-1" />

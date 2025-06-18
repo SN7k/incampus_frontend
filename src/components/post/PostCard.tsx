@@ -14,20 +14,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes.length);
+  const [likeCount, setLikeCount] = useState(post.likes);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
-  // Validate post structure
-  if (!post || !post._id || !post.author) {
-    console.error('Invalid post structure:', post);
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <p className="text-gray-500 dark:text-gray-400">Invalid post data</p>
-      </div>
-    );
-  }
-
   const handleLike = async () => {
     if (!currentUser || loading) return;
     
@@ -35,14 +25,14 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     try {
       if (isLiked) {
         // Unlike
-        const response = await postsApi.unlikePost(post._id);
-        setLikeCount(response.likes);
-        setIsLiked(response.isLiked);
+        await postsApi.unlikePost(post.id);
+        setLikeCount(prev => prev - 1);
+        setIsLiked(false);
       } else {
         // Like
-        const response = await postsApi.likePost(post._id);
-        setLikeCount(response.likes);
-        setIsLiked(response.isLiked);
+        await postsApi.likePost(post.id);
+        setLikeCount(prev => prev + 1);
+        setIsLiked(true);
       }
     } catch (error: unknown) {
       console.error('Error toggling like:', error);
@@ -54,7 +44,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   // Navigate to user profile
   const navigateToProfile = () => {
-    const isCurrentUser = currentUser && post.author._id === currentUser._id;
+    const isCurrentUser = currentUser && post.user.id === currentUser.id;
     
     // First, clear any existing localStorage data to prevent conflicts
     localStorage.removeItem('activeProfileTab'); // Clear any active tab selection
@@ -64,10 +54,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     
     if (!isCurrentUser) {
       // Store the target user ID if it's not the current user
-      localStorage.setItem('viewProfileUserId', post.author._id);
+      localStorage.setItem('viewProfileUserId', post.user.id);
       
       // If this is a faculty profile, store a special ID
-      if (post.author.role === 'faculty') {
+      if (post.user.role === 'faculty') {
         localStorage.setItem('viewProfileUserId', 'faculty-1');
       }
     } else {
@@ -112,15 +102,15 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   // Handle delete post
   const handleDeletePost = async () => {
-    if (!currentUser || post.author._id !== currentUser._id) return;
+    if (!currentUser || post.user.id !== currentUser.id) return;
     
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        await postsApi.deletePost(post._id);
+        await postsApi.deletePost(post.id);
         
         // Dispatch event to notify other components
         window.dispatchEvent(new CustomEvent('postDeleted', { 
-          detail: { postId: post._id } 
+          detail: { postId: post.id } 
         }));
       } catch (error: unknown) {
         console.error('Error deleting post:', error);
@@ -156,8 +146,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img
-              src={getAvatarUrl(post.author.avatar, post.author.name)}
-              alt={post.author.name}
+              src={getAvatarUrl(post.user.avatar, post.user.name)}
+              alt={post.user.name}
               className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
               onClick={navigateToProfile}
             />
@@ -166,7 +156,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 onClick={navigateToProfile}
               >
-                {post.author.name}
+                {post.user.name}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {formatDate(post.createdAt)}
@@ -175,7 +165,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
           
           {/* Post Menu */}
-          {currentUser && post.author._id === currentUser._id && (
+          {currentUser && post.user.id === currentUser.id && (
             <div className="relative">
               <button
                 ref={buttonRef}
@@ -211,19 +201,19 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </p>
         
         {/* Post Media */}
-        {post.images && post.images.length > 0 && (
+        {post.media && post.media.length > 0 && (
           <div className="mb-4">
-            {post.images.map((image, index) => (
+            {post.media.map((media, index) => (
               <div key={index} className="mb-2">
-                {image.type === 'image' ? (
+                {media.type === 'image' ? (
                   <img
-                    src={image.url}
+                    src={media.url}
                     alt={`Post image ${index + 1}`}
                     className="w-full rounded-lg object-cover max-h-96"
                   />
                 ) : (
                   <video
-                    src={image.url}
+                    src={media.url}
                     controls
                     className="w-full rounded-lg max-h-96"
                   />

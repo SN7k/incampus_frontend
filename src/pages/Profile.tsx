@@ -25,10 +25,9 @@ const Profile: React.FC = () => {
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<ProfileData>>({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Animation variants
   const container = {
@@ -67,7 +66,7 @@ const Profile: React.FC = () => {
       const userLikesStr = localStorage.getItem('userProfileLikes');
       if (userLikesStr && user) {
         const userLikes = JSON.parse(userLikesStr);
-        return userLikes[`${user._id}_${profileId}`] || false;
+        return userLikes[`${user.id}_${profileId}`] || false;
       }
       return false;
     } catch (error) {
@@ -89,7 +88,7 @@ const Profile: React.FC = () => {
       if (user) {
         const userLikesStr = localStorage.getItem('userProfileLikes');
         const userLikes = userLikesStr ? JSON.parse(userLikesStr) : {};
-        userLikes[`${user._id}_${profileId}`] = hasLiked;
+        userLikes[`${user.id}_${profileId}`] = hasLiked;
         localStorage.setItem('userProfileLikes', JSON.stringify(userLikes));
       }
     } catch (error) {
@@ -99,7 +98,7 @@ const Profile: React.FC = () => {
       
       // Load profile likes when viewing a profile
   useEffect(() => {
-      const targetProfileId = viewingUserId || (user ? user._id : '');
+      const targetProfileId = viewingUserId || (user ? user.id : '');
       if (targetProfileId) {
         const likes = getProfileLikes(targetProfileId);
         const userHasLiked = hasUserLikedProfile(targetProfileId);
@@ -112,65 +111,36 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoadingProfile(true);
-      setError(null);
       try {
         const targetUserId = localStorage.getItem('viewProfileUserId');
-        console.log('Target user ID from localStorage:', targetUserId);
         setViewingUserId(targetUserId); // null if viewing own profile, userId if viewing someone else
         
-        const userIdToFetch = targetUserId || user?._id;
-        console.log('User ID to fetch:', userIdToFetch);
-        console.log('Current user:', user);
-        
-        if (!userIdToFetch) {
-          console.error('No user ID to fetch profile for');
-          setError('No user ID found. Please try logging in again.');
-          setIsLoadingProfile(false);
-          return;
-        }
+        const userIdToFetch = targetUserId || user?.id;
+        if (!userIdToFetch) return;
         
         // Fetch profile
-        console.log('Fetching profile for user:', userIdToFetch);
         const profile = await profileApi.getUserProfile(userIdToFetch);
-        console.log('Profile loaded:', profile);
         setProfileData(profile);
-        
         // Fetch posts
-        console.log('Fetching posts for user:', userIdToFetch);
         const posts = await postsApi.getUserPosts(userIdToFetch);
-        console.log('Posts loaded:', posts);
         setUserPosts(posts);
-        
         // Fetch friends
-        console.log('Fetching friends');
         const friends = await friendApi.getFriends();
-        console.log('Friends loaded:', friends);
         setFriendsList(friends);
-      } catch (error) {
+            } catch (error) {
         console.error('Error loading profile data:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load profile data';
-        setError(errorMessage);
-        // Don't set profileData to null immediately, let the error be handled gracefully
       } finally {
-        setIsLoadingProfile(false);
-      }
-    };
+          setIsLoadingProfile(false);
+        }
+      };
     fetchData();
   }, [user]);
-
-  // Cleanup viewProfileUserId when viewing own profile
-  useEffect(() => {
-    if (!viewingUserId && user?._id) {
-      // If we're viewing our own profile, clear the viewProfileUserId
-      localStorage.removeItem('viewProfileUserId');
-    }
-  }, [viewingUserId, user?._id]);
 
   // Listen for post deletion events
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
       const { postId } = event.detail;
-      setUserPosts(currentPosts => currentPosts.filter(post => post._id !== postId));
+      setUserPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
     };
     
     window.addEventListener('postDeleted', handlePostDeleted as EventListener);
@@ -340,53 +310,15 @@ const Profile: React.FC = () => {
     );
   }
 
-  if (!profileData && !isLoadingProfile) {
+  if (!profileData) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <div className="text-gray-500 mb-4">
-              {error ? (
-                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-                  <p className="mb-2">{error}</p>
-                  <button 
-                    onClick={() => {
-                      setError(null);
-                      setIsLoadingProfile(true);
-                      // Retry fetching data
-                      const fetchData = async () => {
-                        try {
-                          const targetUserId = localStorage.getItem('viewProfileUserId');
-                          const userIdToFetch = targetUserId || user?._id;
-                          if (userIdToFetch) {
-                            const profile = await profileApi.getUserProfile(userIdToFetch);
-                            setProfileData(profile);
-                            const posts = await postsApi.getUserPosts(userIdToFetch);
-                            setUserPosts(posts);
-                            const friends = await friendApi.getFriends();
-                            setFriendsList(friends);
-                          }
-                        } catch (error) {
-                          console.error('Retry failed:', error);
-                          setError('Failed to load profile. Please try again.');
-                        } finally {
-                          setIsLoadingProfile(false);
-                        }
-                      };
-                      fetchData();
-                    }}
-                    className="underline hover:no-underline"
-                  >
-                    Try again
-                  </button>
+            <div className="text-gray-500 mb-4">Profile not found</div>
                 </div>
-              ) : (
-                'Profile not found'
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+                </div>
+                    </div>
     );
   }
 
@@ -581,7 +513,7 @@ const Profile: React.FC = () => {
                     variants={item} 
                     className={`px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md ${hasLiked ? 'bg-gradient-to-br from-emerald-200 to-emerald-300 dark:from-emerald-600 dark:to-emerald-500' : 'bg-gradient-to-br from-emerald-50/80 to-emerald-100/70 dark:from-emerald-800/40 dark:to-emerald-700/30'}`}
                     onClick={() => {
-                      const targetProfileId = viewingUserId || (user ? user._id : '');
+                      const targetProfileId = viewingUserId || (user ? user.id : '');
                       if (!targetProfileId || !user) return;
                       
                       if (hasLiked) {
@@ -711,7 +643,7 @@ const Profile: React.FC = () => {
               {userPosts.length > 0 ? (
                 <div className="space-y-6">
                   {userPosts.map((post) => (
-                    <motion.div key={post._id} variants={item}>
+                    <motion.div key={post.id} variants={item}>
                       <PostCard post={post} />
                     </motion.div>
                   ))}
@@ -774,8 +706,8 @@ const Profile: React.FC = () => {
               {(() => {
                 // Get all media from user posts
                 const allMedia = userPosts
-                  .filter(post => post.images && post.images.length > 0)
-                  .flatMap(post => post.images || [])
+                  .filter(post => post.media && post.media.length > 0)
+                  .flatMap(post => post.media || [])
                   .filter(media => media.type === 'image');
                 
                 if (allMedia.length === 0) {
@@ -808,7 +740,7 @@ const Profile: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                     {allMedia.map((media, index) => (
                       <motion.div 
-                        key={`${media.url}_${index}`}
+                        key={media.id || index}
                         className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.98 }}
@@ -871,7 +803,7 @@ const Profile: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
                     {filteredFriends.map((friend) => (
                       <motion.div 
-                        key={friend._id}
+                        key={friend.id}
                         className="flex items-center p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
                         whileHover={{ scale: 1.02 }}
                       >
@@ -888,11 +820,9 @@ const Profile: React.FC = () => {
                           <button 
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs sm:text-sm px-2 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                             onClick={() => {
-                              // Navigate to friend's profile using proper navigation
-                              localStorage.setItem('viewProfileUserId', friend._id);
-                              localStorage.setItem('currentPage', 'profile');
-                              // Dispatch navigation event instead of reloading
-                              window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'profile' } }));
+                              // Navigate to friend's profile
+                                    localStorage.setItem('viewProfileUserId', friend.id);
+                                    window.location.reload();
                             }}
                           >
                             View Profile

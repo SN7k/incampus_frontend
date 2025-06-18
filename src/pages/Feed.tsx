@@ -19,26 +19,19 @@ const Feed: React.FC = () => {
   
   // Load posts from API
   const loadPosts = useCallback(async () => {
-    if (!user) {
-      console.log('No user found, skipping loadPosts');
-      return;
-    }
+    if (!user) return;
     
     try {
-      console.log('Loading posts for user:', user._id);
       setLoading(true);
       setError(null);
       
       // Get feed posts from API
       const feedPosts = await postsApi.getFeedPosts();
-      console.log('Feed posts loaded:', feedPosts);
       setPosts(feedPosts);
     } catch (error: unknown) {
       console.error('Error loading posts:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load posts';
       setError(errorMessage);
-      // Set empty posts array to prevent blank screen
-      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -59,20 +52,15 @@ const Feed: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    if (user) {
-      console.log('User authenticated, loading feed data...');
-      loadPosts();
-      loadFriendSuggestions();
-    } else {
-      console.log('No user authenticated, skipping feed load');
-    }
-  }, [loadPosts, loadFriendSuggestions, user]);
+    loadPosts();
+    loadFriendSuggestions();
+  }, [loadPosts, loadFriendSuggestions]);
 
   // Listen for post deletion events
   useEffect(() => {
     const handlePostDeleted = (event: CustomEvent) => {
       const { postId } = event.detail;
-      setPosts(currentPosts => currentPosts.filter(post => post._id !== postId));
+      setPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
     };
     
     window.addEventListener('postDeleted', handlePostDeleted as EventListener);
@@ -84,22 +72,11 @@ const Feed: React.FC = () => {
   // Listen for new post creation events
   useEffect(() => {
     const handlePostCreated = (event: CustomEvent) => {
-      try {
-        const { post } = event.detail;
-        console.log('New post detected:', post);
-        
-        // Validate post structure before adding
-        if (!post || !post._id || !post.author) {
-          console.error('Invalid post structure received:', post);
-          return;
-        }
-        
-        // Add the new post to the beginning of the feed
-        setPosts(currentPosts => [post, ...currentPosts]);
-        console.log('Post added to feed successfully');
-      } catch (error) {
-        console.error('Error handling post creation event:', error);
-      }
+      const { post } = event.detail;
+      console.log('New post detected:', post);
+      
+      // Add the new post to the beginning of the feed
+      setPosts(currentPosts => [post, ...currentPosts]);
     };
     
     window.addEventListener('postCreated', handlePostCreated as EventListener);
@@ -111,20 +88,14 @@ const Feed: React.FC = () => {
   // Handle refresh function
   const handleRefresh = async () => {
     try {
-      console.log('Refreshing feed...');
       await loadPosts();
       await loadFriendSuggestions();
-      console.log('Feed refresh completed');
     } catch (error: unknown) {
       console.error('Error refreshing feed:', error);
-      // Don't let refresh errors break the UI
     }
   };
 
-  if (!user) {
-    console.log('No user found, not rendering feed');
-    return null;
-  }
+  if (!user) return null;
 
   if (loading) {
     return (
@@ -209,7 +180,7 @@ const Feed: React.FC = () => {
               <div className="space-y-4">
                 {posts.map((post) => (
                   <motion.div
-                    key={post._id}
+                    key={post.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
@@ -234,7 +205,7 @@ const Feed: React.FC = () => {
                 
                 <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => (
-                    <div key={suggestedUser._id} className="flex items-center justify-between">
+                    <div key={suggestedUser.id} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <img
                           src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)}
@@ -252,12 +223,13 @@ const Feed: React.FC = () => {
                       </div>
                       <button
                         onClick={() => {
-                          localStorage.setItem('viewProfileUserId', suggestedUser._id);
+                          // Navigate to user profile
+                          localStorage.setItem('viewProfileUserId', suggestedUser.id);
                           window.dispatchEvent(new CustomEvent('navigate', { 
-                            detail: { page: 'profile', userId: suggestedUser._id }
+                            detail: { page: 'profile', userId: suggestedUser.id } 
                           }));
                         }}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
+                        className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
                       >
                         View Profile
                       </button>
