@@ -211,19 +211,19 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </p>
         
         {/* Post Media */}
-        {post.media && post.media.length > 0 && (
+        {post.images && post.images.length > 0 && (
           <div className="mb-4">
-            {post.media.map((media, index) => (
+            {post.images.map((image, index) => (
               <div key={index} className="mb-2">
-                {media.type === 'image' ? (
+                {image.type === 'image' ? (
                   <img
-                    src={media.url}
+                    src={image.url}
                     alt={`Post image ${index + 1}`}
                     className="w-full rounded-lg object-cover max-h-96"
                   />
                 ) : (
                   <video
-                    src={media.url}
+                    src={image.url}
                     controls
                     className="w-full rounded-lg max-h-96"
                   />

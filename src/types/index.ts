@@ -20,7 +20,7 @@ export interface Post {
   userId: string;
   user: User;
   content: string;
-  media?: Media[];
+  images?: Image[];
   likes: number;
   comments: Comment[];
   createdAt: Date;
@@ -32,6 +32,12 @@ export interface Comment {
   user: User;
   content: string;
   createdAt: Date;
+}
+
+export interface Image {
+  type: 'image' | 'video';
+  url: string;
+  publicId?: string;
 }
 
 export interface Media {

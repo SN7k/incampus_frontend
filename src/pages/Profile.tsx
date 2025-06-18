@@ -947,13 +947,13 @@ const Profile: React.FC = () => {
               </div>
               {/* Extract all images from user posts */}
               {(() => {
-                // Get all media from user posts
-                const allMedia = userPosts
-                  .filter(post => post.media && post.media.length > 0)
-                  .flatMap(post => post.media || [])
-                  .filter(media => media.type === 'image');
+                // Get all images from user posts
+                const allImages = userPosts
+                  .filter(post => post.images && post.images.length > 0)
+                  .flatMap(post => post.images || [])
+                  .filter(image => image.type === 'image');
                 
-                if (allMedia.length === 0) {
+                if (allImages.length === 0) {
                   return (
                     <div className="text-center py-8">
                       <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
@@ -981,15 +981,15 @@ const Profile: React.FC = () => {
                 
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                    {allMedia.map((media, index) => (
+                    {allImages.map((image, index) => (
                       <motion.div 
-                        key={media.id || index}
+                        key={image.url || index}
                         className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         <img 
-                          src={media.url} 
+                          src={image.url} 
                           alt="Gallery image" 
                           className="w-full h-full object-cover"
                           loading="lazy"
