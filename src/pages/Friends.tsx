@@ -327,17 +327,17 @@ const Friends: React.FC = () => {
                               <div className="flex items-center space-x-2 flex-shrink-0 ml-3">
                                 <button 
                                   onClick={() => handleAcceptRequest(request.id)}
-                                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                  className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg"
+                                  title="Accept"
                                 >
-                                  <Check className="w-4 h-4 inline mr-1" />
-                                  Accept
+                                  <Check className="w-4 h-4" />
                                 </button>
                                 <button 
                                   onClick={() => handleDeclineRequest(request.id)}
-                                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg"
+                                  title="Decline"
                                 >
-                                  <X className="w-4 h-4 inline mr-1" />
-                                  Decline
+                                  <X className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
@@ -394,10 +394,10 @@ const Friends: React.FC = () => {
                                 </button>
                                 <button 
                                   onClick={() => handleCancelRequest(request.id)}
-                                  className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                  className="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded-lg"
+                                  title="Cancel"
                                 >
-                                  <X className="w-4 h-4 inline mr-1" />
-                                  Cancel
+                                  <X className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
