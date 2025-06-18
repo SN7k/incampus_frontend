@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSearch } from '../../contexts/SearchContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { Search, Bell, Home, LogOut, Settings, HelpCircle, Shield, ChevronRight, Users, ChevronDown } from 'lucide-react';
+import { Search, Bell, Home, LogOut, Settings, HelpCircle, Shield, ChevronRight, Users } from 'lucide-react';
 import Button from '../ui/Button';
 import SearchModal from '../search/SearchModal';
 import NotificationPanel from '../notification/NotificationPanel';
