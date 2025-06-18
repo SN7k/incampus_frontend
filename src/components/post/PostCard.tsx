@@ -290,7 +290,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               )}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center truncate">
-              {formatDate(post.createdAt)} · {post.user?.universityId || 'Unknown'}
+              {formatDate(post.createdAt)} · {post.user?.universityId || (post.user?.role === 'faculty' ? 'Faculty' : 'Student')}
             </div>
           </div>
         </div>
