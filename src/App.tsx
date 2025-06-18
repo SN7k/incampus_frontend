@@ -24,10 +24,10 @@ function AppContent() {
   const { isDarkMode } = useTheme();
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('login');
   
-  // Initialize currentPage from localStorage or default to 'feed'
-  const [currentPage, setCurrentPage] = React.useState<AppPage>(() => {
-    const savedPage = localStorage.getItem('currentPage');
-    return (savedPage === 'profile' || savedPage === 'feed' || savedPage === 'friends' || savedPage === 'settings') ? savedPage as AppPage : 'feed';
+  // Initialize current page from localStorage
+  const [currentPage, setCurrentPage] = useState<AppPage>(() => {
+    const savedPage = localStorage.getItem('currentPage') as AppPage;
+    return savedPage && ['feed', 'profile', 'friends', 'settings'].includes(savedPage) ? savedPage : 'feed';
   });
   
   // State to track friend requests
@@ -51,13 +51,9 @@ function AppContent() {
   // Listen for navigation events
   React.useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
-      console.log('=== APP NAVIGATION DEBUG ===');
-      console.log('App component - Navigation event received:', event.detail);
       if (event.detail?.page) {
-        console.log('App component - Setting currentPage to:', event.detail.page);
         setCurrentPage(event.detail.page);
       }
-      console.log('=== END APP NAVIGATION DEBUG ===');
     };
     
     window.addEventListener('navigate', handleNavigation as EventListener);
@@ -351,10 +347,7 @@ function AppContent() {
       </div>
       
       {isAuthenticated && currentPage === 'feed' && <Feed />}
-      {isAuthenticated && currentPage === 'profile' && (() => {
-        console.log('App component - Rendering Profile component, currentPage:', currentPage);
-        return <Profile />;
-      })()}
+      {isAuthenticated && currentPage === 'profile' && <Profile />}
       {isAuthenticated && currentPage === 'friends' && <Friends />}
       {isAuthenticated && currentPage === 'settings' && <Settings />}
 

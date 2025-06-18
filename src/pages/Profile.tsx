@@ -109,6 +109,13 @@ const Profile: React.FC = () => {
       }
   }, [viewingUserId, user, hasUserLikedProfile]);
 
+  // Initialize viewingUserId from localStorage on mount
+  useEffect(() => {
+    const targetUserId = localStorage.getItem('viewProfileUserId');
+    console.log('Profile component - Initial viewProfileUserId from localStorage:', targetUserId);
+    setViewingUserId(targetUserId);
+  }, []); // Only run on mount
+
   // Fetch profile, posts, and friends for the current or viewed user
   useEffect(() => {
     const fetchData = async () => {
@@ -156,67 +163,6 @@ const Profile: React.FC = () => {
     };
     fetchData();
   }, [user, viewingUserId]); // Only depend on user and viewingUserId, not localStorage
-
-  // Initialize viewingUserId from localStorage on mount
-  useEffect(() => {
-    const targetUserId = localStorage.getItem('viewProfileUserId');
-    console.log('Profile component - Initial viewProfileUserId from localStorage:', targetUserId);
-    setViewingUserId(targetUserId);
-  }, []); // Only run on mount
-
-  // Watch for viewProfileUserId changes via custom events
-  useEffect(() => {
-    const handleViewProfileUserIdChange = (event: CustomEvent) => {
-      console.log('=== PROFILE EVENT DEBUG ===');
-      const { userId } = event.detail;
-      console.log('Profile component - Received viewProfileUserIdChanged event:', userId);
-      console.log('Profile component - Current viewingUserId state:', viewingUserId);
-      console.log('Profile component - Event detail:', event.detail);
-      
-      if (userId !== viewingUserId) {
-        console.log('Profile component - viewProfileUserId changed, updating state');
-        setViewingUserId(userId);
-      } else {
-        console.log('Profile component - viewProfileUserId unchanged, no update needed');
-      }
-      console.log('=== END PROFILE EVENT DEBUG ===');
-    };
-
-    // Listen for custom event
-    console.log('Profile component - Adding viewProfileUserIdChanged event listener');
-    window.addEventListener('viewProfileUserIdChanged', handleViewProfileUserIdChange as EventListener);
-
-    return () => {
-      console.log('Profile component - Removing viewProfileUserIdChanged event listener');
-      window.removeEventListener('viewProfileUserIdChanged', handleViewProfileUserIdChange as EventListener);
-    };
-  }, [viewingUserId]);
-
-  // Also listen for navigation events to handle viewProfileUserId changes
-  useEffect(() => {
-    const handleNavigation = (event: CustomEvent) => {
-      console.log('=== PROFILE NAVIGATION DEBUG ===');
-      console.log('Profile component - Navigation event received:', event.detail);
-      if (event.detail?.page === 'profile' && event.detail?.userId) {
-        console.log('Profile component - Navigation event received with userId:', event.detail.userId);
-        const targetUserId = event.detail.userId;
-        if (targetUserId !== viewingUserId) {
-          console.log('Profile component - Updating viewingUserId from navigation event');
-          setViewingUserId(targetUserId);
-        } else {
-          console.log('Profile component - viewingUserId unchanged from navigation event');
-        }
-      }
-      console.log('=== END PROFILE NAVIGATION DEBUG ===');
-    };
-
-    console.log('Profile component - Adding navigate event listener');
-    window.addEventListener('navigate', handleNavigation as EventListener);
-    return () => {
-      console.log('Profile component - Removing navigate event listener');
-      window.removeEventListener('navigate', handleNavigation as EventListener);
-    };
-  }, [viewingUserId]);
 
   // Check if friend request has already been sent when viewing another user's profile
   useEffect(() => {
@@ -472,6 +418,17 @@ const Profile: React.FC = () => {
         >
           Test Navigation
         </button>
+        {viewingUserId && viewingUserId !== user?.id && (
+          <button 
+            onClick={() => {
+              localStorage.removeItem('viewProfileUserId');
+              window.location.reload();
+            }}
+            className="mt-1 px-2 py-1 bg-green-500 text-white rounded text-xs"
+          >
+            Back to My Profile
+          </button>
+        )}
       </div>
       
       {/* Loading state */}
