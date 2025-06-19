@@ -190,12 +190,10 @@ const Navbar: React.FC = () => {
           {/* Logo and navigation */}
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <span 
-                className="text-xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                onClick={navigateToFeed}
-              >
-                InCampus
-              </span>
+              <a href="/" className="flex items-center">
+                <img src="/navlogo.png" alt="Incampus Logo" style={{ height: 40, width: 'auto' }} />
+                <span className="ml-2 font-bold text-xl">INCAMPUS</span>
+              </a>
             </div>
             
             {/* Desktop navigation */}
