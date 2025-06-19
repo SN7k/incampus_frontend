@@ -13,6 +13,7 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { user: currentUser } = useAuth();
+  const [localPost, setLocalPost] = useState<Post>(post);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes.length);
   const [showShareTooltip, setShowShareTooltip] = useState(false);
@@ -23,6 +24,12 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
+  // Update local state when prop changes
+  useEffect(() => {
+    setLocalPost(post);
+    setLikesCount(post.likes.length);
+  }, [post]);
+
   // Load likes from localStorage on component mount
   useEffect(() => {
     if (currentUser) {
@@ -50,29 +57,27 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     try {
       // Update local state
       const newIsLiked = !isLiked;
-      const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
-      
-      setIsLiked(newIsLiked);
-      setLikesCount(newLikesCount);
-      
-      // Call API to update like status
+      let updatedPost: Post;
       if (newIsLiked) {
-        await postsApi.likePost(post.id);
+        updatedPost = await postsApi.likePost(localPost.id);
       } else {
-        await postsApi.unlikePost(post.id);
+        updatedPost = await postsApi.unlikePost(localPost.id);
       }
+      setLocalPost(updatedPost);
+      setLikesCount(updatedPost.likes.length);
+      setIsLiked(newIsLiked);
       
       // Update localStorage for user's liked posts
       const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
       if (newIsLiked) {
-        likedPosts[post.id] = true;
+        likedPosts[localPost.id] = true;
       } else {
-        delete likedPosts[post.id];
+        delete likedPosts[localPost.id];
       }
       localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
       
       // Update localStorage for post's likes
-      let postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
+      let postLikes = JSON.parse(localStorage.getItem(`post_${localPost.id}_likes`) || '[]');
       if (newIsLiked) {
         // Add user to likes if not already present
         if (!postLikes.includes(currentUser.id)) {
@@ -82,13 +87,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         // Remove user from likes
         postLikes = postLikes.filter((id: string) => id !== currentUser.id);
       }
-      localStorage.setItem(`post_${post.id}_likes`, JSON.stringify(postLikes));
+      localStorage.setItem(`post_${localPost.id}_likes`, JSON.stringify(postLikes));
       
       // Dispatch a custom event to notify other components about the like change
       window.dispatchEvent(new CustomEvent('postLikeChanged', { 
         detail: { 
-          postId: post.id,
-          likesCount: newLikesCount,
+          postId: localPost.id,
+          likesCount: updatedPost.likes.length,
           isLiked: newIsLiked,
           userId: currentUser.id
         } 
@@ -99,8 +104,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         window.dispatchEvent(new CustomEvent('postLike', { 
           detail: { 
             fromUser: currentUser.id,
-            postId: post.id,
-            postAuthorId: post.user.id
+            postId: localPost.id,
+            postAuthorId: localPost.user.id
           } 
         }));
       }
