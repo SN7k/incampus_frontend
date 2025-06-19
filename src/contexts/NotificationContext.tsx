@@ -61,7 +61,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         type = 'friend_request';
         break;
       case 'like':
-        message = `${apiNotif.sender.name} liked your post`;
+        if (apiNotif.post) {
+          message = `${apiNotif.sender.name} liked your post`;
+        } else {
+          message = `${apiNotif.sender.name} liked your profile`;
+        }
         type = 'like';
         break;
       case 'comment':
