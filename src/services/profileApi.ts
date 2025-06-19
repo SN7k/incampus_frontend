@@ -112,6 +112,20 @@ export const setupProfile = async (profileData: {
   return response.data.data;
 };
 
+/**
+ * Like a user profile
+ */
+export const likeProfile = async (userId: string): Promise<void> => {
+  await API.post(`/profile/${userId}/like`);
+};
+
+/**
+ * Unlike a user profile
+ */
+export const unlikeProfile = async (userId: string): Promise<void> => {
+  await API.post(`/profile/${userId}/unlike`);
+};
+
 // Export all functions as a single object for easier imports
 export const profileApi = {
   getMyProfile,
@@ -122,5 +136,7 @@ export const profileApi = {
   updateEducation,
   updateExperience,
   updateSkills,
-  setupProfile
+  setupProfile,
+  likeProfile,
+  unlikeProfile
 };

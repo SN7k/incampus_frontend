@@ -181,28 +181,7 @@ const Profile: React.FC = () => {
     }
   }, [user]);
   
-  // Function to update profile likes in localStorage
-  const updateProfileLikes = (profileId: string, newCount: number, hasLiked: boolean) => {
-    try {
-      // Update profile likes count
-      const profileLikesStr = localStorage.getItem('profileLikes');
-      const profileLikes = profileLikesStr ? JSON.parse(profileLikesStr) : {};
-      profileLikes[profileId] = newCount;
-      localStorage.setItem('profileLikes', JSON.stringify(profileLikes));
-      
-      // Update user's like status for this profile
-      if (user) {
-        const userLikesStr = localStorage.getItem('userProfileLikes');
-        const userLikes = userLikesStr ? JSON.parse(userLikesStr) : {};
-        userLikes[`${user.id}_${profileId}`] = hasLiked;
-        localStorage.setItem('userProfileLikes', JSON.stringify(userLikes));
-      }
-    } catch (error) {
-      console.error('Error updating profile likes:', error);
-    }
-  };
-      
-      // Load profile likes when viewing a profile
+  // Load profile likes when viewing a profile
   useEffect(() => {
       const targetProfileId = viewingUserId || (user ? user.id : '');
       if (targetProfileId) {
@@ -621,6 +600,29 @@ const Profile: React.FC = () => {
     console.log('PROFILE: Active tab changed to:', activeTab);
   }, [activeTab]);
 
+  // Fetch real like count and like state on profile load
+  useEffect(() => {
+    if (profileData && user) {
+      setLikeCount(Array.isArray(profileData.profileLikes) ? profileData.profileLikes.length : 0);
+      setHasLiked(Array.isArray(profileData.profileLikes) ? profileData.profileLikes.includes(user.id) : false);
+    }
+  }, [profileData, user]);
+
+  // Like/unlike handler
+  const handleProfileLike = async () => {
+    const targetProfileId = viewingUserId || (user ? user.id : '');
+    if (!targetProfileId || !user) return;
+    if (hasLiked) {
+      setLikeCount(likeCount - 1);
+      setHasLiked(false);
+      try { await profileApi.unlikeProfile(targetProfileId); } catch {}
+    } else {
+      setLikeCount(likeCount + 1);
+      setHasLiked(true);
+      try { await profileApi.likeProfile(targetProfileId); } catch {}
+    }
+  };
+
   if (isLoadingProfile) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -870,22 +872,7 @@ const Profile: React.FC = () => {
                   <motion.div 
                     variants={item} 
                     className={`px-3 sm:px-4 py-3 rounded-xl transition-colors duration-200 cursor-pointer hover:shadow-md ${hasLiked ? 'bg-gradient-to-br from-emerald-200 to-emerald-300 dark:from-emerald-600 dark:to-emerald-500' : 'bg-gradient-to-br from-emerald-50/80 to-emerald-100/70 dark:from-emerald-800/40 dark:to-emerald-700/30'}`}
-                    onClick={() => {
-                      const targetProfileId = viewingUserId || (user ? user.id : '');
-                      if (!targetProfileId || !user) return;
-                      
-                      if (hasLiked) {
-                        const newCount = likeCount - 1;
-                        setLikeCount(newCount);
-                        setHasLiked(false);
-                        updateProfileLikes(targetProfileId, newCount, false);
-                      } else {
-                        const newCount = likeCount + 1;
-                        setLikeCount(newCount);
-                        setHasLiked(true);
-                        updateProfileLikes(targetProfileId, newCount, true);
-                      }
-                    }}
+                    onClick={handleProfileLike}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.2 }}

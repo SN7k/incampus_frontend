@@ -43,6 +43,7 @@ export interface ProfileData {
   interests: string[];
   posts: Post[];
   universityId: string;
+  profileLikes?: string[];
 }
 
 // API response types
