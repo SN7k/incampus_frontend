@@ -191,8 +191,7 @@ const Navbar: React.FC = () => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <a href="/" className="flex items-center">
-                <img src="/navlogo.png" alt="Incampus Logo" style={{ height: 40, width: 'auto' }} />
-                <span className="ml-2 font-bold text-xl">INCAMPUS</span>
+                <img src="/navlogo.png" alt="Incampus Logo" className="h-8 md:h-10 w-auto" />
               </a>
             </div>
             
