@@ -9,6 +9,9 @@ import { User, Post } from '../types';
 import { postsApi } from '../services/postsApi';
 import { usersApi } from '../services/usersApi';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import CreatePostModal from '../components/post/CreatePostModal';
+import FriendSuggestions from '../components/auth/FriendSuggestions';
+import Button from '../components/ui/Button';
 
 const Feed: React.FC = () => {
   const { user } = useAuth();
@@ -16,6 +19,8 @@ const Feed: React.FC = () => {
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isFindFriendsModalOpen, setIsFindFriendsModalOpen] = useState(false);
   
   // Load posts from API
   const loadPosts = useCallback(async () => {
@@ -178,12 +183,18 @@ const Feed: React.FC = () => {
                   <p className="text-sm">Start by creating your first post or connecting with friends.</p>
                 </div>
                 <div className="flex justify-center space-x-4">
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  <Button
+                    variant="primary"
+                    onClick={() => setIsCreatePostModalOpen(true)}
+                  >
                     Create Post
-                  </button>
-                  <button className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsFindFriendsModalOpen(true)}
+                  >
                     Find Friends
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -257,6 +268,18 @@ const Feed: React.FC = () => {
           </div>
         </PullToRefresh>
       </div>
+      <CreatePostModal
+        isOpen={isCreatePostModalOpen}
+        onClose={() => setIsCreatePostModalOpen(false)}
+      />
+      {isFindFriendsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <FriendSuggestions
+            onComplete={() => setIsFindFriendsModalOpen(false)}
+            onSkip={() => setIsFindFriendsModalOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };
