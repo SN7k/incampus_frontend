@@ -21,7 +21,7 @@ export interface Post {
   user: User;
   content: string;
   images?: Image[];
-  likes: number;
+  likes: User[];
   comments: Comment[];
   createdAt: Date;
 }

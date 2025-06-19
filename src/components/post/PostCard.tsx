@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2 } from 'lucide-react';
 import { Post } from '../../types';
+import { User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
 import { getAvatarUrl } from '../../utils/avatarUtils';
+import { friendsApi } from '../../services/friendsApi';
 
 interface PostCardProps {
   post: Post;
@@ -12,11 +14,12 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { user: currentUser } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likes);
+  const [likesCount, setLikesCount] = useState(post.likes.length);
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [shareIcon, setShareIcon] = useState<'share' | 'copy' | 'check'>('share');
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [friends, setFriends] = useState<User[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
@@ -32,6 +35,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       setLikesCount(postLikes.length);
     }
   }, [currentUser, post.id]);
+
+  // Fetch current user's friends list
+  useEffect(() => {
+    if (currentUser) {
+      friendsApi.getFriendsList().then(setFriends);
+    }
+  }, [currentUser]);
 
   const toggleLike = async () => {
     if (!currentUser || loading) return; // Ensure user is logged in
@@ -354,7 +364,31 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
         <div>
           {likesCount > 0 && (
-            <span>{likesCount} like{likesCount !== 1 ? 's' : ''}</span>
+            <>
+              <span>{likesCount} like{likesCount !== 1 ? 's' : ''}</span>
+              {/* Show friends who liked this post */}
+              {Array.isArray(post.likes) && post.likes.length > 0 && friends.length > 0 && (
+                <div className="flex items-center mt-1 space-x-1">
+                  {post.likes
+                    .filter(liker => friends.some(friend => friend.id === liker.id))
+                    .slice(0, 3)
+                    .map(friend => (
+                      <img
+                        key={friend.id}
+                        src={getAvatarUrl(friend.avatar, friend.name)}
+                        alt={friend.name}
+                        className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-700 -ml-2 first:ml-0"
+                        title={friend.name}
+                      />
+                    ))}
+                  {post.likes.filter(liker => friends.some(friend => friend.id === liker.id)).length > 3 && (
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">+
+                      {post.likes.filter(liker => friends.some(friend => friend.id === liker.id)).length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
         <div></div>
