@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
