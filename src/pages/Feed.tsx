@@ -10,7 +10,6 @@ import { postsApi } from '../services/postsApi';
 import { usersApi } from '../services/usersApi';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import CreatePostModal from '../components/post/CreatePostModal';
-import FriendSuggestions from '../components/auth/FriendSuggestions';
 import Button from '../components/ui/Button';
 
 const Feed: React.FC = () => {
@@ -20,7 +19,6 @@ const Feed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
-  const [isFindFriendsModalOpen, setIsFindFriendsModalOpen] = useState(false);
   
   // Load posts from API
   const loadPosts = useCallback(async () => {
@@ -191,7 +189,10 @@ const Feed: React.FC = () => {
                   </Button>
                   <Button
                     variant="secondary"
-                    onClick={() => setIsFindFriendsModalOpen(true)}
+                    onClick={() => {
+                      localStorage.setItem('friendsActiveTab', 'suggestions');
+                      window.location.href = '/friends';
+                    }}
                   >
                     Find Friends
                   </Button>
@@ -272,14 +273,6 @@ const Feed: React.FC = () => {
         isOpen={isCreatePostModalOpen}
         onClose={() => setIsCreatePostModalOpen(false)}
       />
-      {isFindFriendsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <FriendSuggestions
-            onComplete={() => setIsFindFriendsModalOpen(false)}
-            onSkip={() => setIsFindFriendsModalOpen(false)}
-          />
-        </div>
-      )}
     </div>
   );
 };
