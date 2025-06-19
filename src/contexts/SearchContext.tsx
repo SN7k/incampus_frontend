@@ -44,7 +44,6 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
 
     setIsSearching(true);
-    const normalizedQuery = query.toLowerCase().trim();
 
     try {
       // Fetch users and posts from API
@@ -53,23 +52,18 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         postsApi.getFeedPosts()
       ]);
 
-      // Search users
-      const userResults = users.users
-        .filter((user: User) => 
-          user.name.toLowerCase().includes(normalizedQuery) || 
-          user.universityId.toLowerCase().includes(normalizedQuery) ||
-          (user.bio && user.bio.toLowerCase().includes(normalizedQuery))
-        )
-        .map((user: User) => ({
-          type: 'user' as const,
-          id: user.id,
-          title: user.name,
-          subtitle: user.universityId,
-          avatar: user.avatar,
-          url: `/profile/${user.id}`
-        }));
+      // Transform user results from backend
+      const userResults = users.users.map((user: User) => ({
+        type: 'user' as const,
+        id: user.id,
+        title: user.name,
+        subtitle: user.universityId,
+        avatar: user.avatar,
+        url: `/profile/${user.id}`
+      }));
 
-      // Search posts
+      // Search posts locally (since we don't have a post search endpoint yet)
+      const normalizedQuery = query.toLowerCase().trim();
       const postResults = posts
         .filter((post: Post) => 
           post.content.toLowerCase().includes(normalizedQuery)
@@ -83,10 +77,10 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           url: `/post/${post.id}`
         }));
 
-      // Search comments
+      // Search comments locally
       const commentResults = posts
         .flatMap((post: Post) => 
-          post.comments
+          (post.comments || [])
             .filter((comment: any) => comment.content.toLowerCase().includes(normalizedQuery))
             .map((comment: any) => ({
               type: 'comment' as const,
@@ -109,7 +103,8 @@ export const SearchProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return typeOrder[a.type] - typeOrder[b.type];
       });
       setSearchResults(sortedResults);
-    } catch {
+    } catch (error) {
+      console.error('Search error:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);

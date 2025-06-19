@@ -40,6 +40,7 @@ const FriendSearchPopup: React.FC<FriendSearchPopupProps> = ({
     .filter(user => user.id !== currentUserId) // Exclude current user
     .filter(user => 
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.universityId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
   
