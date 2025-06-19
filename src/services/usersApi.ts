@@ -1,13 +1,6 @@
 import API from './api';
 import { User } from '../types';
 
-interface UsersResponse {
-  status: string;
-  data: {
-    users: User[];
-  };
-}
-
 interface UserResponse {
   status: string;
   data: {
@@ -21,6 +14,11 @@ interface SearchResponse {
     users: User[];
     posts: any[];
   };
+}
+
+interface OTPResponse {
+  status: string;
+  message: string;
 }
 
 export const usersApi = {
@@ -113,6 +111,69 @@ export const usersApi = {
       return response.data.data;
     } catch (error) {
       console.error('Error uploading cover photo:', error);
+      throw error;
+    }
+  },
+
+  // Email change OTP functions
+  sendEmailChangeOTP: async (newEmail: string): Promise<OTPResponse> => {
+    try {
+      const response = await API.post<OTPResponse>('/users/send-email-change-otp', { newEmail });
+      return response.data;
+    } catch (error) {
+      console.error('Error sending email change OTP:', error);
+      throw error;
+    }
+  },
+
+  verifyEmailChangeOTP: async (otp: string, newEmail: string): Promise<UserResponse> => {
+    try {
+      const response = await API.post<UserResponse>('/users/verify-email-change-otp', { otp, newEmail });
+      return response.data;
+    } catch (error) {
+      console.error('Error verifying email change OTP:', error);
+      throw error;
+    }
+  },
+
+  // Password change OTP functions
+  sendPasswordChangeOTP: async (currentPassword: string): Promise<OTPResponse> => {
+    try {
+      const response = await API.post<OTPResponse>('/users/send-password-change-otp', { currentPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Error sending password change OTP:', error);
+      throw error;
+    }
+  },
+
+  verifyPasswordChangeOTP: async (otp: string, newPassword: string): Promise<OTPResponse> => {
+    try {
+      const response = await API.post<OTPResponse>('/users/verify-password-change-otp', { otp, newPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Error verifying password change OTP:', error);
+      throw error;
+    }
+  },
+
+  // Account deletion OTP functions
+  sendDeleteAccountOTP: async (): Promise<OTPResponse> => {
+    try {
+      const response = await API.post<OTPResponse>('/users/send-delete-account-otp');
+      return response.data;
+    } catch (error) {
+      console.error('Error sending delete account OTP:', error);
+      throw error;
+    }
+  },
+
+  verifyDeleteAccountOTP: async (otp: string): Promise<OTPResponse> => {
+    try {
+      const response = await API.post<OTPResponse>('/users/verify-delete-account-otp', { otp });
+      return response.data;
+    } catch (error) {
+      console.error('Error verifying delete account OTP:', error);
       throw error;
     }
   }

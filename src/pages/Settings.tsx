@@ -3,8 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { User } from '../types';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import { ArrowLeft, User as UserIcon, Lock, Trash2, Wifi } from 'lucide-react';
-import { testConnection, isSocketReady, initializeSocket } from '../services/socketService';
+import { ArrowLeft, User as UserIcon, Lock, Trash2 } from 'lucide-react';
+import { usersApi } from '../services/usersApi';
 
 const Settings: React.FC = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -71,107 +71,6 @@ const Settings: React.FC = () => {
           <PersonalInformationTab user={user} updateProfile={updateProfile} />
         )}
         
-        {/* Socket Test Tab */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Socket Connection Test</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Test the real-time connection</p>
-            </div>
-            <Button
-              onClick={() => {
-                console.log('Settings: Testing socket connection...');
-                console.log('Settings: User authenticated:', !!user);
-                console.log('Settings: Auth state in localStorage:', localStorage.getItem('authState'));
-                console.log('Settings: Token in localStorage:', localStorage.getItem('token'));
-                const ready = isSocketReady();
-                console.log('Settings: Socket ready:', ready);
-                if (ready) {
-                  testConnection();
-                } else {
-                  console.log('Settings: Socket not ready');
-                }
-              }}
-              className="flex items-center"
-            >
-              <Wifi size={16} className="mr-2" />
-              Test Socket
-            </Button>
-          </div>
-          <div className="mt-4">
-            <Button
-              onClick={async () => {
-                console.log('Settings: Testing API connection...');
-                try {
-                  const response = await fetch('https://incampus-backend.onrender.com');
-                  console.log('Settings: API response:', response.status, response.statusText);
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log('Settings: API data:', data);
-                  }
-                } catch (error) {
-                  console.error('Settings: API test failed:', error);
-                }
-              }}
-              variant="outline"
-              className="flex items-center"
-            >
-              Test API
-            </Button>
-          </div>
-          <div className="mt-4">
-            <Button
-              onClick={async () => {
-                console.log('Settings: Testing authenticated API connection...');
-                try {
-                  const token = localStorage.getItem('token');
-                  console.log('Settings: Token available:', !!token);
-                  
-                  if (!token) {
-                    console.log('Settings: No token available');
-                    return;
-                  }
-                  
-                  const response = await fetch('https://incampus-backend.onrender.com/api/profile', {
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                    }
-                  });
-                  console.log('Settings: Authenticated API response:', response.status, response.statusText);
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log('Settings: Authenticated API data:', data);
-                  }
-                } catch (error) {
-                  console.error('Settings: Authenticated API test failed:', error);
-                }
-              }}
-              variant="outline"
-              className="flex items-center"
-            >
-              Test Auth API
-            </Button>
-          </div>
-          <div className="mt-4">
-            <Button
-              onClick={() => {
-                console.log('Settings: Manually initializing socket...');
-                const socket = initializeSocket();
-                console.log('Settings: Manual socket initialization result:', !!socket);
-                if (socket) {
-                  console.log('Settings: Socket connected:', socket.connected);
-                  console.log('Settings: Socket id:', socket.id);
-                }
-              }}
-              variant="outline"
-              className="flex items-center"
-            >
-              Manual Socket Init
-            </Button>
-          </div>
-        </div>
-        
         {/* Password & Security Tab */}
         {activeTab === 'password' && (
           <PasswordSecurityTab />
@@ -234,16 +133,16 @@ const PersonalInformationTab: React.FC<{
       // Store the new email for OTP verification
       setNewEmail(formData.email);
       
-      // Simulate sending OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send OTP for email change
+      await usersApi.sendEmailChangeOTP(formData.email);
       
       // Show OTP verification
       setShowOtpVerification(true);
       setOtpValues(['', '', '', '', '', '']);
       setOtpError('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send OTP', error);
-      setErrorMessage('Failed to send verification code. Please try again.');
+      setErrorMessage(error.response?.data?.message || 'Failed to send verification code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -288,47 +187,41 @@ const PersonalInformationTab: React.FC<{
     setOtpError('');
     
     try {
-      // Simulate OTP verification
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Verify OTP and change email
+      await usersApi.verifyEmailChangeOTP(otp, newEmail);
       
-      // For demo purposes, we'll consider 123456 as the valid OTP
-      if (otp === '123456') {
-        // Proceed with email update
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Update profile with the new email
-        updateProfile({
-          email: newEmail,
-        });
-        
-        setShowOtpVerification(false);
-        setSuccessMessage('Email updated successfully!');
-        setIsEditing(false);
-        
-        // Update the form data with the new email
-        setFormData(prev => ({
-          ...prev,
-          email: newEmail
-        }));
-      } else {
-        setOtpError('Invalid OTP. Please try again.');
-      }
-    } catch (error) {
+      // Update profile with the new email
+      updateProfile({
+        email: newEmail,
+      });
+      
+      setShowOtpVerification(false);
+      setSuccessMessage('Email updated successfully!');
+      setIsEditing(false);
+      
+      // Update the form data with the new email
+      setFormData(prev => ({
+        ...prev,
+        email: newEmail
+      }));
+    } catch (error: any) {
       console.error('Failed to verify OTP', error);
-      setOtpError('Failed to verify OTP. Please try again.');
+      setOtpError(error.response?.data?.message || 'Failed to verify OTP. Please try again.');
     } finally {
       setLoading(false);
     }
   };
   
-  const handleResendOtp = () => {
-    // Simulate resending OTP
+  const handleResendOtp = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await usersApi.sendEmailChangeOTP(newEmail);
+      setSuccessMessage('A new OTP has been sent to your email.');
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || 'Failed to resend OTP. Please try again.');
+    } finally {
       setLoading(false);
-      // Show success message or notification
-      alert('A new OTP has been sent to your email.');
-    }, 1000);
+    }
   };
   
   return (
@@ -538,19 +431,16 @@ const PasswordSecurityTab: React.FC = () => {
     }
     
     try {
-      // Simulate API call to verify current password
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send OTP for password change
+      await usersApi.sendPasswordChangeOTP(formData.currentPassword);
       
-      // For demo purposes, we'll assume the current password is correct
-      // In a real app, you would verify this with your backend
-      
-      // Send OTP for verification
+      // Show OTP verification
       setShowOtpVerification(true);
       setOtpValues(['', '', '', '', '', '']);
       setOtpError('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to verify current password', error);
-      setErrorMessage('Current password is incorrect. Please try again.');
+      setErrorMessage(error.response?.data?.message || 'Current password is incorrect. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -595,43 +485,34 @@ const PasswordSecurityTab: React.FC = () => {
     setOtpError('');
     
     try {
-      // Simulate OTP verification
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Verify OTP and change password
+      await usersApi.verifyPasswordChangeOTP(otp, formData.newPassword);
       
-      // For demo purposes, we'll consider 123456 as the valid OTP
-      if (otp === '123456') {
-        // Proceed with password change
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // In a real app, you would send this to your backend
-        console.log('Password changed after OTP verification:', formData);
-        
-        setShowOtpVerification(false);
-        setSuccessMessage('Password updated successfully!');
-        setFormData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
-      } else {
-        setOtpError('Invalid OTP. Please try again.');
-      }
-    } catch (error) {
+      setShowOtpVerification(false);
+      setSuccessMessage('Password updated successfully!');
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
       console.error('Failed to verify OTP', error);
-      setOtpError('Failed to verify OTP. Please try again.');
+      setOtpError(error.response?.data?.message || 'Failed to verify OTP. Please try again.');
     } finally {
       setLoading(false);
     }
   };
   
-  const handleResendOtp = () => {
-    // Simulate resending OTP
+  const handleResendOtp = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await usersApi.sendPasswordChangeOTP(formData.currentPassword);
+      setSuccessMessage('A new OTP has been sent to your email.');
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || 'Failed to resend OTP. Please try again.');
+    } finally {
       setLoading(false);
-      // Show success message or notification
-      alert('A new OTP has been sent to your email.');
-    }, 1000);
+    }
   };
   
   return (
@@ -789,6 +670,7 @@ const DeleteAccountTab: React.FC<{
   const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [otpValues, setOtpValues] = useState<string[]>(['', '', '', '', '', '']);
   const [otpError, setOtpError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [email, setEmail] = useState('');
   const { user } = useAuth();
   
@@ -803,21 +685,27 @@ const DeleteAccountTab: React.FC<{
     setShowConfirmation(true);
   };
   
-  const handleProceedToOtp = () => {
+  const handleProceedToOtp = async () => {
     if (confirmText !== 'DELETE') {
       return;
     }
     
     setLoading(true);
     
-    // Simulate sending OTP to user's email
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Send OTP for account deletion
+      await usersApi.sendDeleteAccountOTP();
+      
       setShowConfirmation(false);
       setShowOtpVerification(true);
       setOtpValues(['', '', '', '', '', '']);
       setOtpError('');
-    }, 1500);
+    } catch (error: any) {
+      console.error('Failed to send OTP for account deletion:', error);
+      setOtpError(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleOtpChange = (index: number, value: string) => {
@@ -859,42 +747,39 @@ const DeleteAccountTab: React.FC<{
     setOtpError('');
     
     try {
-      // Simulate OTP verification
-      // In a real app, you would verify this with your backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Verify OTP and delete account
+      await usersApi.verifyDeleteAccountOTP(otp);
       
-      // For demo purposes, we'll consider 123456 as the valid OTP
-      if (otp === '123456') {
-        // Proceed with account deletion
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('Account deleted after OTP verification');
-        
-        // Log the user out
-        logout();
-      } else {
-        setOtpError('Invalid OTP. Please try again.');
-        setLoading(false);
-      }
-    } catch (error) {
+      // Log the user out
+      logout();
+    } catch (error: any) {
       console.error('Failed to verify OTP', error);
-      setOtpError('Failed to verify OTP. Please try again.');
+      setOtpError(error.response?.data?.message || 'Failed to verify OTP. Please try again.');
       setLoading(false);
     }
   };
   
-  const handleResendOtp = () => {
-    // Simulate resending OTP
+  const handleResendOtp = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await usersApi.sendDeleteAccountOTP();
+      setSuccessMessage('A new OTP has been sent to your email.');
+    } catch (error: any) {
+      setOtpError(error.response?.data?.message || 'Failed to resend OTP. Please try again.');
+    } finally {
       setLoading(false);
-      // Show success message or notification
-      alert('A new OTP has been sent to your email.');
-    }, 1000);
+    }
   };
   
   return (
     <div className="p-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete Account</h2>
+      
+      {successMessage && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg mb-4">
+          {successMessage}
+        </div>
+      )}
       
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
         <h3 className="text-red-700 dark:text-red-400 font-medium mb-2">Warning: This action cannot be undone</h3>
