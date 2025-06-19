@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { useSearch } from '../../contexts/SearchContext';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -111,15 +112,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, isMobile = f
                     className="flex items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                     onClick={() => handleSearchResultClick(result.url || '#')}
                   >
-                    {result.avatar ? (
-                      <img 
-                        src={result.avatar} 
-                        alt={result.title}
-                        className="w-8 h-8 rounded-full object-cover mr-3"
-                      />
-                    ) : (
-                      <Search size={16} className="text-gray-400 mr-3" />
-                    )}
+                    <img 
+                      src={getAvatarUrl(result.avatar, result.title, 32)} 
+                      alt={result.title}
+                      className="w-8 h-8 rounded-full object-cover mr-3"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                         {result.title}
