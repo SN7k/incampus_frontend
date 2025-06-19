@@ -67,6 +67,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
       let coverPhotoUrl = '';
       if (coverPhoto) {
         const result = await profileApi.uploadCoverPhoto(coverPhoto);
+        console.log('Cover photo upload result:', result);
         coverPhotoUrl = result.coverPhotoUrl;
       }
 
@@ -78,6 +79,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         bio: bio || undefined,
         role: userInfo.role
       };
+      console.log('Profile data to submit:', profileData);
       
       // Call the parent callback to continue the flow
       onProfileComplete(profileData);
