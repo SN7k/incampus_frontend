@@ -28,7 +28,6 @@ const Friends: React.FC = () => {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
-  const [suggestionSearch, setSuggestionSearch] = useState('');
 
   // Load data based on active tab
   const loadData = useCallback(async () => {
@@ -51,7 +50,59 @@ const Friends: React.FC = () => {
       } else if (activeTab === 'suggestions') {
         const data = await friendsApi.getFriendSuggestions();
         console.log('Friends: Loaded suggestions data:', data);
-        setSuggestions(data);
+        
+        // If no suggestions were returned, create some placeholders
+        if (data.length === 0) {
+          console.log('Friends: No suggestions received, using placeholders');
+          // Create some placeholder suggestions
+          const placeholders: FriendSuggestion[] = [
+            {
+              user: {
+                id: 'placeholder1',
+                name: 'Alex Johnson',
+                universityId: 'BCA2023101',
+                role: 'student',
+                avatar: { url: '' },
+                course: 'BCA',
+                batch: '2023'
+              },
+              mutualFriends: 0,
+              relevance: ['BCA', 'First Year'],
+              priority: 3
+            },
+            {
+              user: {
+                id: 'placeholder2',
+                name: 'Sam Thompson',
+                universityId: 'MCA2022045',
+                role: 'student',
+                avatar: { url: '' },
+                course: 'MCA',
+                batch: '2022'
+              },
+              mutualFriends: 0,
+              relevance: ['MCA', 'Second Year'],
+              priority: 2
+            },
+            {
+              user: {
+                id: 'placeholder3',
+                name: 'Dr. Priya Sharma',
+                universityId: 'FAC2020012',
+                role: 'faculty',
+                avatar: { url: '' },
+                course: 'Computer Science',
+                batch: ''
+              },
+              mutualFriends: 0,
+              relevance: ['Faculty', 'Computer Science'],
+              priority: 1
+            }
+          ];
+          setSuggestions(placeholders);
+        } else {
+          setSuggestions(data);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -61,6 +112,11 @@ const Friends: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+  
+  // Debug logging for suggestions
+  useEffect(() => {
+    console.log('Friends: Suggestions updated:', suggestions);
+  }, [suggestions]);
   
   // Notify the app about friend requests changes
   useEffect(() => {
@@ -98,6 +154,13 @@ const Friends: React.FC = () => {
   
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
+    // Check if this is a placeholder suggestion
+    if (userId.startsWith('placeholder')) {
+      console.log('Friends: Tried to view profile of placeholder user');
+      alert('This is a demo suggestion. Profile viewing is not available for demo users.');
+      return;
+    }
+    
     // Set navigation data
     localStorage.setItem('viewProfileUserId', userId);
     
@@ -144,6 +207,13 @@ const Friends: React.FC = () => {
   // Handle adding a friend from suggestions
   const handleAddFriend = async (suggestionId: string) => {
     try {
+      // Check if this is a placeholder suggestion
+      if (suggestionId.startsWith('placeholder')) {
+        console.log('Friends: Clicked on placeholder suggestion');
+        alert('This is a demo suggestion. In a real app, this would send a friend request.');
+        return;
+      }
+      
       console.log('Friends: Sending friend request to suggestion ID:', suggestionId);
       await friendsApi.sendFriendRequest(suggestionId);
       console.log('Friends: Friend request sent successfully');
@@ -414,27 +484,12 @@ const Friends: React.FC = () => {
 
                 {activeTab === 'suggestions' && (
                   <div className="space-y-4">
-                    {/* Search Bar for Suggestions */}
-                    <div className="mb-4">
-                      <input
-                        type="text"
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-white"
-                        placeholder="Search suggestions..."
-                        value={suggestionSearch}
-                        onChange={e => setSuggestionSearch(e.target.value)}
-                      />
-                    </div>
+                    {/* Remove search bar */}
                     
                     {/* Group and display suggestions */}
                     {(() => {
-                      // Filter suggestions based on search term
-                      const filteredSuggestions = suggestions.filter(suggestion =>
-                        suggestion.user.name.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                        suggestion.user.universityId?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                        suggestion.user.role.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                        suggestion.user.course?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                        suggestion.user.batch?.toLowerCase().includes(suggestionSearch.toLowerCase())
-                      );
+                      // Use all suggestions instead of filtering
+                      const filteredSuggestions = suggestions;
                       
                       if (filteredSuggestions.length === 0) {
                         return (
