@@ -138,27 +138,25 @@ const Feed: React.FC = () => {
   }
 
   return (
-    <PullToRefresh 
-      onRefresh={handleRefresh}
-      pullingContent={
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
-        </div>
-      }
-      refreshingContent={
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
-        </div>
-      }
-    >
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
-        <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <PostForm />
+        <PullToRefresh 
+          onRefresh={handleRefresh}
+          pullingContent={
+            <div className="flex items-center justify-center py-4 z-50 relative">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
+            </div>
+          }
+          refreshingContent={
+            <div className="flex items-center justify-center py-4 z-50 relative">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
+            </div>
+          }
+        >
           <div className="space-y-6">
-            {/* Post Creation */}
-            <PostForm />
-            
             {/* Error Message */}
             {error && (
               <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
@@ -171,7 +169,6 @@ const Feed: React.FC = () => {
                 </button>
               </div>
             )}
-            
             {/* Posts Feed */}
             {posts.length === 0 && !loading ? (
               <div className="text-center py-12">
@@ -200,7 +197,7 @@ const Feed: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) :
               <div className="space-y-4">
                 {posts.map((post) => (
                   <motion.div
@@ -213,8 +210,7 @@ const Feed: React.FC = () => {
                   </motion.div>
                 ))}
               </div>
-            )}
-            
+            }
             {/* Friend Suggestions */}
             {suggestedUsers.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
@@ -234,7 +230,6 @@ const Feed: React.FC = () => {
                     See All
                   </button>
                 </div>
-                
                 <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => (
                     <div key={suggestedUser?.id || 'unknown'} className="flex items-center justify-between">
@@ -277,13 +272,13 @@ const Feed: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-        <CreatePostModal
-          isOpen={isCreatePostModalOpen}
-          onClose={() => setIsCreatePostModalOpen(false)}
-        />
+        </PullToRefresh>
       </div>
-    </PullToRefresh>
+      <CreatePostModal
+        isOpen={isCreatePostModalOpen}
+        onClose={() => setIsCreatePostModalOpen(false)}
+      />
+    </div>
   );
 };
 
