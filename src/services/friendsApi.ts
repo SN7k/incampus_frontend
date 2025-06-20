@@ -5,7 +5,7 @@ import API from './api';
 // Helper function to transform backend data (convert _id to id)
 const transformUser = (user: any): User => {
   return {
-    id: user._id || user.id,
+    id: (user._id || user.id) ? String(user._id || user.id) : '',
     name: user.name,
     universityId: user.universityId,
     role: user.role,
