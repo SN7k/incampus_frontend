@@ -57,12 +57,6 @@ interface SentRequestsResponse {
   };
 }
 
-interface FriendSuggestionsResponse {
-  status: string;
-  data: {
-    suggestions: FriendSuggestion[];
-  };
-}
 
 interface FriendRequestResponse {
   status: string;
@@ -138,18 +132,64 @@ export const friendsApi = {
   getFriendSuggestions: async (): Promise<FriendSuggestion[]> => {
     try {
       console.log('FriendsApi: Fetching friend suggestions...');
-      const response = await API.get<FriendSuggestionsResponse>('/friends/suggestions');
+      const response = await API.get<any>('/friends/suggestions');
       console.log('FriendsApi: Suggestions response:', response.data);
-      const suggestions = response.data.data.suggestions || [];
+      
+      // Handle different API response formats
+      let suggestions: any[] = [];
+      
+      if (response.data.data) {
+        if (Array.isArray(response.data.data)) {
+          // Handle the case where data is an array of users directly
+          suggestions = response.data.data.map((user: any) => ({
+            user,
+            mutualFriends: 0,
+            relevance: [user.course || '', user.batch || '', user.role || ''].filter(Boolean),
+            priority: 1
+          }));
+        } else if (response.data.data.suggestions) {
+          // Handle the case where data contains a suggestions property
+          suggestions = response.data.data.suggestions;
+        } else if (response.data.data.users) {
+          // Handle the case where data contains a users property
+          suggestions = response.data.data.users.map((user: any) => ({
+            user,
+            mutualFriends: 0,
+            relevance: [user.course || '', user.batch || '', user.role || ''].filter(Boolean),
+            priority: 1
+          }));
+        }
+      }
+      
       console.log('FriendsApi: Parsed suggestions:', suggestions);
       
+      // If still no suggestions, log the error and return an empty array
+      if (!suggestions || suggestions.length === 0) {
+        console.error('FriendsApi: No suggestions found in API response');
+        return [];
+      }
+      
       // Ensure each suggestion has the required properties
-      const transformedSuggestions = suggestions.map(suggestion => ({
-        user: transformUser(suggestion.user),
-        mutualFriends: suggestion.mutualFriends || 0,
-        relevance: suggestion.relevance || [],
-        priority: suggestion.priority || 0
-      }));
+      const transformedSuggestions = suggestions.map(suggestion => {
+        // If the suggestion already has a user property
+        if (suggestion.user) {
+          return {
+            user: transformUser(suggestion.user),
+            mutualFriends: suggestion.mutualFriends || 0,
+            relevance: suggestion.relevance || [],
+            priority: suggestion.priority || 0
+          };
+        } 
+        // If the suggestion itself is a user
+        else {
+          return {
+            user: transformUser(suggestion),
+            mutualFriends: 0,
+            relevance: [suggestion.course || '', suggestion.batch || '', suggestion.role || ''].filter(Boolean),
+            priority: 0
+          };
+        }
+      });
       
       console.log('FriendsApi: Transformed suggestions:', transformedSuggestions);
       return transformedSuggestions;

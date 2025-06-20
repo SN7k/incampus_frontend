@@ -28,6 +28,7 @@ const Friends: React.FC = () => {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // Load data based on active tab
   const loadData = useCallback(async () => {
@@ -48,64 +49,43 @@ const Friends: React.FC = () => {
         setFriendRequests(receivedData);
         setSentRequests(sentData);
       } else if (activeTab === 'suggestions') {
-        const data = await friendsApi.getFriendSuggestions();
-        console.log('Friends: Loaded suggestions data:', data);
+        // Set loading state
+        setLoadingSuggestions(true);
         
-        // If no suggestions were returned, create some placeholders
-        if (data.length === 0) {
-          console.log('Friends: No suggestions received, using placeholders');
-          // Create some placeholder suggestions
-          const placeholders: FriendSuggestion[] = [
-            {
-              user: {
-                id: 'placeholder1',
-                name: 'Alex Johnson',
-                universityId: 'BCA2023101',
-                role: 'student',
-                avatar: { url: '' },
-                course: 'BCA',
-                batch: '2023'
-              },
-              mutualFriends: 0,
-              relevance: ['BCA', 'First Year'],
-              priority: 3
-            },
-            {
-              user: {
-                id: 'placeholder2',
-                name: 'Sam Thompson',
-                universityId: 'MCA2022045',
-                role: 'student',
-                avatar: { url: '' },
-                course: 'MCA',
-                batch: '2022'
-              },
-              mutualFriends: 0,
-              relevance: ['MCA', 'Second Year'],
-              priority: 2
-            },
-            {
-              user: {
-                id: 'placeholder3',
-                name: 'Dr. Priya Sharma',
-                universityId: 'FAC2020012',
-                role: 'faculty',
-                avatar: { url: '' },
-                course: 'Computer Science',
-                batch: ''
-              },
-              mutualFriends: 0,
-              relevance: ['Faculty', 'Computer Science'],
-              priority: 1
+        // Make multiple attempts to get real suggestions
+        console.log('Friends: Attempting to load real suggestions...');
+        let attempts = 0;
+        let data: FriendSuggestion[] = [];
+        
+        while (attempts < 2 && data.length === 0) {
+          try {
+            data = await friendsApi.getFriendSuggestions();
+            console.log(`Friends: Attempt ${attempts + 1} - Got ${data.length} suggestions`);
+            attempts++;
+            
+            // If no data, wait briefly before trying again
+            if (data.length === 0 && attempts < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
-          ];
-          setSuggestions(placeholders);
-        } else {
-          setSuggestions(data);
+          } catch (error) {
+            console.error(`Friends: Attempt ${attempts + 1} failed:`, error);
+            attempts++;
+            if (attempts < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
         }
+        
+        // Only use real suggestions, never placeholders
+        setSuggestions(data);
+        setLoadingSuggestions(false);
       }
     } catch (error) {
       console.error('Error loading data:', error);
+      // End loading state in case of error
+      if (activeTab === 'suggestions') {
+        setLoadingSuggestions(false);
+      }
     }
   }, [activeTab]);
 
@@ -484,11 +464,85 @@ const Friends: React.FC = () => {
 
                 {activeTab === 'suggestions' && (
                   <div className="space-y-4">
-                    {/* Remove search bar */}
+                    {/* Refresh button for suggestions */}
+                    <div className="flex justify-end mb-4">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            console.log('Manually refreshing suggestions...');
+                            // Show loading indicator
+                            setSuggestions([]);
+                            setLoadingSuggestions(true);
+                            
+                            // Fetch new suggestions
+                            const data = await friendsApi.getFriendSuggestions();
+                            if (data.length > 0) {
+                              setSuggestions(data);
+                              console.log('Successfully refreshed suggestions:', data);
+                            } else {
+                              console.log('No suggestions found during refresh');
+                              // Re-run the full loading logic to get placeholders if needed
+                              await loadData();
+                            }
+                          } catch (error) {
+                            console.error('Error refreshing suggestions:', error);
+                            // Re-run the full loading logic to get placeholders if needed
+                            await loadData();
+                          } finally {
+                            // Ensure loading state is reset
+                            setLoadingSuggestions(false);
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh Suggestions
+                      </button>
+                    </div>
+                    
+                    {/* Development debugging tools */}
+                    {process.env.NODE_ENV !== 'production' && (
+                      <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Development tools:</p>
+                        <button 
+                          onClick={async () => {
+                            try {
+                              console.log('Testing API connection...');
+                              const response = await fetch('https://incampus-backend.onrender.com/api/friends/suggestions', {
+                                headers: {
+                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                              });
+                              const data = await response.json();
+                              console.log('Direct API response:', data);
+                              alert('Check console for API response details');
+                            } catch (error) {
+                              console.error('API connection test failed:', error);
+                              alert('API test failed. See console for details.');
+                            }
+                          }}
+                          className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                        >
+                          Test API Connection
+                        </button>
+                      </div>
+                    )}
                     
                     {/* Group and display suggestions */}
                     {(() => {
-                      // Use all suggestions instead of filtering
+                      // Show loading indicator if loading
+                      if (loadingSuggestions) {
+                        return (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+                            <p className="text-gray-600 dark:text-gray-400">Loading suggestions...</p>
+                          </div>
+                        );
+                      }
+                      
+                      // Use all suggestions
                       const filteredSuggestions = suggestions;
                       
                       if (filteredSuggestions.length === 0) {
