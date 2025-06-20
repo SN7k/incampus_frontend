@@ -70,7 +70,14 @@ export const usersApi = {
   getUserSuggestions: async (): Promise<User[]> => {
     try {
       const response = await API.get<{status: string, data: User[]}>('/friends/suggestions');
-      return response.data.data;
+      // Always convert id to string for each user
+      return response.data.data.map(user => {
+        const anyUser = user as any;
+        return {
+          ...user,
+          id: (user.id || anyUser._id) ? String(user.id || anyUser._id) : '',
+        };
+      });
     } catch (error) {
       console.error('Error fetching user suggestions:', error);
       throw new Error('An error occurred');
