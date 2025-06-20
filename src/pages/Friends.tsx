@@ -365,39 +365,29 @@ const Friends: React.FC = () => {
                           <motion.div 
                             key={request.id}
                             id={`sent-request-${request.id}`}
-                            className="flex flex-col sm:flex-row sm:items-center p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                             variants={itemVariants}
                           >
-                            <div className="flex items-center">
-                              <img 
-                                src={getAvatarUrl(request.receiver.avatar, request.receiver.name)} 
-                                alt={request.receiver.name} 
-                                className="w-14 h-14 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigateToProfile(request.receiver.id);
-                                }}
+                            <div className="flex items-center cursor-pointer" onClick={() => navigateToProfile(request.receiver.id)}>
+                              <img
+                                src={getAvatarUrl(request.receiver.avatar, request.receiver.name)}
+                                alt={request.receiver.name}
+                                className="w-14 h-14 rounded-full object-cover mr-3"
                               />
-                              <div 
-                                className="ml-3 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigateToProfile(request.receiver.id);
-                                }}
-                              >
+                              <div>
                                 <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{request.receiver.name}</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">{request.receiver.role === 'faculty' ? 'Faculty' : request.receiver.universityId}</p>
                                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Pending approval</p>
                               </div>
                             </div>
-                            <div className="flex space-x-2 mt-4 sm:mt-0 sm:ml-auto">
-                              <button 
-                                className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition-colors"
-                                onClick={() => handleCancelRequest(request.id)}
-                              >
-                                Cancel Request
-                              </button>
-                            </div>
+                            <button
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full ml-2"
+                              onClick={() => handleCancelRequest(request.id)}
+                              aria-label="Cancel Request"
+                              title="Cancel Request"
+                            >
+                              <X size={20} />
+                            </button>
                           </motion.div>
                         ))}
                     </div>
