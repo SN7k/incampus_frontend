@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import PostForm from '../components/post/PostForm';
 import PostCard from '../components/post/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Users, BookOpen, Bookmark, Settings, HelpCircle, Heart } from 'lucide-react';
 import { User, Post } from '../types';
 import { postsApi } from '../services/postsApi';
 import { usersApi } from '../services/usersApi';
@@ -17,16 +17,37 @@ const Feed: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   
+  // Animation variants for grid and items
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
+  // Helper functions for universityId parsing
+  const extractYear = (universityId: string): string => {
+    const parts = universityId.split('/');
+    return parts.length >= 3 ? parts[2] : '';
+  };
+  const extractDepartment = (universityId: string): string => {
+    const parts = universityId.split('/');
+    return parts.length >= 2 ? parts[1] : '';
+  };
+
   // Load posts from API
   const loadPosts = useCallback(async () => {
     if (!user) return;
     
     try {
       setLoading(true);
-      setError(null);
       
       // Get feed posts from API
       const feedPosts = await postsApi.getFeedPosts();
@@ -39,8 +60,6 @@ const Feed: React.FC = () => {
       setPosts(normalizedPosts);
     } catch (error: unknown) {
       console.error('Error loading posts:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load posts';
-      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -138,141 +157,220 @@ const Feed: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <PostForm />
-        <PullToRefresh 
-          onRefresh={handleRefresh}
-          pullingContent={
-            <div className="flex items-center justify-center py-4 z-50 relative">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
-            </div>
-          }
-          refreshingContent={
-            <div className="flex items-center justify-center py-4 z-50 relative">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
-            </div>
-          }
-        >
-          <div className="space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-                {error}
-                <button 
-                  onClick={loadPosts}
-                  className="ml-2 underline hover:no-underline"
+    <div className="pt-20 pb-20 md:pb-10 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+          {/* Left Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-24 transition-colors duration-200"
+            >
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                <Sparkles size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
+                Quick Links
+              </h3>
+              <nav className="space-y-2">
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {
+                    localStorage.removeItem('viewProfileUserId');
+                    localStorage.setItem('activeProfileTab', 'memories');
+                    localStorage.setItem('currentPage', 'profile');
+                    window.dispatchEvent(new CustomEvent('navigate', { 
+                      detail: { page: 'profile', timestamp: new Date().getTime() } 
+                    }));
+                  }}
                 >
-                  Try again
-                </button>
-              </div>
-            )}
-            {/* Posts Feed */}
-            {posts.length === 0 && !loading ? (
-              <div className="text-center py-12">
-                <div className="text-gray-500 dark:text-gray-400 mb-4">
-                  <Sparkles className="h-12 w-12 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Welcome to InCampus!</h3>
-                  <p className="text-sm">Start by creating your first post or connecting with friends.</p>
+                  <BookOpen size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Memories
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {
+                    localStorage.removeItem('viewProfileUserId');
+                    localStorage.setItem('activeProfileTab', 'collections');
+                    localStorage.setItem('currentPage', 'profile');
+                    window.dispatchEvent(new CustomEvent('navigate', { 
+                      detail: { page: 'profile', timestamp: new Date().getTime() } 
+                    }));
+                  }}
+                >
+                  <Bookmark size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Collections
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {}}
+                >
+                  <Settings size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Settings
+                </a>
+                <a
+                  href="mailto:connect.incampus@gmail.com?subject=InCampus%20Support%20Request&body=Hello%20InCampus%20Support%20Team,%0A%0AI%20need%20assistance%20with%20the%20following%20issue:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThank%20you,%0A[Your%20Name]"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                >
+                  <HelpCircle size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Help
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
+                  onClick={() => {}}
+                >
+                  <Heart size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Contribute
+                </a>
+              </nav>
+            </motion.div>
+          </div>
+          {/* Main Content */}
+          <motion.div 
+            className="col-span-1 lg:col-span-6"
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
+            {/* Post Form - Fixed at the top */}
+            <PostForm />
+            {/* Refreshable Posts Section */}
+            <PullToRefresh
+              onRefresh={handleRefresh}
+              pullingContent={<div className="text-center text-gray-500 dark:text-gray-400 py-2">Pull down to refresh</div>}
+              refreshingContent={
+                <div className="flex justify-center items-center py-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 dark:border-blue-400"></div>
                 </div>
-                <div className="flex justify-center space-x-4">
-                  <Button
-                    variant="primary"
-                    onClick={() => setIsCreatePostModalOpen(true)}
-                  >
-                    Create Post
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      localStorage.setItem('friendsActiveTab', 'suggestions');
-                      window.dispatchEvent(new CustomEvent('navigate', { 
-                        detail: { page: 'friends' } 
-                      }));
-                    }}
-                  >
-                    Find Friends
-                  </Button>
-                </div>
-              </div>
-            ) :
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <PostCard post={post} />
-                  </motion.div>
-                ))}
-              </div>
-            }
-            {/* Friend Suggestions */}
-            {suggestedUsers.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    People You May Know
-                  </h3>
-                  <button 
-                    className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
-                    onClick={() => {
-                      localStorage.setItem('friendsActiveTab', 'suggestions');
-                      window.dispatchEvent(new CustomEvent('navigate', { 
-                        detail: { page: 'friends' } 
-                      }));
-                    }}
-                  >
-                    See All
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {suggestedUsers.map((suggestedUser) => (
-                    <div key={suggestedUser?.id || 'unknown'} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={getAvatarUrl(suggestedUser?.avatar, suggestedUser?.name || 'User')}
-                          alt={suggestedUser?.name || 'User'}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {suggestedUser?.name || 'User'}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {suggestedUser?.universityId || 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                      <button
+              }
+              className="mt-6"
+            >
+              <div className="space-y-6">
+                {posts.length === 0 && !loading ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-500 dark:text-gray-400 mb-4">
+                      <Sparkles className="h-12 w-12 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Welcome to InCampus!</h3>
+                      <p className="text-sm">Start by creating your first post or connecting with friends.</p>
+                    </div>
+                    <div className="flex justify-center space-x-4">
+                      <Button
+                        variant="primary"
+                        onClick={() => setIsCreatePostModalOpen(true)}
+                      >
+                        Create Post
+                      </Button>
+                      <Button
+                        variant="secondary"
                         onClick={() => {
-                          // Navigate to user profile
-                          if (!suggestedUser?.id) {
-                            console.error('Feed - Suggested user ID is undefined!');
-                            return;
-                          }
-                          console.log('Feed - View Profile clicked for user:', suggestedUser);
-                          console.log('Feed - User ID being set:', suggestedUser.id);
-                          localStorage.setItem('viewProfileUserId', suggestedUser.id);
+                          localStorage.setItem('friendsActiveTab', 'suggestions');
                           window.dispatchEvent(new CustomEvent('navigate', { 
-                            detail: { page: 'profile', userId: suggestedUser.id } 
+                            detail: { page: 'friends' } 
                           }));
                         }}
-                        className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
                       >
-                        View Profile
-                      </button>
+                        Find Friends
+                      </Button>
                     </div>
-                  ))}
+                  </div>
+                ) :
+                  posts.map((post) => (
+                    <motion.div key={post.id} variants={item}>
+                      <PostCard post={post} />
+                    </motion.div>
+                  ))
+                }
+              </div>
+            </PullToRefresh>
+          </motion.div>
+          {/* Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-6"
+            >
+              {/* Suggested Connections */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-24 transition-colors duration-200 overflow-hidden">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                  <Users size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  People You May Know
+                </h3>
+                <div className="space-y-2 -mx-4 px-4">
+                  {suggestedUsers.map((suggestedUser) => {
+                    const userYear = extractYear(suggestedUser.universityId);
+                    const userDept = extractDepartment(suggestedUser.universityId);
+                    const currentUserYear = user ? extractYear(user.universityId) : '';
+                    const currentUserDept = user ? extractDepartment(user.universityId) : '';
+                    const hasMatchingYear = userYear === currentUserYear;
+                    const hasMatchingDept = userDept === currentUserDept;
+                    const isFaculty = suggestedUser.role === 'faculty';
+                    const displayDepartment = isFaculty ? 'Faculty' : 
+                      (hasMatchingDept ? `${extractDepartment(suggestedUser.universityId)} (Same Dept)` : 
+                      extractDepartment(suggestedUser.universityId));
+                    const navigateToUserProfile = () => {
+                      localStorage.setItem('currentPage', 'profile');
+                      localStorage.setItem('viewProfileUserId', suggestedUser.id);
+                      window.dispatchEvent(new CustomEvent('navigate', { 
+                        detail: { 
+                          page: 'profile',
+                          scrollToTop: true,
+                          timestamp: new Date().getTime() 
+                        } 
+                      }));
+                      window.scrollTo(0, 0);
+                    };
+                    return (
+                      <div 
+                        key={suggestedUser.id} 
+                        className="flex items-center p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors mx-0"
+                      >
+                        <img 
+                          src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)} 
+                          alt={suggestedUser.name}
+                          className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={navigateToUserProfile}
+                          data-profile-id={suggestedUser.id}
+                        />
+                        <div 
+                          className="ml-3 cursor-pointer" 
+                          onClick={navigateToUserProfile}
+                          data-profile-id={suggestedUser.id}
+                        >
+                          <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            {suggestedUser.name}
+                            {hasMatchingYear && (
+                              <span className="ml-2 text-xs font-medium px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                                Same Year
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{displayDepartment}</p>
+                        </div>
+                        <div className="ml-auto">
+                          <button 
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium whitespace-nowrap"
+                            onClick={() => {
+                              // Use your real add friend logic here
+                              if (suggestedUser.id) {
+                                // e.g. friendsApi.sendFriendRequest(suggestedUser.id)
+                              }
+                            }}
+                          >
+                            Add Friend
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
+            </motion.div>
           </div>
-        </PullToRefresh>
+        </div>
         <CreatePostModal
           isOpen={isCreatePostModalOpen}
           onClose={() => setIsCreatePostModalOpen(false)}
