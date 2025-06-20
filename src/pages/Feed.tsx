@@ -191,7 +191,9 @@ const Feed: React.FC = () => {
                     variant="secondary"
                     onClick={() => {
                       localStorage.setItem('friendsActiveTab', 'suggestions');
-                      window.location.href = '/friends';
+                      window.dispatchEvent(new CustomEvent('navigate', { 
+                        detail: { page: 'friends' } 
+                      }));
                     }}
                   >
                     Find Friends
@@ -220,7 +222,15 @@ const Feed: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     People You May Know
                   </h3>
-                  <button className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
+                  <button 
+                    className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                    onClick={() => {
+                      localStorage.setItem('friendsActiveTab', 'suggestions');
+                      window.dispatchEvent(new CustomEvent('navigate', { 
+                        detail: { page: 'friends' } 
+                      }));
+                    }}
+                  >
                     See All
                   </button>
                 </div>

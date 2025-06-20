@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 type FriendTab = 'friends' | 'requests' | 'suggestions';
 
 const Friends: React.FC = () => {
-  const { user } = useAuth();
+  useAuth();
   const [activeTab, setActiveTab] = useState<FriendTab>(() => {
     const savedTab = localStorage.getItem('friendsActiveTab');
     return (savedTab === 'friends' || savedTab === 'requests' || savedTab === 'suggestions') 
@@ -99,13 +99,12 @@ const Friends: React.FC = () => {
   // Navigate to user profile
   const navigateToProfile = (userId: string) => {
     // Set navigation data
-    localStorage.setItem('currentPage', 'profile');
     localStorage.setItem('viewProfileUserId', userId);
     
-    // Add a small delay to ensure localStorage is set before reload
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    // Use the custom navigation event instead of page reload
+    window.dispatchEvent(new CustomEvent('navigate', { 
+      detail: { page: 'profile', userId: userId } 
+    }));
   };
   
   // Handle accepting a friend request
@@ -425,64 +424,146 @@ const Friends: React.FC = () => {
                         onChange={e => setSuggestionSearch(e.target.value)}
                       />
                     </div>
-                    {suggestions.filter(suggestion =>
-                      suggestion.user.name.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                      suggestion.user.universityId?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                      suggestion.user.role.toLowerCase().includes(suggestionSearch.toLowerCase())
-                    ).length === 0 ? (
-                      <div className="text-center py-8">
-                        <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No suggestions</h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          We couldn't find any suggestions for you right now.
-                        </p>
-                      </div>
-                    ) : (
-                      suggestions.filter(suggestion =>
+                    
+                    {/* Group and display suggestions */}
+                    {(() => {
+                      // Filter suggestions based on search term
+                      const filteredSuggestions = suggestions.filter(suggestion =>
                         suggestion.user.name.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
                         suggestion.user.universityId?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                        suggestion.user.role.toLowerCase().includes(suggestionSearch.toLowerCase())
-                      ).map(suggestion => (
-                        <div key={suggestion?.user?.id || 'unknown'} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex items-center space-x-4">
-                            <img
-                              src={getAvatarUrl(suggestion?.user?.avatar, suggestion?.user?.name || 'User')}
-                              alt={suggestion?.user?.name || 'User'}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                            <div>
-                              <h3 className="font-medium text-gray-900 dark:text-white">{suggestion?.user?.name || 'User'}</h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {suggestion?.user?.role === 'faculty' ? 'Faculty' : 'Student'}
-                              </p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">
-                                {suggestion?.mutualFriends || 0} mutual {(suggestion?.mutualFriends || 0) === 1 ? 'friend' : 'friends'}
-                              </p>
+                        suggestion.user.role.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                        suggestion.user.course?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                        suggestion.user.batch?.toLowerCase().includes(suggestionSearch.toLowerCase())
+                      );
+                      
+                      if (filteredSuggestions.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
+                            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No suggestions</h3>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                              We couldn't find any suggestions for you right now.
+                            </p>
+                          </div>
+                        );
+                      }
+                      
+                      // Group suggestions by course
+                      const courseGroups: Record<string, FriendSuggestion[]> = {};
+                      const batchGroups: Record<string, FriendSuggestion[]> = {};
+                      const roleGroups: Record<string, FriendSuggestion[]> = {};
+                      
+                      // Populate groups
+                      filteredSuggestions.forEach(suggestion => {
+                        // Group by course (BCA, MCA, etc.)
+                        const course = suggestion.user.course || 'Other';
+                        if (!courseGroups[course]) {
+                          courseGroups[course] = [];
+                        }
+                        courseGroups[course].push(suggestion);
+                        
+                        // Group by batch (year)
+                        const batch = suggestion.user.batch || 'Other';
+                        if (!batchGroups[batch]) {
+                          batchGroups[batch] = [];
+                        }
+                        batchGroups[batch].push(suggestion);
+                        
+                        // Group by role (Student/Faculty)
+                        const role = suggestion.user.role || 'Other';
+                        if (!roleGroups[role]) {
+                          roleGroups[role] = [];
+                        }
+                        roleGroups[role].push(suggestion);
+                      });
+                      
+                      // First check if we have course groups with more than one entry
+                      const hasMultipleCourses = Object.keys(courseGroups).length > 1;
+                      const hasMultipleBatches = Object.keys(batchGroups).length > 1;
+                      
+                      // Determine the primary grouping method
+                      let primaryGroups: Record<string, FriendSuggestion[]> = {};
+                      let groupingTitle = "";
+                      
+                      if (hasMultipleCourses) {
+                        primaryGroups = courseGroups;
+                        groupingTitle = "Program";
+                      } else if (hasMultipleBatches) {
+                        primaryGroups = batchGroups;
+                        groupingTitle = "Batch";
+                      } else {
+                        primaryGroups = roleGroups;
+                        groupingTitle = "Role";
+                      }
+                      
+                      return (
+                        <div className="space-y-6">
+                          {Object.entries(primaryGroups).map(([group, groupSuggestions]) => (
+                            <div key={group} className="space-y-3">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                                {groupingTitle}: {group} ({groupSuggestions.length})
+                              </h3>
+                              {groupSuggestions.map(suggestion => (
+                                <div key={suggestion?.user?.id || 'unknown'} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                  <div className="flex items-center space-x-4">
+                                    <img
+                                      src={getAvatarUrl(suggestion?.user?.avatar, suggestion?.user?.name || 'User')}
+                                      alt={suggestion?.user?.name || 'User'}
+                                      className="w-12 h-12 rounded-full object-cover"
+                                    />
+                                    <div>
+                                      <h3 className="font-medium text-gray-900 dark:text-white">{suggestion?.user?.name || 'User'}</h3>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {suggestion?.user?.course && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                            {suggestion.user.course}
+                                          </span>
+                                        )}
+                                        {suggestion?.user?.batch && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                            {suggestion.user.batch}
+                                          </span>
+                                        )}
+                                        {suggestion?.user?.role && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+                                            {suggestion.user.role}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {suggestion?.mutualFriends > 0 && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                          {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => {
+                                        if (!suggestion?.user?.id) {
+                                          console.error('FRIENDS: Suggestion user ID is undefined!');
+                                          return;
+                                        }
+                                        navigateToProfile(suggestion.user.id);
+                                      }}
+                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                                    >
+                                      View Profile
+                                    </button>
+                                    <button
+                                      onClick={() => suggestion?.user?.id && handleAddFriend(suggestion.user.id)}
+                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                    >
+                                      Add Friend
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => {
-                                if (!suggestion?.user?.id) {
-                                  console.error('FRIENDS: Suggestion user ID is undefined!');
-                                  return;
-                                }
-                                navigateToProfile(suggestion.user.id);
-                              }}
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
-                            >
-                              View Profile
-                            </button>
-                            <button
-                              onClick={() => suggestion?.user?.id && handleAddFriend(suggestion.user.id)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                            >
-                              Add Friend
-                            </button>
-                          </div>
+                          ))}
                         </div>
-                      ))
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
               </div>

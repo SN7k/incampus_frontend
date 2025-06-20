@@ -13,6 +13,8 @@ export interface User {
     publicId?: string;
   };
   email?: string;
+  course?: string;  // Program (like BCA, MCA)
+  batch?: string;   // Year/batch
 }
 
 export interface Post {

@@ -12,7 +12,9 @@ const transformUser = (user: any): User => {
     avatar: user.avatar,
     bio: user.bio,
     coverPhoto: user.coverPhoto,
-    email: user.email
+    email: user.email,
+    course: user.course,
+    batch: user.batch
   };
 };
 
@@ -30,6 +32,7 @@ export interface FriendSuggestion {
   user: User;
   mutualFriends: number;
   relevance: string[];
+  priority: number;
 }
 
 // API response types
@@ -139,10 +142,15 @@ export const friendsApi = {
       console.log('FriendsApi: Suggestions response:', response.data);
       const suggestions = response.data.data.suggestions || [];
       console.log('FriendsApi: Parsed suggestions:', suggestions);
+      
+      // Ensure each suggestion has the required properties
       const transformedSuggestions = suggestions.map(suggestion => ({
-        ...suggestion,
-        user: transformUser(suggestion.user)
+        user: transformUser(suggestion.user),
+        mutualFriends: suggestion.mutualFriends || 0,
+        relevance: suggestion.relevance || [],
+        priority: suggestion.priority || 0
       }));
+      
       console.log('FriendsApi: Transformed suggestions:', transformedSuggestions);
       return transformedSuggestions;
     } catch (error) {
