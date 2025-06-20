@@ -24,6 +24,7 @@ const Friends: React.FC = () => {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
+  const [suggestionSearch, setSuggestionSearch] = useState('');
 
   // Load data based on active tab
   const loadData = useCallback(async () => {
@@ -410,7 +411,21 @@ const Friends: React.FC = () => {
 
                 {activeTab === 'suggestions' && (
                   <div className="space-y-4">
-                    {suggestions.length === 0 ? (
+                    {/* Search Bar for Suggestions */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-white"
+                        placeholder="Search suggestions..."
+                        value={suggestionSearch}
+                        onChange={e => setSuggestionSearch(e.target.value)}
+                      />
+                    </div>
+                    {suggestions.filter(suggestion =>
+                      suggestion.user.name.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                      suggestion.user.universityId?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                      suggestion.user.role.toLowerCase().includes(suggestionSearch.toLowerCase())
+                    ).length === 0 ? (
                       <div className="text-center py-8">
                         <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No suggestions</h3>
@@ -419,7 +434,11 @@ const Friends: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      suggestions.map(suggestion => (
+                      suggestions.filter(suggestion =>
+                        suggestion.user.name.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                        suggestion.user.universityId?.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                        suggestion.user.role.toLowerCase().includes(suggestionSearch.toLowerCase())
+                      ).map(suggestion => (
                         <div key={suggestion?.user?.id || 'unknown'} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                           <div className="flex items-center space-x-4">
                             <img
@@ -435,8 +454,8 @@ const Friends: React.FC = () => {
                               <p className="text-xs text-gray-400 dark:text-gray-500">
                                 {suggestion?.mutualFriends || 0} mutual {(suggestion?.mutualFriends || 0) === 1 ? 'friend' : 'friends'}
                               </p>
-                                </div>
-                              </div>
+                            </div>
+                          </div>
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => {
@@ -450,14 +469,13 @@ const Friends: React.FC = () => {
                             >
                               View Profile
                             </button>
-                                <button 
+                            <button
                               onClick={() => suggestion?.user?.id && handleAddFriend(suggestion.user.id)}
                               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
                             >
-                              <UserPlus className="w-4 h-4 inline mr-1" />
                               Add Friend
-                                </button>
-                              </div>
+                            </button>
+                          </div>
                         </div>
                       ))
                     )}
