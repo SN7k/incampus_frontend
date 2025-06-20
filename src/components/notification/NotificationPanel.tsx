@@ -88,7 +88,7 @@ const NotificationPanel: React.FC = () => {
             animate="visible"
             exit="exit"
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed left-1/2 top-1/2 sm:top-1/3 z-[100] w-full max-w-md sm:max-w-lg md:max-w-xl -translate-x-1/2 -translate-y-1/2 sm:-translate-y-1/4 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg"
+            className="fixed left-1/2 top-1/2 z-[100] w-full max-w-md sm:max-w-lg md:max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg"
             style={{ maxHeight: '80vh' }}
           >
             {/* Header */}
