@@ -241,7 +241,7 @@ const Friends: React.FC = () => {
                           data-profile-id={friend.id}
                         >
                           <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{friend.name}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{friend.role}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{friend.role === 'faculty' ? 'Faculty' : friend.universityId}</p>
                         </div>
                         <div className="ml-auto relative">
                           {/* Initialize ref for this friend if it doesn't exist */}
@@ -323,7 +323,7 @@ const Friends: React.FC = () => {
                               }}
                             >
                               <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{request.sender.name}</h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{request.sender.role}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{request.sender.role === 'faculty' ? 'Faculty' : request.sender.universityId}</p>
                             </div>
                           </div>
                           <div className="flex space-x-3">
@@ -386,7 +386,7 @@ const Friends: React.FC = () => {
                                 }}
                               >
                                 <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{request.receiver.name}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{request.receiver.role}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{request.receiver.role === 'faculty' ? 'Faculty' : request.receiver.universityId}</p>
                                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Pending approval</p>
                               </div>
                             </div>
