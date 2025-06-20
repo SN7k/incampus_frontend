@@ -69,9 +69,10 @@ export const usersApi = {
   // Get user suggestions (for friend suggestions)
   getUserSuggestions: async (): Promise<User[]> => {
     try {
-      const response = await API.get<{status: string, data: User[]}>('/friends/suggestions');
-      // Always convert id to string for each user
-      return response.data.data.map(user => {
+      const response = await API.get<{status: string, data: any[]}>('/friends/suggestions');
+      // Handle both formats: array of users or array of { user, ... }
+      return response.data.data.map(item => {
+        const user = item.user ? item.user : item;
         const anyUser = user as any;
         return {
           ...user,
