@@ -162,9 +162,9 @@ const Friends: React.FC = () => {
     >
       <div className="pt-20 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Friends</h1>
-          <div className="flex justify-center mb-8">
-            <div className="grid grid-cols-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 mt-2">Friends</h1>
+          <div className="mb-8">
+            <div className="grid grid-cols-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 w-full">
               <button
                 className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'friends' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
                 onClick={() => setActiveTab('friends')}
