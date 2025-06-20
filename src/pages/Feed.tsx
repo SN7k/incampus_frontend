@@ -273,11 +273,11 @@ const Feed: React.FC = () => {
             )}
           </div>
         </PullToRefresh>
+        <CreatePostModal
+          isOpen={isCreatePostModalOpen}
+          onClose={() => setIsCreatePostModalOpen(false)}
+        />
       </div>
-      <CreatePostModal
-        isOpen={isCreatePostModalOpen}
-        onClose={() => setIsCreatePostModalOpen(false)}
-      />
     </div>
   );
 };
