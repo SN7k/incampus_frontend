@@ -205,7 +205,9 @@ const Feed: React.FC = () => {
                 <a
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
-                  onClick={() => {}}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'settings' } }));
+                  }}
                 >
                   <Settings size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
                   Settings
