@@ -134,65 +134,26 @@ export const friendsApi = {
       console.log('FriendsApi: Fetching friend suggestions...');
       const response = await API.get<any>('/friends/suggestions');
       console.log('FriendsApi: Suggestions response:', response.data);
-      
-      // Handle different API response formats
+
+      // Always handle both formats: array of users or array of { user, ... }
       let suggestions: any[] = [];
-      
-      if (response.data.data) {
-        if (Array.isArray(response.data.data)) {
-          // Handle the case where data is an array of users directly
-          suggestions = response.data.data.map((user: any) => ({
-            user,
-            mutualFriends: 0,
-            relevance: [user.course || '', user.batch || '', user.role || ''].filter(Boolean),
-            priority: 1
-          }));
-        } else if (response.data.data.suggestions) {
-          // Handle the case where data contains a suggestions property
-          suggestions = response.data.data.suggestions;
-        } else if (response.data.data.users) {
-          // Handle the case where data contains a users property
-          suggestions = response.data.data.users.map((user: any) => ({
-            user,
-            mutualFriends: 0,
-            relevance: [user.course || '', user.batch || '', user.role || ''].filter(Boolean),
-            priority: 1
-          }));
-        }
-      }
-      
-      console.log('FriendsApi: Parsed suggestions:', suggestions);
-      
-      // If still no suggestions, log the error and return an empty array
-      if (!suggestions || suggestions.length === 0) {
-        console.error('FriendsApi: No suggestions found in API response');
-        return [];
-      }
-      
-      // Ensure each suggestion has the required properties
-      const transformedSuggestions = suggestions.map(suggestion => {
-        // If the suggestion already has a user property
-        if (suggestion.user) {
+      if (Array.isArray(response.data.data)) {
+        suggestions = response.data.data.map((item: any) => {
+          const user = item.user ? item.user : item;
+          const anyUser = user as any;
           return {
-            user: transformUser(suggestion.user),
-            mutualFriends: suggestion.mutualFriends || 0,
-            relevance: suggestion.relevance || [],
-            priority: suggestion.priority || 0
+            user: transformUser({
+              ...user,
+              id: (user.id || anyUser._id) ? String(user.id || anyUser._id) : '',
+            }),
+            mutualFriends: item.mutualFriends || 0,
+            relevance: item.relevance || [user.course || '', user.batch || '', user.role || ''].filter(Boolean),
+            priority: item.priority || 0
           };
-        } 
-        // If the suggestion itself is a user
-        else {
-          return {
-            user: transformUser(suggestion),
-            mutualFriends: 0,
-            relevance: [suggestion.course || '', suggestion.batch || '', suggestion.role || ''].filter(Boolean),
-            priority: 0
-          };
-        }
-      });
-      
-      console.log('FriendsApi: Transformed suggestions:', transformedSuggestions);
-      return transformedSuggestions;
+        });
+      }
+      console.log('FriendsApi: Transformed suggestions:', suggestions);
+      return suggestions;
     } catch (error) {
       console.error('Error fetching friend suggestions:', error);
       return []; // Return empty array on error
