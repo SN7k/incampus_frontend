@@ -161,21 +161,21 @@ const Friends: React.FC = () => {
   };
 
   return (
-    <div className="pt-20 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-      <PullToRefresh onRefresh={handleRefresh}
-        pullingContent={
-          <div className="flex items-center justify-center py-4 z-50 relative">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
-          </div>
-        }
-        refreshingContent={
-          <div className="flex items-center justify-center py-4 z-50 relative">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
-          </div>
-        }
-      >
+    <PullToRefresh onRefresh={handleRefresh}
+      pullingContent={
+        <div className="flex items-center justify-center py-4 z-50 relative">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
+        </div>
+      }
+      refreshingContent={
+        <div className="flex items-center justify-center py-4 z-50 relative">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
+        </div>
+      }
+    >
+      <div className="pt-20 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
         <div className="container mx-auto px-4">
           <div className="flex flex-col space-y-6 mt-4">
             {/* Header */}
@@ -222,7 +222,7 @@ const Friends: React.FC = () => {
               </button>
             </div>
 
-            {/* Tab content (motion.div) with border-radius is inside PullToRefresh */}
+            {/* Tab content (motion.div) with border-radius */}
             <motion.div 
               className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-700"
               variants={containerVariants}
@@ -466,8 +466,8 @@ const Friends: React.FC = () => {
             </motion.div>
           </div>
         </div>
-      </PullToRefresh>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };
 
