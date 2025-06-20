@@ -416,55 +416,25 @@ const Friends: React.FC = () => {
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">People you may know</h2>
                   {filteredSuggestions.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       {filteredSuggestions.map(suggestion => (
-                        <motion.div 
+                        <div 
                           key={suggestion.user.id}
-                          id={`suggestion-${suggestion.user.id}`}
-                          className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                          variants={itemVariants}
+                          className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
                         >
-                          <div className="flex items-center">
-                            <img 
-                              src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)} 
-                              alt={suggestion.user.name} 
-                              className="w-14 h-14 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigateToProfile(suggestion.user.id);
-                              }}
-                            />
-                            <div 
-                              className="ml-3 cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigateToProfile(suggestion.user.id);
-                              }}
-                            >
-                              <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{suggestion.user.name}</h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{suggestion.user.role}</p>
-                              {suggestion.relevance && suggestion.relevance.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {suggestion.relevance.map((rel, index) => (
-                                    <span key={index} className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
-                                      {rel}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">{suggestion.user.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{suggestion.user.universityId}</div>
                           </div>
-                          <div className="flex space-x-3">
-                            <button 
-                              className="p-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-600 dark:text-blue-400 rounded-full transition-colors"
-                              onClick={() => handleAddFriend(suggestion.user.id)}
-                              aria-label="Add Friend"
-                              title="Add Friend"
-                            >
-                              <UserPlus size={20} />
-                            </button>
-                          </div>
-                        </motion.div>
+                          <button
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full"
+                            onClick={() => handleAddFriend(suggestion.user.id)}
+                            aria-label="Add Friend"
+                            title="Add Friend"
+                          >
+                            <UserPlus size={20} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   ) : (
