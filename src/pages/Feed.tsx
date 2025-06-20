@@ -138,23 +138,23 @@ const Feed: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <PullToRefresh 
-          onRefresh={handleRefresh}
-          pullingContent={
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
-            </div>
-          }
-          refreshingContent={
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
-            </div>
-          }
-        >
+    <PullToRefresh 
+      onRefresh={handleRefresh}
+      pullingContent={
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Pull to refresh...</span>
+        </div>
+      }
+      refreshingContent={
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Refreshing...</span>
+        </div>
+      }
+    >
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 pb-20">
+        <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="space-y-6">
             {/* Post Creation */}
             <PostForm />
@@ -277,13 +277,13 @@ const Feed: React.FC = () => {
               </div>
             )}
           </div>
-        </PullToRefresh>
+        </div>
+        <CreatePostModal
+          isOpen={isCreatePostModalOpen}
+          onClose={() => setIsCreatePostModalOpen(false)}
+        />
       </div>
-      <CreatePostModal
-        isOpen={isCreatePostModalOpen}
-        onClose={() => setIsCreatePostModalOpen(false)}
-      />
-    </div>
+    </PullToRefresh>
   );
 };
 
