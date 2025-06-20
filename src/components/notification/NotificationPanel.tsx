@@ -5,7 +5,6 @@ import { useNotifications, Notification } from '../../contexts/NotificationConte
 import { formatDistanceToNow } from 'date-fns';
 import Button from '../ui/Button';
 import { getAvatarUrl } from '../../utils/avatarUtils';
-import ReactDOM from 'react-dom';
 
 const NotificationPanel: React.FC = () => {
   const { 
@@ -69,7 +68,7 @@ const NotificationPanel: React.FC = () => {
     }
   };
 
-  return ReactDOM.createPortal(
+  return (
     <AnimatePresence>
       {showNotificationPanel && (
         <motion.div
@@ -166,8 +165,7 @@ const NotificationPanel: React.FC = () => {
           </div>
         </motion.div>
       )}
-    </AnimatePresence>,
-    document.body
+    </AnimatePresence>
   );
 };
 
