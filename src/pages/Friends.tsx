@@ -422,9 +422,16 @@ const Friends: React.FC = () => {
                           key={suggestion.user.id}
                           className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
                         >
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">{suggestion.user.name}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">{suggestion.user.universityId}</div>
+                          <div className="flex items-center cursor-pointer" onClick={() => navigateToProfile(suggestion.user.id)}>
+                            <img
+                              src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name)}
+                              alt={suggestion.user.name}
+                              className="w-10 h-10 rounded-full object-cover mr-3"
+                            />
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{suggestion.user.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{suggestion.user.universityId}</div>
+                            </div>
                           </div>
                           <button
                             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full"
