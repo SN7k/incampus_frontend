@@ -12,13 +12,17 @@ const Friends: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<FriendTab>(() => {
     const savedTab = localStorage.getItem('friendsActiveTab');
-    if (savedTab) {
-      localStorage.removeItem('friendsActiveTab');
-    }
     return (savedTab === 'friends' || savedTab === 'requests' || savedTab === 'suggestions') 
       ? savedTab as FriendTab 
       : 'friends';
   });
+
+  useEffect(() => {
+    const savedTab = localStorage.getItem('friendsActiveTab');
+    if (savedTab) {
+      localStorage.removeItem('friendsActiveTab');
+    }
+  }, []);
   
   const [friends, setFriends] = useState<User[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
