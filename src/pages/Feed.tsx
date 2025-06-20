@@ -240,7 +240,11 @@ const Feed: React.FC = () => {
             {/* Refreshable Posts Section */}
             <PullToRefresh
               onRefresh={handleRefresh}
-              pullingContent={<div className="text-center text-gray-500 dark:text-gray-400 py-2">Pull down to refresh</div>}
+              pullingContent={
+                <div className="flex justify-center items-center py-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 dark:border-blue-400"></div>
+                </div>
+              }
               refreshingContent={
                 <div className="flex justify-center items-center py-3">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 dark:border-blue-400"></div>

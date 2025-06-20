@@ -163,12 +163,12 @@ const Friends: React.FC = () => {
   return (
     <PullToRefresh onRefresh={handleRefresh}
       pullingContent={
-        <div className="flex items-center justify-center py-4 z-50 relative mt-8">
+        <div className="flex items-center justify-center py-4 z-50 relative mt-16">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
         </div>
       }
       refreshingContent={
-        <div className="flex items-center justify-center py-4 z-50 relative mt-8">
+        <div className="flex items-center justify-center py-4 z-50 relative mt-16">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
         </div>
       }
@@ -176,44 +176,47 @@ const Friends: React.FC = () => {
       <div className="pt-20 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
         <div className="container mx-auto px-4">
           <div className="flex flex-col space-y-6 mt-4">
-            {/* Tab buttons and header */}
-            <div className="flex justify-center mb-6 sticky top-0 z-20 bg-gray-50 dark:bg-gray-900">
-              <div className="grid grid-cols-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <button
-                  className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'friends' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
-                  onClick={() => setActiveTab('friends')}
-                >
-                  <UserCheck size={18} className="mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">Friends</span>
-                </button>
-                <button
-                  className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'requests' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
-                  onClick={() => setActiveTab('requests')}
-                >
-                  <div className="relative">
-                    <UserPlus size={18} className="mb-1 sm:mb-0 sm:mr-2" />
-                    {(friendRequests.length > 0 || sentRequests.filter(req => req.status === 'pending').length > 0) && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                        {friendRequests.length + sentRequests.filter(req => req.status === 'pending').length}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs sm:text-sm">Requests</span>
-                </button>
-                <button
-                  className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'suggestions' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
-                  onClick={() => setActiveTab('suggestions')}
-                >
-                  <div className="relative">
-                    <Users size={18} className="mb-1 sm:mb-0 sm:mr-2" />
-                    {filteredSuggestions.length > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                        {filteredSuggestions.length}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs sm:text-sm">Suggestions</span>
-                </button>
+            {/* Sticky header with Friends title and tab buttons */}
+            <div className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 pt-4 pb-2">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Friends</h1>
+              <div className="flex justify-center mb-2">
+                <div className="grid grid-cols-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <button
+                    className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'friends' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                    onClick={() => setActiveTab('friends')}
+                  >
+                    <UserCheck size={18} className="mb-1 sm:mb-0 sm:mr-2" />
+                    <span className="text-xs sm:text-sm">Friends</span>
+                  </button>
+                  <button
+                    className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'requests' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                    onClick={() => setActiveTab('requests')}
+                  >
+                    <div className="relative">
+                      <UserPlus size={18} className="mb-1 sm:mb-0 sm:mr-2" />
+                      {(friendRequests.length > 0 || sentRequests.filter(req => req.status === 'pending').length > 0) && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                          {friendRequests.length + sentRequests.filter(req => req.status === 'pending').length}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs sm:text-sm">Requests</span>
+                  </button>
+                  <button
+                    className={`flex flex-col sm:flex-row items-center justify-center sm:justify-start px-2 sm:px-4 py-3 ${activeTab === 'suggestions' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                    onClick={() => setActiveTab('suggestions')}
+                  >
+                    <div className="relative">
+                      <Users size={18} className="mb-1 sm:mb-0 sm:mr-2" />
+                      {filteredSuggestions.length > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium px-1 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                          {filteredSuggestions.length}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs sm:text-sm">Suggestions</span>
+                  </button>
+                </div>
               </div>
             </div>
 
