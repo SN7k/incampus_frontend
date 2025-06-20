@@ -572,64 +572,60 @@ const Friends: React.FC = () => {
                           {Object.entries(primaryGroups).map(([group, groupSuggestions]) => (
                             <div key={group} className="space-y-3">
                               <h3 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                                {groupingTitle}: {group} ({groupSuggestions.length})
+                                {groupingTitle}: {group} ({groupSuggestions.filter(suggestion => suggestion.user && suggestion.user.id).length})
                               </h3>
-                              {groupSuggestions.map(suggestion => (
-                                <div key={suggestion?.user?.id || 'unknown'} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                  <div className="flex items-center space-x-4">
-                                    <img
-                                      src={getAvatarUrl(suggestion?.user?.avatar, suggestion?.user?.name || 'User')}
-                                      alt={suggestion?.user?.name || 'User'}
-                                      className="w-12 h-12 rounded-full object-cover"
-                                    />
-                                    <div>
-                                      <h3 className="font-medium text-gray-900 dark:text-white">{suggestion?.user?.name || 'User'}</h3>
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {suggestion?.user?.course && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                                            {suggestion.user.course}
-                                          </span>
-                                        )}
-                                        {suggestion?.user?.batch && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                                            {suggestion.user.batch}
-                                          </span>
-                                        )}
-                                        {suggestion?.user?.role && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
-                                            {suggestion.user.role}
-                                          </span>
+                              {groupSuggestions
+                                .filter(suggestion => suggestion.user && suggestion.user.id)
+                                .map(suggestion => (
+                                  <div key={suggestion.user.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <div className="flex items-center space-x-4">
+                                      <img
+                                        src={getAvatarUrl(suggestion.user.avatar, suggestion.user.name || 'User')}
+                                        alt={suggestion.user.name || 'User'}
+                                        className="w-12 h-12 rounded-full object-cover"
+                                      />
+                                      <div>
+                                        <h3 className="font-medium text-gray-900 dark:text-white">{suggestion.user.name || 'User'}</h3>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {suggestion.user.course && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                              {suggestion.user.course}
+                                            </span>
+                                          )}
+                                          {suggestion.user.batch && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                              {suggestion.user.batch}
+                                            </span>
+                                          )}
+                                          {suggestion.user.role && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+                                              {suggestion.user.role}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {suggestion.mutualFriends > 0 && (
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
+                                          </p>
                                         )}
                                       </div>
-                                      {suggestion?.mutualFriends > 0 && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                          {suggestion.mutualFriends} mutual {suggestion.mutualFriends === 1 ? 'friend' : 'friends'}
-                                        </p>
-                                      )}
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <button
+                                        onClick={() => navigateToProfile(suggestion.user.id)}
+                                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                                      >
+                                        View Profile
+                                      </button>
+                                      <button
+                                        onClick={() => handleAddFriend(suggestion.user.id)}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                      >
+                                        Add Friend
+                                      </button>
                                     </div>
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      onClick={() => {
-                                        if (!suggestion?.user?.id) {
-                                          console.error('FRIENDS: Suggestion user ID is undefined!');
-                                          return;
-                                        }
-                                        navigateToProfile(suggestion.user.id);
-                                      }}
-                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
-                                    >
-                                      View Profile
-                                    </button>
-                                    <button
-                                      onClick={() => suggestion?.user?.id && handleAddFriend(suggestion.user.id)}
-                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                                    >
-                                      Add Friend
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
                             </div>
                           ))}
                         </div>
