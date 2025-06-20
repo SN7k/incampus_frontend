@@ -323,7 +323,7 @@ const Friends: React.FC = () => {
                             <Check size={20} />
                           </button>
                           <button 
-                            className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 rounded-full transition-colors"
+                            className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 rounded-full"
                             onClick={() => handleDeclineRequest(request.id)}
                             aria-label="Decline"
                             title="Decline"
@@ -366,7 +366,7 @@ const Friends: React.FC = () => {
                             </div>
                           </div>
                           <button
-                            className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 rounded-full ml-2"
+                            className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 rounded-full"
                             onClick={() => handleCancelRequest(request.id)}
                             aria-label="Cancel Request"
                             title="Cancel Request"

@@ -77,7 +77,7 @@ const NotificationPanel: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+          className="fixed bottom-0 left-0 right-0 w-full rounded-t-lg bg-white dark:bg-gray-800 shadow-xl border-t border-gray-200 dark:border-gray-700 z-50 overflow-hidden sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-80 sm:rounded-lg sm:border sm:border-gray-200 sm:dark:border-gray-700"
           style={{ maxHeight: '80vh' }}
         >
           {/* Header */}
