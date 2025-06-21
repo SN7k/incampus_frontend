@@ -24,15 +24,6 @@ export interface Post {
   content: string;
   images?: Image[];
   likes: User[];
-  comments: Comment[];
-  createdAt: Date;
-}
-
-export interface Comment {
-  id: string;
-  userId: string;
-  user: User;
-  content: string;
   createdAt: Date;
 }
 

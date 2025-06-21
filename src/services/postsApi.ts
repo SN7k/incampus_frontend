@@ -125,28 +125,6 @@ export const unlikePost = async (postId: string): Promise<Post> => {
 };
 
 /**
- * Add a comment to a post
- * @param postId Post ID to comment on
- * @param content Comment content
- * @returns Updated post with new comment
- */
-export const addComment = async (postId: string, content: string): Promise<Post> => {
-  const response = await API.post<PostResponse>(`/posts/${postId}/comments`, { content });
-  return response.data.data.post;
-};
-
-/**
- * Delete a comment from a post
- * @param postId Post ID the comment belongs to
- * @param commentId Comment ID to delete
- * @returns Updated post without the deleted comment
- */
-export const deleteComment = async (postId: string, commentId: string): Promise<Post> => {
-  const response = await API.delete<PostResponse>(`/posts/${postId}/comments/${commentId}`);
-  return response.data.data.post;
-};
-
-/**
  * Toggle like a post
  * @param postId Post ID to toggle like
  * @returns Updated post
@@ -169,7 +147,5 @@ export const postsApi = {
   deletePost,
   likePost,
   unlikePost,
-  addComment,
-  deleteComment,
   toggleLike
 };

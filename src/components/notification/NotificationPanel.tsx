@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, CheckCheck, Trash2, UserPlus, Heart, MessageCircle } from 'lucide-react';
+import { Bell, X, CheckCheck, Trash2, UserPlus, Heart } from 'lucide-react';
 import { useNotifications, Notification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import Button from '../ui/Button';
@@ -53,7 +53,7 @@ const NotificationPanel: React.FC = () => {
     markAsRead(notification.id);
     if (notification.type === 'friend_request' && notification.userId) {
       window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'friends', tab: 'requests' } }));
-    } else if ((notification.type === 'like' || notification.type === 'comment') && notification.postId) {
+    } else if (notification.type === 'like' && notification.postId) {
       window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'feed' } }));
     }
     setShowNotificationPanel(false);
@@ -64,7 +64,6 @@ const NotificationPanel: React.FC = () => {
     switch (type) {
       case 'friend_request': return <UserPlus size={18} className="text-blue-500" />;
       case 'like': return <Heart size={18} className="text-red-500" />;
-      case 'comment': return <MessageCircle size={18} className="text-green-500" />;
       default: return <Bell size={18} className="text-gray-500" />;
     }
   };

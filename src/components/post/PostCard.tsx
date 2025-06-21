@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2, MessageSquare } from 'lucide-react';
+import { Heart, Share2, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
 import { Post, User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
@@ -8,10 +8,9 @@ import { friendsApi } from '../../services/friendsApi';
 
 interface PostCardProps {
   post: Post;
-  onCommentClick: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onCommentClick }) => {
+const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { user: currentUser } = useAuth();
   
   const [isLiked, setIsLiked] = useState(
@@ -230,7 +229,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onCommentClick }) => {
         </div>
       )}
 
-      <div className="flex justify-between items-center px-5 py-2 border-t border-gray-100 dark:border-gray-700">
+      {/* Post Actions */}
+      <div className="flex justify-around items-center px-5 py-2 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-2">
           <button 
             onClick={toggleLike}
@@ -241,12 +241,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onCommentClick }) => {
           </button>
           <span className="text-sm text-gray-600 dark:text-gray-300">{likesCount}</span>
         </div>
-        <button 
-          onClick={() => onCommentClick(post.id)}
-          className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 p-2 rounded-full transition-colors"
-        >
-          <MessageSquare size={22} />
-        </button>
         <button 
           onClick={handleShare}
           className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/50 p-2 rounded-full transition-colors relative"
