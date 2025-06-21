@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2 } from 'lucide-react';
-import { Post } from '../../types';
-import { User } from '../../types';
+import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2, MessageSquare } from 'lucide-react';
+import { Post, User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
 import { getAvatarUrl } from '../../utils/avatarUtils';
@@ -9,217 +8,119 @@ import { friendsApi } from '../../services/friendsApi';
 
 interface PostCardProps {
   post: Post;
+  onCommentClick: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onCommentClick }) => {
   const { user: currentUser } = useAuth();
-  const [localPost, setLocalPost] = useState<Post>(post);
-  const [isLiked, setIsLiked] = useState(false);
+  
+  const [isLiked, setIsLiked] = useState(
+    currentUser ? post.likes.some(like => (like as User).id === currentUser.id) : false
+  );
   const [likesCount, setLikesCount] = useState(post.likes.length);
+  
   const [showShareTooltip, setShowShareTooltip] = useState(false);
-  const [shareIcon, setShareIcon] = useState<'share' | 'copy' | 'check'>('share');
   const [showMenu, setShowMenu] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [friends, setFriends] = useState<User[]>([]);
+  const [loadingLike, setLoadingLike] = useState(false);
+  
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  
-  // Update local state when prop changes
-  useEffect(() => {
-    setLocalPost(post);
-    setLikesCount(post.likes.length);
-  }, [post]);
 
-  // Load likes from localStorage on component mount
+  useEffect(() => {
+    setIsLiked(currentUser ? post.likes.some(like => (like as User).id === currentUser.id) : false);
+    setLikesCount(post.likes.length);
+  }, [post, currentUser]);
+
   useEffect(() => {
     if (currentUser) {
-      // Check if current user has liked this post
       const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
       const postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
       
-      // Set initial like state based on localStorage
       setIsLiked(likedPosts[post.id] === true);
       setLikesCount(postLikes.length);
     }
   }, [currentUser, post.id]);
 
-  // Fetch current user's friends list
   useEffect(() => {
     if (currentUser) {
-      friendsApi.getFriendsList().then(setFriends);
+      friendsApi.getFriendsList();
     }
   }, [currentUser]);
 
   const toggleLike = async () => {
-    if (!currentUser || loading) return; // Ensure user is logged in
+    if (!currentUser || loadingLike) return;
     
-    setLoading(true);
+    setLoadingLike(true);
+    
+    const originalIsLiked = isLiked;
+    const originalLikesCount = likesCount;
+    setIsLiked(!originalIsLiked);
+    setLikesCount(originalIsLiked ? originalLikesCount - 1 : originalLikesCount + 1);
+
     try {
-      // Update local state
-      const newIsLiked = !isLiked;
-      let updatedPost: Post;
-      if (newIsLiked) {
-        updatedPost = await postsApi.likePost(localPost.id);
-      } else {
-        updatedPost = await postsApi.unlikePost(localPost.id);
-      }
-      setLocalPost(updatedPost);
-      setLikesCount(updatedPost.likes.length);
-      setIsLiked(newIsLiked);
-      
-      // Update localStorage for user's liked posts
-      const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-      if (newIsLiked) {
-        likedPosts[localPost.id] = true;
-      } else {
-        delete likedPosts[localPost.id];
-      }
-      localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-      
-      // Update localStorage for post's likes
-      let postLikes = JSON.parse(localStorage.getItem(`post_${localPost.id}_likes`) || '[]');
-      if (newIsLiked) {
-        // Add user to likes if not already present
-        if (!postLikes.includes(currentUser.id)) {
-          postLikes.push(currentUser.id);
-        }
-      } else {
-        // Remove user from likes
-        postLikes = postLikes.filter((id: string) => id !== currentUser.id);
-      }
-      localStorage.setItem(`post_${localPost.id}_likes`, JSON.stringify(postLikes));
-      
-      // Dispatch a custom event to notify other components about the like change
-      window.dispatchEvent(new CustomEvent('postLikeChanged', { 
-        detail: { 
-          postId: localPost.id,
-          likesCount: updatedPost.likes.length,
-          isLiked: newIsLiked,
-          userId: currentUser.id
-        } 
-      }));
-      
-      // Dispatch event for notifications if the user liked the post (not when unliking)
-      if (newIsLiked) {
-        window.dispatchEvent(new CustomEvent('postLike', { 
-          detail: { 
-            fromUser: currentUser.id,
-            postId: localPost.id,
-            postAuthorId: localPost.user.id
-          } 
-        }));
-      }
+      await postsApi.toggleLike(post.id);
     } catch (error) {
-      console.error('Error toggling like:', error);
-      // Revert the UI state on error
-      setIsLiked(!isLiked);
-      setLikesCount(isLiked ? likesCount + 1 : likesCount - 1);
+      console.error('Failed to toggle like:', error);
+      setIsLiked(originalIsLiked);
+      setLikesCount(originalLikesCount);
     } finally {
-      setLoading(false);
+      setLoadingLike(false);
     }
   };
 
   const handleShare = async () => {
-    // Create a shareable URL for the post
     const postUrl = `${window.location.origin}/post/${post.id}`;
-    
-    // Try to use the Web Share API if available
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Post by ${post.user.name}`,
-          text: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+          text: post.content.substring(0, 100),
           url: postUrl
         });
-        return;
-      } catch (error) {
-        console.error('Error sharing:', error);
-        // Fall back to clipboard if sharing fails
-      }
-    }
-    
-    // Fallback: Copy to clipboard
-    try {
-      await navigator.clipboard.writeText(postUrl);
-      setShareIcon('check');
-      setShowShareTooltip(true);
-      
-      // Reset the icon and hide tooltip after 2 seconds
-      setTimeout(() => {
-        setShareIcon('share');
-        setShowShareTooltip(false);
-      }, 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
-  };
-
-  // Navigate to user profile
-  const navigateToProfile = () => {
-    const isCurrentUser = currentUser && post.user.id === currentUser.id;
-    
-    // First, clear any existing localStorage data to prevent conflicts
-    localStorage.removeItem('activeProfileTab'); // Clear any active tab selection
-    
-    // Save the current page and target user ID to localStorage
-    localStorage.setItem('currentPage', 'profile');
-    
-    if (!isCurrentUser) {
-      // Store the target user ID if it's not the current user
-      if (post.user?.id) {
-        localStorage.setItem('viewProfileUserId', post.user.id);
-        
-        // If this is a faculty profile, store a special ID
-        if (post.user?.role === 'faculty') {
-          localStorage.setItem('viewProfileUserId', 'faculty-1');
-        }
+      } catch (err) {
+        console.error('Share failed:', err);
       }
     } else {
-      // Clear any stored user ID if viewing own profile
-      localStorage.removeItem('viewProfileUserId');
+      await navigator.clipboard.writeText(postUrl);
+      setShowShareTooltip(true);
+      setTimeout(() => setShowShareTooltip(false), 2000);
     }
-    
-    // Add timestamp to make the event unique
-    const timestamp = new Date().getTime();
-    
-    // Trigger a navigation event with scroll instructions
-    window.dispatchEvent(new CustomEvent('navigate', { 
-      detail: { 
-        page: 'profile',
-        scrollToTop: true,
-        timestamp: timestamp
-      } 
-    }));
-    
-    // Ensure the page scrolls to the top
-    window.scrollTo(0, 0);
   };
 
-  // Handle click outside to close the menu
+  const navigateToProfile = () => {
+    if (post.user?.id) {
+      localStorage.setItem('viewProfileUserId', post.user.id);
+      window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'profile' } }));
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!currentUser || post.user?.id !== currentUser.id) return;
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      try {
+        await postsApi.deletePost(post.id);
+        window.dispatchEvent(new CustomEvent('postDeleted', { detail: { postId: post.id } }));
+      } catch (error) {
+        console.error('Failed to delete post:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current && 
-        !menuRef.current.contains(event.target as Node) &&
-        buttonRef.current && 
-        !buttonRef.current.contains(event.target as Node)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setShowMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  // Listen for like changes from other components
   useEffect(() => {
     const handleLikeChange = (event: CustomEvent) => {
       const { postId, likesCount: newLikesCount, userId } = event.detail;
       
-      // Only update if this is the same post and not triggered by the current user
       if (postId === post.id && currentUser && userId !== currentUser.id) {
         setLikesCount(newLikesCount);
       }
@@ -231,201 +132,133 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     };
   }, [post.id, currentUser]);
 
-  // Handle delete post
-  const handleDeletePost = async () => {
-    if (!currentUser || post.user?.id !== currentUser.id) return;
-    
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      try {
-        await postsApi.deletePost(post.id);
-        
-        // Remove any likes associated with this post
-        localStorage.removeItem(`post_${post.id}_likes`);
-        
-        // Update user's liked posts to remove this post if it was liked
-        const likedPostsStr = localStorage.getItem('likedPosts') || '{}';
-        const likedPosts = JSON.parse(likedPostsStr);
-        if (likedPosts[post.id]) {
-          delete likedPosts[post.id];
-          localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-        }
-        
-        // Dispatch event to notify other components
-        window.dispatchEvent(new CustomEvent('postDeleted', { 
-          detail: { postId: post.id } 
-        }));
-        
-        // Close the menu first to avoid UI glitches
-        setShowMenu(false);
-        
-      } catch (error: unknown) {
-        console.error('Error deleting post:', error);
-        alert('Failed to delete post. Please try again.');
-      }
-    }
-  };
+  if (!post || !post.user) {
+    return null;
+  }
 
-  const formatDate = (date: Date | string) => {
-    // Ensure we have a Date object
-    const dateObj = date instanceof Date ? date : new Date(date);
+  const formatDate = (date: Date | string): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return 'Just now';
     
-    // Check if the date is valid
-    if (isNaN(dateObj.getTime())) {
-      return 'Unknown time';
-    }
-    
-    return dateObj.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const diff = new Date().getTime() - d.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 1) return `${days}d`;
+    if (hours > 1) return `${hours}h`;
+    if (minutes > 1) return `${minutes}m`;
+    return 'Just now';
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg mb-6 w-full max-w-2xl mx-auto">
-      {/* Post header */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <img 
-            src={getAvatarUrl(post.user?.avatar, post.user?.name || 'User')} 
-            alt={post.user?.name || 'User'} 
-            className="w-10 h-10 rounded-full object-cover flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={navigateToProfile}
-          />
-          <div className="overflow-hidden">
-            <div 
-              className="font-semibold text-gray-800 dark:text-gray-100 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              onClick={navigateToProfile}
-            >
-              {post.user?.name || 'User'}
-              {post.user?.role === 'faculty' && (
-                <span className="ml-2 text-xs font-medium px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
-                  Faculty
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center truncate">
-              {formatDate(post.createdAt)} · {post.user?.universityId || (post.user?.role === 'faculty' ? 'Faculty' : 'Student')}
-            </div>
-          </div>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md mb-4 transition-colors duration-200">
+      {(post as any).likedByFriend && (
+        <div className="px-5 pt-3 pb-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
+          <Heart size={14} className="mr-2 text-gray-400" />
+          <span>{(post as any).likedByFriend} liked this</span>
         </div>
-        {/* Show menu only for current user's posts */}
-        {currentUser && post.user?.id === currentUser.id && (
-          <div className="relative">
-            <button 
-              ref={buttonRef}
-              onClick={() => setShowMenu(!showMenu)}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex-shrink-0 ml-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <MoreHorizontal size={20} />
-            </button>
-            
-            {showMenu && (
-              <div 
-                ref={menuRef}
-                className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5 focus:outline-none"
-              >
+      )}
+
+      <div className="flex items-center px-5 pt-4">
+        <img
+          src={getAvatarUrl(post.user.avatar, post.user.name)}
+          alt={post.user.name}
+          className="w-11 h-11 rounded-full object-cover cursor-pointer"
+          onClick={navigateToProfile}
+        />
+        <div className="ml-3">
+          <h4 
+            className="font-semibold text-gray-800 dark:text-gray-100 cursor-pointer"
+            onClick={navigateToProfile}
+          >
+            {post.user.name}
+          </h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {formatDate(post.createdAt)}
+          </p>
+        </div>
+        <div className="ml-auto relative">
+          <button 
+            ref={buttonRef}
+            onClick={() => setShowMenu(!showMenu)} 
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+          >
+            <MoreHorizontal size={20} />
+          </button>
+          {showMenu && (
+            <div ref={menuRef} className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl z-10 border border-gray-100 dark:border-gray-600">
+              {currentUser && post.user.id === currentUser.id ? (
                 <button
                   onClick={handleDeletePost}
-                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center"
                 >
                   <Trash2 size={16} className="mr-2" />
                   Delete Post
                 </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Post content (always render) */}
-      <div className="px-4 py-2">
-        <p className="text-gray-800 dark:text-gray-100 whitespace-pre-line break-words">{post.content}</p>
-      </div>
-      
-      {/* Post media (optional) */}
-      {post.images && post.images.length > 0 && (
-        <div className="w-full">
-          {post.images[0].type === 'image' && (
-            <img 
-              src={post.images[0].url} 
-              alt="Post content" 
-              className="w-full h-auto object-cover max-h-[500px]"
-              loading="lazy"
-            />
-          )}
-          {post.images[0].type === 'video' && (
-            <video 
-              src={post.images[0].url} 
-              controls 
-              className="w-full h-auto max-h-[500px]"
-              preload="metadata"
-            />
+              ) : (
+                <button
+                  onClick={handleShare}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center"
+                >
+                  <Copy size={16} className="mr-2" />
+                  Copy link
+                </button>
+              )}
+            </div>
           )}
         </div>
-      )}
-      
-      {/* Post stats */}
-      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-        <div>
-          {likesCount > 0 && (
-            <>
-              <span>{likesCount} like{likesCount !== 1 ? 's' : ''}</span>
-              {/* Show friends who liked this post */}
-              {Array.isArray(post.likes) && post.likes.length > 0 && friends.length > 0 && (
-                <div className="flex items-center mt-1 space-x-1">
-                  {post.likes
-                    .filter(liker => friends.some(friend => friend.id === liker.id))
-                    .slice(0, 3)
-                    .map(friend => (
-                      <img
-                        key={friend.id}
-                        src={getAvatarUrl(friend.avatar, friend.name)}
-                        alt={friend.name}
-                        className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-700 -ml-2 first:ml-0"
-                        title={friend.name}
-                      />
-                    ))}
-                  {post.likes.filter(liker => friends.some(friend => friend.id === liker.id)).length > 3 && (
-                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">+
-                      {post.likes.filter(liker => friends.some(friend => friend.id === liker.id)).length - 3} more
-                    </span>
-                  )}
+      </div>
+
+      <div className="px-5 py-3">
+        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
+      </div>
+
+      {post.images && post.images.length > 0 && (
+        <div className={`grid gap-1 ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {post.images.slice(0, 4).map((image, index) => (
+            <div key={index} className="relative aspect-square bg-gray-100 dark:bg-gray-700">
+              <img src={image.url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover" />
+              {post.images && post.images.length > 4 && index === 3 && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">+{post.images.length - 4}</span>
                 </div>
               )}
-            </>
-          )}
+            </div>
+          ))}
         </div>
-        <div></div>
-      </div>
-      
-      {/* Post actions */}
-      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
+      )}
+
+      <div className="flex justify-between items-center px-5 py-2 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={toggleLike}
+            className={`flex items-center space-x-2 p-2 rounded-full transition-colors ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/50'}`}
+            disabled={loadingLike}
+          >
+            <Heart fill={isLiked ? 'currentColor' : 'none'} size={22} />
+          </button>
+          <span className="text-sm text-gray-600 dark:text-gray-300">{likesCount}</span>
+        </div>
         <button 
-          onClick={toggleLike}
-          disabled={loading}
-          className={`flex items-center justify-center space-x-2 py-1.5 rounded-md ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'} hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+          onClick={() => onCommentClick(post.id)}
+          className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 p-2 rounded-full transition-colors"
         >
-          <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
-          <span className="sm:inline">Like</span>
+          <MessageSquare size={22} />
         </button>
         <button 
           onClick={handleShare}
-          className="relative flex items-center justify-center space-x-2 py-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/50 p-2 rounded-full transition-colors relative"
         >
-          {shareIcon === 'share' && <Share2 size={18} />}
-          {shareIcon === 'copy' && <Copy size={18} />}
-          {shareIcon === 'check' && <Check size={18} className="text-green-500" />}
-          <span className="sm:inline">{shareIcon === 'check' ? 'Copied!' : 'Share'}</span>
-          
+          <Share2 size={22} />
           {showShareTooltip && (
-            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-              Link copied to clipboard!
+            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
+              Link copied!
             </div>
           )}
         </button>
       </div>
-
     </div>
   );
 };

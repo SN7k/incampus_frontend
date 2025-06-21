@@ -146,6 +146,20 @@ export const deleteComment = async (postId: string, commentId: string): Promise<
   return response.data.data.post;
 };
 
+/**
+ * Toggle like a post
+ * @param postId Post ID to toggle like
+ * @returns Updated post
+ */
+export const toggleLike = async (postId: string): Promise<void> => {
+  try {
+    await API.post(`/posts/${postId}/like`);
+  } catch (error) {
+    console.error('API Error toggling like:', error);
+    throw error;
+  }
+};
+
 // Export all functions as a single object for easier imports
 export const postsApi = {
   getFeedPosts,
@@ -156,5 +170,6 @@ export const postsApi = {
   likePost,
   unlikePost,
   addComment,
-  deleteComment
+  deleteComment,
+  toggleLike
 };
