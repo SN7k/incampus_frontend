@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, CheckCheck, Trash2, UserPlus, Heart, MessageCircle } from 'lucide-react';
 import { useNotifications, Notification } from '../../contexts/NotificationContext';
@@ -18,28 +19,35 @@ const NotificationPanel: React.FC = () => {
   } = useNotifications();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close panel on outside click or Esc
+  // Close panel on outside click (only if clicking overlay) or Esc key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        showNotificationPanel &&
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node)
-      ) {
+      // Check if the click is on the modal content itself
+      if (panelRef.current && panelRef.current.contains(event.target as Node)) {
+        return;
+      }
+      // If the click is outside the modal content, close it.
+      // This relies on the overlay capturing the click.
+      setShowNotificationPanel(false);
+    };
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
         setShowNotificationPanel(false);
       }
     };
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowNotificationPanel(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEsc);
+
+    if (showNotificationPanel) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEsc);
+    }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEsc);
     };
   }, [showNotificationPanel, setShowNotificationPanel]);
-
+  
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
@@ -63,18 +71,18 @@ const NotificationPanel: React.FC = () => {
 
   // Animation variants
   const panelVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 40 },
-    visible: { opacity: 1, scale: 1, y: 0 },
-    exit: { opacity: 0, scale: 0.95, y: 40 }
+    hidden: { opacity: 0, scale: 0.9, y: 30 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } },
+    exit: { opacity: 0, scale: 0.9, y: 30, transition: { duration: 0.2 } }
   };
-
-  return (
+  
+  const modalContent = (
     <AnimatePresence>
       {showNotificationPanel && (
-        <>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
           {/* Overlay */}
           <motion.div
-            className="fixed inset-0 z-[99] bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -87,12 +95,11 @@ const NotificationPanel: React.FC = () => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed left-1/2 top-1/2 z-[100] w-full max-w-md sm:max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg"
-            style={{ maxHeight: '80vh' }}
+            className="relative z-10 w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl"
+            style={{ maxHeight: '85vh' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 rounded-t-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Notifications</h3>
               <div className="flex items-center space-x-2">
                 {unreadCount > 0 && (
@@ -110,40 +117,40 @@ const NotificationPanel: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowNotificationPanel(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full"
                 >
-                  <X size={24} />
+                  <X size={22} />
                 </Button>
               </div>
             </div>
 
             {/* Notification list */}
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 80px)' }}>
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 74px)' }}>
               {notifications.length > 0 ? (
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`flex items-start p-5 border-b border-gray-100 dark:border-gray-700 hover:bg-white/40 dark:hover:bg-gray-900/40 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50/60 dark:bg-blue-900/30' : ''}`}
+                    className={`flex items-start p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-white/50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-500/10 dark:bg-blue-500/10' : ''}`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex-shrink-0 mr-4">
+                    <div className="flex-shrink-0 mx-3 mt-1">
                       {notification.avatar ? (
                         <img
                           src={getAvatarUrl(notification.avatar, 'User')}
                           alt="User"
-                          className="w-12 h-12 rounded-full object-cover shadow"
+                          className="w-11 h-11 rounded-full object-cover shadow-sm"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow">
+                        <div className="w-11 h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow-sm">
                           {getNotificationIcon(notification.type)}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-base text-gray-800 dark:text-gray-200">
+                      <p className="text-sm md:text-base text-gray-800 dark:text-gray-200 leading-tight">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
                         {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
                       </p>
                     </div>
@@ -152,9 +159,9 @@ const NotificationPanel: React.FC = () => {
                         e.stopPropagation();
                         clearNotification(notification.id);
                       }}
-                      className="ml-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                      className="ml-3 mr-3 p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 ))
@@ -163,28 +170,29 @@ const NotificationPanel: React.FC = () => {
                   <div className="flex justify-center mb-4">
                     <Bell size={32} className="text-gray-400" />
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400">No notifications yet</p>
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">No new notifications</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    We'll notify you when something happens
+                    We'll let you know when something new happens.
                   </p>
                 </div>
               )}
             </div>
-            {/* Large close button for mobile */}
-            <div className="block sm:hidden p-6 border-t border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 rounded-b-2xl">
-              <Button
-                variant="secondary"
-                className="w-full py-3 text-base font-semibold"
-                onClick={() => setShowNotificationPanel(false)}
-              >
-                Close
-              </Button>
-            </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
+
+  // Find the portal root, but only on the client side
+  const portalRoot = typeof document !== 'undefined' ? document.getElementById('notification-portal') : null;
+
+  if (!portalRoot) {
+    // Return null or some fallback if the portal root doesn't exist,
+    // or if we're on the server side (SSR)
+    return null;
+  }
+  
+  return ReactDOM.createPortal(modalContent, portalRoot);
 };
 
 export default NotificationPanel;
