@@ -79,7 +79,7 @@ const NotificationPanel: React.FC = () => {
   const modalContent = (
     <AnimatePresence>
       {showNotificationPanel && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 sm:pt-32">
           {/* Overlay */}
           <motion.div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
