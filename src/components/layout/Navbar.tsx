@@ -265,9 +265,6 @@ const Navbar: React.FC = () => {
                   </span>
                 )}
               </Button>
-              
-              {/* Notification Panel */}
-              <NotificationPanel />
             </div>
             
             {/* Profile dropdown */}
