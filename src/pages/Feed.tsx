@@ -92,6 +92,11 @@ const Feed: React.FC = () => {
     }
   };
 
+  const navigateToUserProfile = (profileUserId: string) => {
+    localStorage.setItem('viewProfileUserId', profileUserId);
+    window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'profile' } }));
+  };
+
   // Initial load
   useEffect(() => {
     loadPosts();
@@ -331,18 +336,6 @@ const Feed: React.FC = () => {
                     const displayDepartment = isFaculty ? 'Faculty' : 
                       (hasMatchingDept ? `${extractDepartment(suggestedUser.universityId)} (Same Dept)` : 
                       extractDepartment(suggestedUser.universityId));
-                    const navigateToUserProfile = () => {
-                      localStorage.setItem('currentPage', 'profile');
-                      localStorage.setItem('viewProfileUserId', suggestedUser.id);
-                      window.dispatchEvent(new CustomEvent('navigate', { 
-                        detail: { 
-                          page: 'profile',
-                          scrollToTop: true,
-                          timestamp: new Date().getTime() 
-                        } 
-                      }));
-                      window.scrollTo(0, 0);
-                    };
                     return (
                       <div 
                         key={suggestedUser.id} 
@@ -352,12 +345,12 @@ const Feed: React.FC = () => {
                           src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)} 
                           alt={suggestedUser.name}
                           className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={navigateToUserProfile}
+                          onClick={() => navigateToUserProfile(suggestedUser.id)}
                           data-profile-id={suggestedUser.id}
                         />
                         <div 
                           className="ml-3 cursor-pointer" 
-                          onClick={navigateToUserProfile}
+                          onClick={() => navigateToUserProfile(suggestedUser.id)}
                           data-profile-id={suggestedUser.id}
                         >
                           <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
@@ -383,6 +376,43 @@ const Feed: React.FC = () => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-[280px] transition-colors duration-200">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                  <Users size={18} className="text-green-600 dark:text-green-400 mr-2" />
+                  Who to Follow
+                </h3>
+                <div className="space-y-3">
+                  {suggestedUsers.map((suggestedUser) => (
+                    <div key={suggestedUser.id} className="flex items-center">
+                      <img
+                        src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name || 'User')}
+                        alt={suggestedUser.name || 'User'}
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                        onClick={() => navigateToUserProfile(suggestedUser.id)}
+                      />
+                      <div className="ml-3 flex-1 min-w-0">
+                        <p 
+                          className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate cursor-pointer"
+                          onClick={() => navigateToUserProfile(suggestedUser.id)}
+                        >
+                          {suggestedUser.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{extractDepartment(suggestedUser.universityId || '')}</p>
+                      </div>
+                      <div className="ml-auto">
+                        <Button
+                          size="sm"
+                          variant={sentRequests.includes(suggestedUser.id) ? "secondary" : "primary"}
+                          onClick={() => handleAddFriend(suggestedUser.id)}
+                          disabled={sentRequests.includes(suggestedUser.id)}
+                        >
+                          {sentRequests.includes(suggestedUser.id) ? 'Sent' : 'Add Friend'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </motion.div>
