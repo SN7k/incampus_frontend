@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, Share2, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
+import { Heart, Share2, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Post, User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
@@ -180,17 +180,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             {post.user.role === 'student' ? post.user.universityId : 'Faculty'} · {formatDate(post.createdAt)}
           </p>
         </div>
-        <div className="ml-auto relative">
-          <button 
-            ref={buttonRef}
-            onClick={() => setShowMenu(!showMenu)} 
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-          >
-            <MoreHorizontal size={20} />
-          </button>
-          {showMenu && (
-            <div ref={menuRef} className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl z-10 border border-gray-100 dark:border-gray-600">
-              {currentUser && post.user.id === currentUser.id ? (
+        {currentUser && post.user.id === currentUser.id && (
+          <div className="ml-auto relative">
+            <button
+              ref={buttonRef}
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+            >
+              <MoreHorizontal size={20} />
+            </button>
+            {showMenu && (
+              <div ref={menuRef} className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl z-10 border border-gray-100 dark:border-gray-600">
                 <button
                   onClick={handleDeletePost}
                   className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center"
@@ -198,18 +198,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                   <Trash2 size={16} className="mr-2" />
                   Delete Post
                 </button>
-              ) : (
-                <button
-                  onClick={handleShare}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center"
-                >
-                  <Copy size={16} className="mr-2" />
-                  Copy link
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-5 py-3">

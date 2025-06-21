@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
-import { X, Image, Smile, MapPin } from 'lucide-react';
+import { X, Image } from 'lucide-react';
 import Button from '../ui/Button';
 import { getAvatarUrl } from '../../utils/avatarUtils';
 
@@ -204,12 +204,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                 className="p-2 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <Image className="h-5 w-5" />
-              </button>
-              <button className="p-2 text-gray-500 hover:text-yellow-500 dark:text-gray-400 dark:hover:text-yellow-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                <Smile className="h-5 w-5" />
-              </button>
-              <button className="p-2 text-gray-500 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                <MapPin className="h-5 w-5" />
               </button>
             </div>
             
