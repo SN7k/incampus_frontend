@@ -326,65 +326,6 @@ const Feed: React.FC = () => {
                 </h3>
                 <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => {
-                    const userYear = extractYear(suggestedUser.universityId);
-                    const userDept = extractDepartment(suggestedUser.universityId);
-                    const currentUserYear = user ? extractYear(user.universityId) : '';
-                    const currentUserDept = user ? extractDepartment(user.universityId) : '';
-                    const hasMatchingYear = userYear === currentUserYear;
-                    const hasMatchingDept = userDept === currentUserDept;
-                    const isFaculty = suggestedUser.role === 'faculty';
-                    const displayDepartment = isFaculty ? 'Faculty' : 
-                      (hasMatchingDept ? `${extractDepartment(suggestedUser.universityId)} (Same Dept)` : 
-                      extractDepartment(suggestedUser.universityId));
-                    return (
-                      <div 
-                        key={suggestedUser.id} 
-                        className="flex items-center p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors mx-0"
-                      >
-                        <img 
-                          src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name)} 
-                          alt={suggestedUser.name}
-                          className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => navigateToUserProfile(suggestedUser.id)}
-                          data-profile-id={suggestedUser.id}
-                        />
-                        <div 
-                          className="ml-3 cursor-pointer" 
-                          onClick={() => navigateToUserProfile(suggestedUser.id)}
-                          data-profile-id={suggestedUser.id}
-                        >
-                          <h3 className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                            {suggestedUser.name}
-                            {hasMatchingYear && (
-                              <span className="ml-2 text-xs font-medium px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
-                                Same Year
-                              </span>
-                            )}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{displayDepartment}</p>
-                        </div>
-                        <div className="ml-auto">
-                          <Button
-                            size="sm"
-                            variant={sentRequests.includes(suggestedUser.id) ? "secondary" : "primary"}
-                            onClick={() => handleAddFriend(suggestedUser.id)}
-                            disabled={sentRequests.includes(suggestedUser.id)}
-                          >
-                            {sentRequests.includes(suggestedUser.id) ? 'Sent' : 'Add Friend'}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-[280px] transition-colors duration-200">
-                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                  <Users size={18} className="text-green-600 dark:text-green-400 mr-2" />
-                  People You May Know
-                </h3>
-                <div className="space-y-3">
-                  {suggestedUsers.map((suggestedUser) => {
                     const hasMatchingYear = user?.universityId && suggestedUser.universityId &&
                       extractYear(user.universityId) === extractYear(suggestedUser.universityId);
                     return (
