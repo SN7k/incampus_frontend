@@ -63,125 +63,104 @@ const NotificationPanel: React.FC = () => {
 
   // Animation variants
   const panelVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 40 },
+    hidden: { opacity: 0, scale: 0.95, y: -10 },
     visible: { opacity: 1, scale: 1, y: 0 },
-    exit: { opacity: 0, scale: 0.95, y: 40 }
+    exit: { opacity: 0, scale: 0.95, y: -10 }
   };
 
   return (
     <AnimatePresence>
       {showNotificationPanel && (
-        <>
-          {/* Overlay */}
-          <motion.div
-            className="fixed inset-0 z-[99] bg-black/40 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowNotificationPanel(false)}
-          />
-          {/* Modal */}
-          <motion.div
-            ref={panelRef}
-            variants={panelVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed left-1/2 top-1/2 z-[100] w-full max-w-md sm:max-w-lg md:max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg"
-            style={{ maxHeight: '80vh' }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 rounded-t-2xl">
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Notifications</h3>
-              <div className="flex items-center space-x-2">
-                {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={markAllAsRead}
-                    className="text-xs"
-                  >
-                    <CheckCheck size={16} className="mr-1" />
-                    Mark all read
-                  </Button>
-                )}
+        <motion.div
+          ref={panelRef}
+          variants={panelVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          className="absolute right-0 mt-2 w-80 sm:w-96 md:w-[420px] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg z-50"
+          style={{ maxHeight: '70vh' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 rounded-t-xl">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Notifications</h3>
+            <div className="flex items-center space-x-2">
+              {unreadCount > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowNotificationPanel(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  onClick={markAllAsRead}
+                  className="text-xs"
                 >
-                  <X size={24} />
+                  <CheckCheck size={16} className="mr-1" />
+                  Mark all read
                 </Button>
-              </div>
-            </div>
-
-            {/* Notification list */}
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 80px)' }}>
-              {notifications.length > 0 ? (
-                notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`flex items-start p-5 border-b border-gray-100 dark:border-gray-700 hover:bg-white/40 dark:hover:bg-gray-900/40 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50/60 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className="flex-shrink-0 mr-4">
-                      {notification.avatar ? (
-                        <img
-                          src={getAvatarUrl(notification.avatar, 'User')}
-                          alt="User"
-                          className="w-12 h-12 rounded-full object-cover shadow"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base text-gray-800 dark:text-gray-200">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
-                      </p>
-                    </div>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        clearNotification(notification.id);
-                      }}
-                      className="ml-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="p-10 text-center">
-                  <div className="flex justify-center mb-4">
-                    <Bell size={32} className="text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 dark:text-gray-400">No notifications yet</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    We'll notify you when something happens
-                  </p>
-                </div>
               )}
-            </div>
-            {/* Large close button for mobile */}
-            <div className="block sm:hidden p-6 border-t border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 rounded-b-2xl">
               <Button
-                variant="secondary"
-                className="w-full py-3 text-base font-semibold"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowNotificationPanel(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                Close
+                <X size={20} />
               </Button>
             </div>
-          </motion.div>
-        </>
+          </div>
+
+          {/* Notification list */}
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 80px)' }}>
+            {notifications.length > 0 ? (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`flex items-start p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-white/40 dark:hover:bg-gray-900/40 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50/60 dark:bg-blue-900/30' : ''}`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <div className="flex-shrink-0 mr-3">
+                    {notification.avatar ? (
+                      <img
+                        src={getAvatarUrl(notification.avatar, 'User')}
+                        alt="User"
+                        className="w-10 h-10 rounded-full object-cover shadow"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      clearNotification(notification.id);
+                    }}
+                    className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center">
+                <div className="flex justify-center mb-3">
+                  <Bell size={28} className="text-gray-400" />
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">No notifications yet</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  We'll notify you when something happens
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
