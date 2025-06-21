@@ -319,12 +319,12 @@ const Feed: React.FC = () => {
               className="space-y-6"
             >
               {/* Suggested Connections */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-24 transition-colors duration-200 overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-24 transition-colors duration-200">
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                  <Users size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  <Users size={18} className="text-green-600 dark:text-green-400 mr-2" />
                   People You May Know
                 </h3>
-                <div className="space-y-2 -mx-4 px-4">
+                <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => {
                     const userYear = extractYear(suggestedUser.universityId);
                     const userDept = extractDepartment(suggestedUser.universityId);
@@ -381,38 +381,42 @@ const Feed: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sticky top-[280px] transition-colors duration-200">
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
                   <Users size={18} className="text-green-600 dark:text-green-400 mr-2" />
-                  Who to Follow
+                  People You May Know
                 </h3>
                 <div className="space-y-3">
-                  {suggestedUsers.map((suggestedUser) => (
-                    <div key={suggestedUser.id} className="flex items-center">
-                      <img
-                        src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name || 'User')}
-                        alt={suggestedUser.name || 'User'}
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer"
-                        onClick={() => navigateToUserProfile(suggestedUser.id)}
-                      />
-                      <div className="ml-3 flex-1 min-w-0">
-                        <p 
-                          className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate cursor-pointer"
+                  {suggestedUsers.map((suggestedUser) => {
+                    const hasMatchingYear = user?.universityId && suggestedUser.universityId &&
+                      extractYear(user.universityId) === extractYear(suggestedUser.universityId);
+                    return (
+                      <div key={suggestedUser.id} className="flex items-center">
+                        <img
+                          src={getAvatarUrl(suggestedUser.avatar, suggestedUser.name || 'User')}
+                          alt={suggestedUser.name || 'User'}
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer"
                           onClick={() => navigateToUserProfile(suggestedUser.id)}
-                        >
-                          {suggestedUser.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{extractDepartment(suggestedUser.universityId || '')}</p>
+                        />
+                        <div className="ml-3 flex-1 min-w-0">
+                          <p 
+                            className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate cursor-pointer"
+                            onClick={() => navigateToUserProfile(suggestedUser.id)}
+                          >
+                            {suggestedUser.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{extractDepartment(suggestedUser.universityId || '')}</p>
+                        </div>
+                        <div className="ml-auto">
+                          <Button
+                            size="sm"
+                            variant={sentRequests.includes(suggestedUser.id) ? "secondary" : "primary"}
+                            onClick={() => handleAddFriend(suggestedUser.id)}
+                            disabled={sentRequests.includes(suggestedUser.id)}
+                          >
+                            {sentRequests.includes(suggestedUser.id) ? 'Sent' : 'Add Friend'}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="ml-auto">
-                        <Button
-                          size="sm"
-                          variant={sentRequests.includes(suggestedUser.id) ? "secondary" : "primary"}
-                          onClick={() => handleAddFriend(suggestedUser.id)}
-                          disabled={sentRequests.includes(suggestedUser.id)}
-                        >
-                          {sentRequests.includes(suggestedUser.id) ? 'Sent' : 'Add Friend'}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
