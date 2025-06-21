@@ -16,7 +16,6 @@ import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import { User } from './types';
 import { profileApi } from './services/profileApi';
-import NotificationPanel from './components/notification/NotificationPanel';
 
 type RegistrationStep = 'login' | 'signup' | 'otp' | 'profile-setup' | 'friend-suggestions';
 type AppPage = 'feed' | 'profile' | 'friends' | 'settings';
@@ -327,7 +326,6 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <Navbar />
-      <NotificationPanel />
       
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden">
         <div className="flex justify-around py-2">
@@ -383,22 +381,15 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <NotificationProvider>
-          <SearchProvider>
-            <div className={`app-container bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen`}>
-              <Navbar />
-              <NotificationPanel />
-
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-                <AppContent />
-              </main>
-            </div>
-          </SearchProvider>
-        </NotificationProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SearchProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </SearchProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
