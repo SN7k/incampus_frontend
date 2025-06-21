@@ -267,9 +267,7 @@ const Navbar: React.FC = () => {
               </Button>
               
               {/* Notification Panel */}
-              <div className="absolute right-0 z-50">
-                <NotificationPanel />
-              </div>
+              <NotificationPanel />
             </div>
             
             {/* Profile dropdown */}
