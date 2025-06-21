@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Share2, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
-import { Post, User } from '../../types';
+import { Post } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
 import { getAvatarUrl } from '../../utils/avatarUtils';
@@ -13,10 +13,8 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { user: currentUser } = useAuth();
   
-  const [isLiked, setIsLiked] = useState(
-    currentUser ? post.likes.some(like => (like as User).id === currentUser.id) : false
-  );
-  const [likesCount, setLikesCount] = useState(post.likes.length);
+  const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
+  const [likesCount, setLikesCount] = useState(post.likesCount ?? 0);
   
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -26,9 +24,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setIsLiked(currentUser ? post.likes.some(like => (like as User).id === currentUser.id) : false);
-    setLikesCount(post.likes.length);
-  }, [post, currentUser]);
+    setIsLiked(post.isLiked ?? false);
+    setLikesCount(post.likesCount ?? 0);
+  }, [post.isLiked, post.likesCount]);
 
   useEffect(() => {
     if (currentUser) {

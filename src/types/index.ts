@@ -25,6 +25,8 @@ export interface Post {
   images?: Image[];
   likes: User[];
   createdAt: Date;
+  isLiked?: boolean;
+  likesCount?: number;
 }
 
 export interface Image {
