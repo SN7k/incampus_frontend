@@ -26,9 +26,21 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setIsLiked(currentUser ? post.likes.some(like => (like as User).id === currentUser.id) : false);
+    if (currentUser) {
+      // The `likes` array can contain either user IDs (strings) or full user objects.
+      // This check handles both cases to determine if the current user has liked the post.
+      const userHasLiked = post.likes.some(like => {
+        if (typeof like === 'string') {
+          return like === currentUser.id;
+        }
+        return (like as User).id === currentUser.id;
+      });
+      setIsLiked(userHasLiked);
+    } else {
+      setIsLiked(false);
+    }
     setLikesCount(post.likes.length);
-  }, [post, currentUser]);
+  }, [post.likes, currentUser]);
 
   useEffect(() => {
     if (currentUser) {
