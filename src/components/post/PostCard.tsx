@@ -177,7 +177,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             {post.user.name}
           </h4>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {formatDate(post.createdAt)}
+            {post.user.role === 'student' ? post.user.universityId : 'Faculty'} · {formatDate(post.createdAt)}
           </p>
         </div>
         <div className="ml-auto relative">
