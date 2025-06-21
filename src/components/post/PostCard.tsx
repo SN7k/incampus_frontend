@@ -32,16 +32,6 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   useEffect(() => {
     if (currentUser) {
-      const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-      const postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
-      
-      setIsLiked(likedPosts[post.id] === true);
-      setLikesCount(postLikes.length);
-    }
-  }, [currentUser, post.id]);
-
-  useEffect(() => {
-    if (currentUser) {
       friendsApi.getFriendsList();
     }
   }, [currentUser]);
