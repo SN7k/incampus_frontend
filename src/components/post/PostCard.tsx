@@ -57,7 +57,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     setLikesCount(originalIsLiked ? originalLikesCount - 1 : originalLikesCount + 1);
 
     try {
-      await postsApi.toggleLike(post.id);
+      const { likesCount: newLikesCount, isLiked: newIsLiked } = await postsApi.toggleLike(post.id);
+      setLikesCount(newLikesCount);
+      setIsLiked(newIsLiked);
     } catch (error) {
       console.error('Failed to toggle like:', error);
       setIsLiked(originalIsLiked);

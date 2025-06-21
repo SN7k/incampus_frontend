@@ -129,9 +129,10 @@ export const unlikePost = async (postId: string): Promise<Post> => {
  * @param postId Post ID to toggle like
  * @returns Updated post
  */
-export const toggleLike = async (postId: string): Promise<void> => {
+export const toggleLike = async (postId: string): Promise<{ likesCount: number; isLiked: boolean }> => {
   try {
-    await API.patch(`/posts/${postId}/like`);
+    const response = await API.patch(`/posts/${postId}/like`);
+    return response.data.data;
   } catch (error) {
     console.error('API Error toggling like:', error);
     throw error;
