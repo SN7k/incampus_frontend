@@ -8,6 +8,7 @@ import { Sparkles, Users, BookOpen, Bookmark, Settings, HelpCircle, Heart } from
 import { User, Post } from '../types';
 import { postsApi } from '../services/postsApi';
 import { usersApi } from '../services/usersApi';
+import { friendsApi } from '../services/friendsApi';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import CreatePostModal from '../components/post/CreatePostModal';
 import Button from '../components/ui/Button';
@@ -18,6 +19,7 @@ const Feed: React.FC = () => {
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [sentRequests, setSentRequests] = useState<string[]>([]);
   
   // Animation variants for grid and items
   const container = {
@@ -77,6 +79,18 @@ const Feed: React.FC = () => {
       // Don't show error for suggestions as it's not critical
     }
   }, [user]);
+
+  // Handle sending a friend request
+  const handleAddFriend = async (userId: string) => {
+    try {
+      await friendsApi.sendFriendRequest(userId);
+      setSentRequests(prev => [...prev, userId]);
+      // Optionally, refresh suggestions or show a success message
+    } catch (error) {
+      console.error('Failed to send friend request:', error);
+      // Handle error display to the user
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -357,17 +371,14 @@ const Feed: React.FC = () => {
                           <p className="text-sm text-gray-500 dark:text-gray-400">{displayDepartment}</p>
                         </div>
                         <div className="ml-auto">
-                          <button 
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium whitespace-nowrap"
-                            onClick={() => {
-                              // Use your real add friend logic here
-                              if (suggestedUser.id) {
-                                // e.g. friendsApi.sendFriendRequest(suggestedUser.id)
-                              }
-                            }}
+                          <Button
+                            size="sm"
+                            variant={sentRequests.includes(suggestedUser.id) ? "secondary" : "primary"}
+                            onClick={() => handleAddFriend(suggestedUser.id)}
+                            disabled={sentRequests.includes(suggestedUser.id)}
                           >
-                            Add Friend
-                          </button>
+                            {sentRequests.includes(suggestedUser.id) ? 'Sent' : 'Add Friend'}
+                          </Button>
                         </div>
                       </div>
                     );
