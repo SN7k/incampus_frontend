@@ -249,7 +249,7 @@ const Navbar: React.FC = () => {
             </div>
             
             {/* Notifications */}
-            <div className="ml-2 md:ml-4 relative" ref={notificationRef}>
+            <div className="ml-2 md:ml-4 md:relative" ref={notificationRef}>
               <Button
                 variant="ghost"
                 className={`p-2 rounded-full relative ${unreadCount > 0 ? 'animate-pulse' : ''}`}
