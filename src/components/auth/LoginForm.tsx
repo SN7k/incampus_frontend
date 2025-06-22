@@ -17,7 +17,8 @@ const ForgotPassword: React.FC<{ onBack: () => void; onOtpSent: (identifier: str
     setError('');
     setLoading(true);
     try {
-      await authApi.forgotPassword(identifier, role);
+      const result = await authApi.forgotPassword(identifier, role);
+      console.log('Forgot password API result:', result);
       onOtpSent(identifier, role);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to send OTP.');
