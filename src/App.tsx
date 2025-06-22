@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -242,32 +242,28 @@ function AppContent() {
     }
   }, [isAuthenticated]);
   
-  // Force PWA to always start from 'feed' page on fresh launch
+  // Force PWA to always start from 'feed' page on true fresh launch
   useEffect(() => {
-    function handlePageShow(event: any) {
-      // Only redirect if this is a fresh navigation (not back/forward)
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-        (typeof window.navigator === 'object' && 'standalone' in window.navigator && (window.navigator as any).standalone === true);
-      if (isStandalone) {
-        // If navigation type is TYPE_NAVIGATE (0) or TYPE_RELOAD (1)
-        if (performance && performance.getEntriesByType) {
-          const navEntries = performance.getEntriesByType('navigation');
-          if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'navigate') {
-            // Always redirect to feed (or your desired route)
-            setCurrentPage('feed');
-            localStorage.setItem('currentPage', 'feed');
-          }
-        } else if (performance && (performance as any).navigation) {
-          // Fallback for older browsers
-          if ((performance as any).navigation.type === 0) {
-            setCurrentPage('feed');
-            localStorage.setItem('currentPage', 'feed');
-          }
-        }
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (typeof window.navigator === 'object' && 'standalone' in window.navigator && (window.navigator as any).standalone === true);
+
+    let isFreshLaunch = false;
+    if (performance && performance.getEntriesByType) {
+      const navEntries = performance.getEntriesByType('navigation');
+      if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'navigate') {
+        isFreshLaunch = true;
+      }
+    } else if (performance && (performance as any).navigation) {
+      if ((performance as any).navigation.type === 0) {
+        isFreshLaunch = true;
       }
     }
-    window.addEventListener('pageshow', handlePageShow);
-    return () => window.removeEventListener('pageshow', handlePageShow);
+
+    if (isStandalone && isFreshLaunch) {
+      setCurrentPage('feed');
+      localStorage.setItem('currentPage', 'feed');
+      window.history.replaceState({ page: 'feed' }, '', '');
+    }
   }, []);
   
   // On initial load, set the current page in history
