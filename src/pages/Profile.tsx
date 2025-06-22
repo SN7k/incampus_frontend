@@ -381,18 +381,12 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const checkFriendRequestStatus = async () => {
       if (!viewingUserId || !user) return;
-      
       try {
         // Check sent requests to see if we already sent a request to this user
-        const sentRequests = await friendsApi.getPendingRequests();
+        const sentRequests = await friendsApi.getSentRequests();
         if (sentRequests && Array.isArray(sentRequests)) {
           const hasSentRequest = sentRequests.some((request: any) => request.receiver && request.receiver.id === viewingUserId);
-          
-          if (hasSentRequest) {
-            setRequestSent(true);
-          } else {
-            setRequestSent(false);
-          }
+          setRequestSent(hasSentRequest);
         } else {
           setRequestSent(false);
         }
@@ -401,7 +395,6 @@ const Profile: React.FC = () => {
         setRequestSent(false);
       }
     };
-    
     checkFriendRequestStatus();
   }, [viewingUserId, user]);
 
@@ -409,11 +402,9 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const checkFriendshipStatus = async () => {
       if (!viewingUserId || !user) return;
-      
       try {
         const isUserFriend = await friendsApi.isFriend(viewingUserId);
         setIsFriend(isUserFriend);
-        
         // If user is a friend, they can't have a pending request
         if (isUserFriend) {
           setRequestSent(false);
@@ -423,7 +414,6 @@ const Profile: React.FC = () => {
         setIsFriend(false);
       }
     };
-    
     checkFriendshipStatus();
   }, [viewingUserId, user]);
 
