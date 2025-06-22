@@ -13,6 +13,7 @@ const ForgotPassword: React.FC<{ onBack: () => void; onOtpSent: (identifier: str
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('ForgotPassword handleSubmit called');
     setError('');
     setLoading(true);
     try {
