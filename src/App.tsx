@@ -48,7 +48,9 @@ function AppContent() {
   // Listen for navigation events
   useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
+      console.log('App: Navigation event received:', event.detail);
       if (event.detail?.page) {
+        console.log('App: Setting current page to:', event.detail.page);
         setCurrentPage(event.detail.page);
       }
     };

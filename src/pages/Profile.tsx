@@ -192,10 +192,52 @@ const Profile: React.FC = () => {
       }
   }, [viewingUserId, user, hasUserLikedProfile]);
 
+  // Listen for 'viewProfile' events to update the viewing user ID
+  useEffect(() => {
+    const handleViewProfile = (event: CustomEvent) => {
+      console.log('Profile: viewProfile event received:', event.detail);
+      const { userId } = event.detail;
+      
+      // Ensure userId is a string
+      let userIdString: string;
+      if (typeof userId === 'object' && userId !== null) {
+        userIdString = (userId as any)._id || (userId as any).id || String(userId);
+      } else {
+        userIdString = String(userId);
+      }
+      
+      if (userIdString && userIdString !== viewingUserId) {
+        console.log('Profile: Setting viewingUserId to:', userIdString);
+        setViewingUserId(userIdString);
+      }
+    };
+
+    window.addEventListener('viewProfile', handleViewProfile as EventListener);
+
+    return () => {
+      window.removeEventListener('viewProfile', handleViewProfile as EventListener);
+    };
+  }, [viewingUserId]);
+
   // Initialize viewingUserId from localStorage on mount
   useEffect(() => {
     const targetUserId = localStorage.getItem('viewProfileUserId');
-    setViewingUserId(targetUserId);
+    if (targetUserId) {
+      // Ensure the stored value is a string
+      let userIdString: string;
+      try {
+        const parsed = JSON.parse(targetUserId);
+        if (typeof parsed === 'object' && parsed !== null) {
+          userIdString = parsed._id || parsed.id || String(parsed);
+        } else {
+          userIdString = String(parsed);
+        }
+      } catch {
+        // If parsing fails, use the raw string
+        userIdString = targetUserId;
+      }
+      setViewingUserId(userIdString);
+    }
   }, []); // Only run on mount
 
   // Initialize profile data
@@ -214,20 +256,41 @@ const Profile: React.FC = () => {
         targetProfileId = user?.id || '';
       }
       
+      console.log('Profile: fetchData called with targetProfileId:', targetProfileId);
+      
       // Only proceed if we have a valid profile ID
       if (!targetProfileId) {
+        console.log('Profile: No valid profile ID, skipping fetch');
         setIsLoadingProfile(false);
         return;
       }
       
+      // Ensure targetProfileId is a string
+      let profileIdString: string;
+      if (typeof targetProfileId === 'object' && targetProfileId !== null) {
+        profileIdString = (targetProfileId as any)._id || (targetProfileId as any).id || String(targetProfileId);
+      } else {
+        profileIdString = String(targetProfileId);
+      }
+      
+      console.log('Profile: Using profile ID string:', profileIdString);
+      
       try {
         setIsLoadingProfile(true);
+        console.log('Profile: Fetching data for user:', targetProfileId);
+        
         // Fetch profile data, posts, and friends in parallel
         const [profileResponse, postsResponse, friendsResponse] = await Promise.all([
-          profileApi.getUserProfile(targetProfileId),
-          postsApi.getUserPosts(targetProfileId),
+          profileApi.getUserProfile(profileIdString),
+          postsApi.getUserPosts(profileIdString),
           friendsApi.getFriendsList()
         ]);
+        
+        console.log('Profile: Successfully fetched data:', {
+          profile: profileResponse,
+          postsCount: postsResponse.length,
+          friendsCount: friendsResponse.length
+        });
         
         setProfileData(profileResponse);
         
