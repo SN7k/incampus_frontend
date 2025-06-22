@@ -185,7 +185,7 @@ const Feed: React.FC = () => {
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
                   onClick={() => {
-                    localStorage.setItem('viewProfileUserId', user?.id || '');
+                    localStorage.removeItem('viewProfileUserId');
                     localStorage.setItem('activeProfileTab', 'memories');
                     localStorage.setItem('currentPage', 'profile');
                     window.dispatchEvent(new CustomEvent('navigate', { 
@@ -200,7 +200,7 @@ const Feed: React.FC = () => {
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
                   onClick={() => {
-                    localStorage.setItem('viewProfileUserId', user?.id || '');
+                    localStorage.removeItem('viewProfileUserId');
                     localStorage.setItem('activeProfileTab', 'collections');
                     localStorage.setItem('currentPage', 'profile');
                     window.dispatchEvent(new CustomEvent('navigate', { 
