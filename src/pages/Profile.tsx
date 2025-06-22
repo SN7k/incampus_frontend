@@ -204,6 +204,9 @@ const Profile: React.FC = () => {
       // Check if we're viewing someone else's profile
       const storedViewProfileUserId = localStorage.getItem('viewProfileUserId');
       
+      console.log('PROFILE: Stored viewProfileUserId:', storedViewProfileUserId);
+      console.log('PROFILE: Current user ID:', user?.id);
+      
       let targetProfileId = '';
       
       if (storedViewProfileUserId) {
@@ -216,8 +219,12 @@ const Profile: React.FC = () => {
         targetProfileId = user?.id || '';
       }
       
+      console.log('PROFILE: Target profile ID:', targetProfileId);
+      console.log('PROFILE: Viewing user ID:', viewingUserId);
+      
       // Only proceed if we have a valid profile ID
       if (!targetProfileId) {
+        console.log('PROFILE: No valid profile ID, skipping fetch');
         setIsLoadingProfile(false);
         return;
       }
