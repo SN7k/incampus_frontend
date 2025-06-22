@@ -3,6 +3,7 @@ import { Heart, Share2, MoreHorizontal, Check, Copy, Trash2 } from 'lucide-react
 import { Post } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAvatarUrl } from '../../utils/avatarUtils';
+import { postsApi } from '../../services/postsApi';
 
 interface PostCardProps {
   post: Post;
@@ -214,56 +215,47 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   }, [post.id, currentUser]);
 
   // Handle delete post
-  const handleDeletePost = () => {
-    // In a real application, this would call an API to delete the post
+  const handleDeletePost = async () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
         console.log('Deleting post:', post.id);
-        
-        // First, check if this is a user-created post (stored in userPosts)
+        let isUserCreatedPost = false;
         let userPostsStr = localStorage.getItem('userPosts') || '[]';
         let userPosts = JSON.parse(userPostsStr);
-        let isUserCreatedPost = false;
-        
-        // Check if the post exists in userPosts
+        // Check if the post exists in userPosts (mock/local post)
         for (let i = 0; i < userPosts.length; i++) {
           if (userPosts[i].id === post.id) {
             isUserCreatedPost = true;
             break;
           }
         }
-        
-        console.log('Is user created post:', isUserCreatedPost);
-        
         if (isUserCreatedPost) {
-          console.log('Deleting user-created post from localStorage');
           // Remove the post from userPosts
           userPosts = userPosts.filter((p: any) => p.id !== post.id);
           localStorage.setItem('userPosts', JSON.stringify(userPosts));
+        } else {
+          // Real post: call API
+          try {
+            await postsApi.deletePost(post.id);
+          } catch (apiError) {
+            alert('Failed to delete post from server.');
+            return;
+          }
         }
-        
         // For all posts (including mock posts), add to deletedPosts list
         const deletedPostsStr = localStorage.getItem('deletedPosts') || '[]';
         const deletedPosts = JSON.parse(deletedPostsStr);
-        
-        // Add this post ID to the deleted posts list
         if (!deletedPosts.includes(post.id)) {
           deletedPosts.push(post.id);
           localStorage.setItem('deletedPosts', JSON.stringify(deletedPosts));
         }
-        
-        // Remove any likes associated with this post
         localStorage.removeItem(`post_${post.id}_likes`);
-        
-        // Update user's liked posts to remove this post if it was liked
         const likedPostsStr = localStorage.getItem('likedPosts') || '{}';
         const likedPosts = JSON.parse(likedPostsStr);
         if (likedPosts[post.id]) {
           delete likedPosts[post.id];
           localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
         }
-        
-        // Dispatch a custom event to notify other components about the post deletion
         window.dispatchEvent(new CustomEvent('postDeleted', { 
           detail: { 
             postId: post.id,
@@ -271,15 +263,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             isUserCreatedPost
           } 
         }));
-        
-        // Close the menu first to avoid UI glitches
         setShowMenu(false);
-        
-        // Show success message
         setTimeout(() => {
           alert('Post deleted successfully!');
         }, 100);
-        
       } catch (error) {
         console.error('Error deleting post:', error);
         alert('Failed to delete post. Please try again.');
