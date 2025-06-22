@@ -216,61 +216,55 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   // Handle delete post
   const handleDeletePost = async () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      try {
-        console.log('Deleting post:', post.id);
-        let isUserCreatedPost = false;
-        let userPostsStr = localStorage.getItem('userPosts') || '[]';
-        let userPosts = JSON.parse(userPostsStr);
-        // Check if the post exists in userPosts (mock/local post)
-        for (let i = 0; i < userPosts.length; i++) {
-          if (userPosts[i].id === post.id) {
-            isUserCreatedPost = true;
-            break;
-          }
+    try {
+      let isUserCreatedPost = false;
+      let userPostsStr = localStorage.getItem('userPosts') || '[]';
+      let userPosts = JSON.parse(userPostsStr);
+      // Check if the post exists in userPosts (mock/local post)
+      for (let i = 0; i < userPosts.length; i++) {
+        if (userPosts[i].id === post.id) {
+          isUserCreatedPost = true;
+          break;
         }
-        if (isUserCreatedPost) {
-          // Remove the post from userPosts
-          userPosts = userPosts.filter((p: any) => p.id !== post.id);
-          localStorage.setItem('userPosts', JSON.stringify(userPosts));
-        } else {
-          // Real post: call API
-          try {
-            await postsApi.deletePost(post.id);
-          } catch (apiError) {
-            alert('Failed to delete post from server.');
-            return;
-          }
-        }
-        // For all posts (including mock posts), add to deletedPosts list
-        const deletedPostsStr = localStorage.getItem('deletedPosts') || '[]';
-        const deletedPosts = JSON.parse(deletedPostsStr);
-        if (!deletedPosts.includes(post.id)) {
-          deletedPosts.push(post.id);
-          localStorage.setItem('deletedPosts', JSON.stringify(deletedPosts));
-        }
-        localStorage.removeItem(`post_${post.id}_likes`);
-        const likedPostsStr = localStorage.getItem('likedPosts') || '{}';
-        const likedPosts = JSON.parse(likedPostsStr);
-        if (likedPosts[post.id]) {
-          delete likedPosts[post.id];
-          localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-        }
-        window.dispatchEvent(new CustomEvent('postDeleted', { 
-          detail: { 
-            postId: post.id,
-            userId: post.user?.id || '',
-            isUserCreatedPost
-          } 
-        }));
-        setShowMenu(false);
-        setTimeout(() => {
-          alert('Post deleted successfully!');
-        }, 100);
-      } catch (error) {
-        console.error('Error deleting post:', error);
-        alert('Failed to delete post. Please try again.');
       }
+      if (isUserCreatedPost) {
+        // Remove the post from userPosts
+        userPosts = userPosts.filter((p: any) => p.id !== post.id);
+        localStorage.setItem('userPosts', JSON.stringify(userPosts));
+      } else {
+        // Real post: call API
+        try {
+          await postsApi.deletePost(post.id);
+        } catch (apiError) {
+          // Optionally, show a non-intrusive error (e.g., toast)
+          return;
+        }
+      }
+      // For all posts (including mock posts), add to deletedPosts list
+      const deletedPostsStr = localStorage.getItem('deletedPosts') || '[]';
+      const deletedPosts = JSON.parse(deletedPostsStr);
+      if (!deletedPosts.includes(post.id)) {
+        deletedPosts.push(post.id);
+        localStorage.setItem('deletedPosts', JSON.stringify(deletedPosts));
+      }
+      localStorage.removeItem(`post_${post.id}_likes`);
+      const likedPostsStr = localStorage.getItem('likedPosts') || '{}';
+      const likedPosts = JSON.parse(likedPostsStr);
+      if (likedPosts[post.id]) {
+        delete likedPosts[post.id];
+        localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+      }
+      window.dispatchEvent(new CustomEvent('postDeleted', { 
+        detail: { 
+          postId: post.id,
+          userId: post.user?.id || '',
+          isUserCreatedPost
+        } 
+      }));
+      setShowMenu(false);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      // Optionally, show a non-intrusive error (e.g., toast)
     }
   };
 
