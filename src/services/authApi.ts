@@ -101,6 +101,50 @@ export const authApi = {
       console.error('Error fetching current user:', error);
       throw error;
     }
+  },
+
+  // Forgot Password - send OTP to email/universityId
+  forgotPassword: async (
+    identifier: string,
+    role: 'student' | 'faculty'
+  ): Promise<{ status: string; message: string }> => {
+    try {
+      // Determine if identifier is email or universityId
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+      const payload = {
+        role,
+        ...(isEmail ? { email: identifier } : { universityId: identifier })
+      };
+      const response = await API.post<{ status: string; message: string }>('/auth/forgot-password', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending forgot password OTP:', error);
+      throw error;
+    }
+  },
+
+  // Reset Password with OTP
+  resetPassword: async (
+    identifier: string,
+    otp: string,
+    newPassword: string,
+    role: 'student' | 'faculty'
+  ): Promise<{ status: string; message: string }> => {
+    try {
+      // Determine if identifier is email or universityId
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+      const payload = {
+        otp,
+        newPassword,
+        role,
+        ...(isEmail ? { email: identifier } : { universityId: identifier })
+      };
+      const response = await API.post<{ status: string; message: string }>('/auth/reset-password', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      throw error;
+    }
   }
 };
 
