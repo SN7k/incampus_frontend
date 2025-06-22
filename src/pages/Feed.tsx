@@ -34,16 +34,6 @@ const Feed: React.FC = () => {
     show: { opacity: 1, y: 0 }
   };
 
-  // Helper functions for universityId parsing
-  const extractYear = (universityId: string): string => {
-    const parts = universityId.split('/');
-    return parts.length >= 3 ? parts[2] : '';
-  };
-  const extractDepartment = (universityId: string): string => {
-    const parts = universityId.split('/');
-    return parts.length >= 2 ? parts[1] : '';
-  };
-
   // Load posts from API
   const loadPosts = useCallback(async () => {
     if (!user) return;
@@ -326,8 +316,6 @@ const Feed: React.FC = () => {
                 </h3>
                 <div className="space-y-3">
                   {suggestedUsers.map((suggestedUser) => {
-                    const hasMatchingYear = user?.universityId && suggestedUser.universityId &&
-                      extractYear(user.universityId) === extractYear(suggestedUser.universityId);
                     return (
                       <div key={suggestedUser.id} className="flex items-center">
                         <img
@@ -343,7 +331,7 @@ const Feed: React.FC = () => {
                           >
                             {suggestedUser.name}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{extractDepartment(suggestedUser.universityId || '')}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{suggestedUser.universityId || ''}</p>
                         </div>
                         <div className="ml-auto">
                           <Button
