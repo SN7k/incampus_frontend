@@ -206,10 +206,12 @@ const Profile: React.FC = () => {
       
       let targetProfileId = '';
       
-      if (storedViewProfileUserId && storedViewProfileUserId !== user?.id) {
-        setViewingUserId(storedViewProfileUserId);
+      if (storedViewProfileUserId) {
+        // If we have a stored user ID, use it (could be current user or another user)
+        setViewingUserId(storedViewProfileUserId === user?.id ? null : storedViewProfileUserId);
         targetProfileId = storedViewProfileUserId;
       } else {
+        // If no stored user ID, use current user's ID
         setViewingUserId(null);
         targetProfileId = user?.id || '';
       }

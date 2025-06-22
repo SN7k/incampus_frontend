@@ -138,8 +138,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         localStorage.setItem('viewProfileUserId', 'faculty-1');
       }
     } else {
-      // Clear any stored user ID if viewing own profile
-      localStorage.removeItem('viewProfileUserId');
+      // For current user, set their own ID to ensure proper profile loading
+      localStorage.setItem('viewProfileUserId', currentUser.id);
     }
     
     // Add timestamp to make the event unique
