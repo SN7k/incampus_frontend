@@ -41,7 +41,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   
   // Initialize form data when profileData changes
   useEffect(() => {
-    if (profileData) {
+    if (isOpen && profileData) {
       setFormData({
         name: profileData.name || '',
         bio: 'bio' in profileData ? (profileData.bio || '') : '',
@@ -54,13 +54,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
         interests: 'interests' in profileData ? profileData.interests : [],
         newInterest: ''
       });
-      
       setProfilePicturePreview(profileData.avatar?.url || null);
       setCoverPhotoPreview('coverPhoto' in profileData && profileData.coverPhoto?.url ? profileData.coverPhoto.url : null);
       setSkills('skills' in profileData ? profileData.skills : []);
       setAchievements('achievements' in profileData ? profileData.achievements : []);
     }
-  }, [profileData]);
+  }, [isOpen, profileData]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
