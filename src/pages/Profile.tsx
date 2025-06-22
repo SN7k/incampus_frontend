@@ -221,49 +221,41 @@ const Profile: React.FC = () => {
       }
       
       try {
-        // Fetch profile data
-        const profileResponse = await profileApi.getUserProfile(targetProfileId);
+        setIsLoadingProfile(true);
+        // Fetch profile data, posts, and friends in parallel
+        const [profileResponse, postsResponse, friendsResponse] = await Promise.all([
+          profileApi.getUserProfile(targetProfileId),
+          postsApi.getUserPosts(targetProfileId),
+          friendsApi.getFriendsList()
+        ]);
+        
         setProfileData(profileResponse);
         
-        // Fetch user posts
-        try {
-          const postsResponse = await postsApi.getUserPosts(targetProfileId);
-          console.log('PROFILE: Raw posts response:', postsResponse);
-          // Normalize posts: ensure each post has a 'user' field and 'createdAt' as Date
-          const normalizedPosts = postsResponse.map(post => ({
-            ...post,
-            user: post.user || (post as any).author,
-            createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
-          }));
-          console.log('PROFILE: Normalized posts:', normalizedPosts);
-          setUserPosts(normalizedPosts);
-        } catch (error) {
-          console.error('PROFILE: Error fetching posts:', error);
-          setUserPosts([]); // Set empty array on error
-        }
+        // Normalize posts: ensure each post has a 'user' field and 'createdAt' as Date
+        const normalizedPosts = postsResponse.map((post: any) => ({
+          ...post,
+          user: post.user || post.author,
+          createdAt: post.createdAt ? new Date(post.createdAt) : new Date()
+        }));
+        setUserPosts(normalizedPosts);
         
-        // Fetch friends list
-        try {
-          const friendsResponse = await friendsApi.getFriendsList();
-          setFriendsList(friendsResponse);
-        } catch (error) {
-          console.error('PROFILE: Error fetching friends:', error);
-          setFriendsList([]); // Set empty array on error
-        }
+        setFriendsList(friendsResponse);
         
-        setIsLoadingProfile(false);
       } catch (error) {
-        console.error('PROFILE: Error fetching data:', error);
+        console.error('PROFILE: Error fetching profile data:', error);
+        setProfileData(null);
+        setUserPosts([]);
+        setFriendsList([]);
+      } finally {
         setIsLoadingProfile(false);
       }
     };
 
-    if (user?.id) {
-      fetchData();
-    }
-  }, [user?.id]);
+    fetchData();
+  }, [user, viewingUserId]);
 
-  // Listen for navigation events to view own profile
+  // This effect now listens for a custom event to re-fetch the current user's profile data.
+  // This is useful when navigating back to the profile tab from another profile view.
   useEffect(() => {
     const handleProfileNavigation = (event: CustomEvent) => {
       console.log('PROFILE: Received profileNavigation event:', event.detail);
