@@ -295,6 +295,20 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     });
   };
 
+  // Helper to extract user id from post
+  const getPostOwnerId = (post: any): string | undefined => {
+    // Try all possible locations for the user id
+    if (post.user && typeof post.user.id === 'string') return post.user.id;
+    if (typeof post.userId === 'string') return post.userId;
+    if (post.author && typeof post.author.id === 'string') return post.author.id;
+    if (post.author && typeof post.author === 'string') return post.author;
+    if (post.user && typeof post.user === 'string') return post.user;
+    // Try _id fields
+    if (post.user && typeof post.user._id === 'string') return post.user._id;
+    if (post.author && typeof post.author._id === 'string') return post.author._id;
+    return undefined;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg mb-6 w-full max-w-2xl mx-auto">
       {/* Post header */}
@@ -343,10 +357,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
         </div>
         {/* Show the three-dot menu only if the current user is the owner of the post */}
-        {currentUser && (
-          currentUser.id === post.user.id || 
-          currentUser.id === post.userId ||
-          currentUser.id === (post as any)?.author?.id
+        {currentUser && getPostOwnerId(post) && (
+          String(currentUser.id) === String(getPostOwnerId(post))
         ) && (
           <div className="relative">
             <button 
