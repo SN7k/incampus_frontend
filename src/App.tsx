@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -34,23 +34,19 @@ function AppContent() {
   // State to track friend requests
   const [hasFriendRequests, setHasFriendRequests] = useState(false);
   
-  // Update friend requests state when they change
-  React.useEffect(() => {
-    // Listen for changes to friend requests
+  // Listen for friend request status changes
+  useEffect(() => {
     const handleFriendRequestsChange = (event: CustomEvent) => {
-      if (event.detail?.hasRequests !== undefined) {
-        setHasFriendRequests(event.detail.hasRequests);
-      }
+      setHasFriendRequests(event.detail.hasFriendRequests);
     };
-    
-    window.addEventListener('friendRequestsChange', handleFriendRequestsChange as EventListener);
+    window.addEventListener('friendRequestStatusChanged', handleFriendRequestsChange as EventListener);
     return () => {
-      window.removeEventListener('friendRequestsChange', handleFriendRequestsChange as EventListener);
+      window.removeEventListener('friendRequestStatusChanged', handleFriendRequestsChange as EventListener);
     };
   }, []);
-  
+
   // Listen for navigation events
-  React.useEffect(() => {
+  useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
       if (event.detail?.page) {
         setCurrentPage(event.detail.page);
@@ -64,7 +60,7 @@ function AppContent() {
   }, []);
   
   // Save currentPage to localStorage whenever it changes and dispatch page change event
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('currentPage', currentPage);
     
     // Dispatch a custom event to notify components about page change
@@ -210,14 +206,14 @@ function AppContent() {
   };
 
   // Apply dark mode to body element to ensure full page coverage
-  React.useEffect(() => {
+  useEffect(() => {
     document.body.classList.toggle('dark', isDarkMode);
     document.body.style.backgroundColor = isDarkMode ? '#111827' : '#f9fafb';
     document.body.style.color = isDarkMode ? '#f3f4f6' : '#111827';
   }, [isDarkMode]);
   
   // Listen for authentication state changes and update registration step when user logs out
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
       // When user logs out, reset to login page
       setRegistrationStep('login');
@@ -225,7 +221,7 @@ function AppContent() {
   }, [isAuthenticated]);
   
   // Initialize socket connection when user is authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('App: Socket initialization effect triggered, isAuthenticated:', isAuthenticated);
     console.log('App: Auth state in localStorage:', localStorage.getItem('authState'));
     if (isAuthenticated) {
