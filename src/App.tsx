@@ -242,6 +242,54 @@ function AppContent() {
     }
   }, [isAuthenticated]);
   
+  // Force PWA to always start from 'feed' page on fresh launch
+  useEffect(() => {
+    function handlePageShow(event: any) {
+      // Only redirect if this is a fresh navigation (not back/forward)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (typeof window.navigator === 'object' && 'standalone' in window.navigator && (window.navigator as any).standalone === true);
+      if (isStandalone) {
+        // If navigation type is TYPE_NAVIGATE (0) or TYPE_RELOAD (1)
+        if (performance && performance.getEntriesByType) {
+          const navEntries = performance.getEntriesByType('navigation');
+          if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'navigate') {
+            // Always redirect to feed (or your desired route)
+            setCurrentPage('feed');
+            localStorage.setItem('currentPage', 'feed');
+          }
+        } else if (performance && (performance as any).navigation) {
+          // Fallback for older browsers
+          if ((performance as any).navigation.type === 0) {
+            setCurrentPage('feed');
+            localStorage.setItem('currentPage', 'feed');
+          }
+        }
+      }
+    }
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+  
+  // On initial load, set the current page in history
+  useEffect(() => {
+    window.history.replaceState({ page: currentPage }, '', '');
+  }, []);
+
+  // On every page change, push the new page to history
+  useEffect(() => {
+    window.history.pushState({ page: currentPage }, '', '');
+  }, [currentPage]);
+
+  // Listen for popstate (back button) and update currentPage
+  useEffect(() => {
+    function handlePopState(event: PopStateEvent) {
+      const page = (event.state && event.state.page) || 'feed';
+      setCurrentPage(page);
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+  
   // If user is not authenticated, show auth forms
   if (!isAuthenticated) {
     return (
