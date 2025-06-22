@@ -190,9 +190,9 @@ const Navbar: React.FC = () => {
           {/* Logo and navigation */}
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <a href="/" className="flex items-center">
+              <button onClick={navigateToFeed} className="flex items-center focus:outline-none" style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer' }}>
                 <img src="/navlogo.png" alt="Incampus Logo" className="h-8 md:h-10 w-auto" />
-              </a>
+              </button>
             </div>
             
             {/* Desktop navigation */}
