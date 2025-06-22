@@ -131,7 +131,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   };
   
   const addSkill = () => {
-    setSkills(prev => [{ name: '', proficiency: 50 }, ...prev.map(skill => ({ ...skill }))]);
+    setSkills(prev => [{ name: '', proficiency: 50 }, ...prev]);
   };
   
   const removeSkill = (index: number) => {
@@ -147,7 +147,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   };
   
   const addAchievement = () => {
-    setAchievements(prev => [{ title: '', description: '', year: '' }, ...prev.map(a => ({ ...a }))]);
+    setAchievements(prev => [{ title: '', description: '', year: '' }, ...prev]);
   };
   
   const removeAchievement = (index: number) => {
