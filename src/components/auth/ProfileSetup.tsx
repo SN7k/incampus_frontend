@@ -56,33 +56,34 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     setLoading(true);
     
     try {
-      // Upload profile picture if provided
+      // First, upload the images to get the URLs
       let avatarUrl = '';
       if (profilePicture) {
         const result = await profileApi.uploadProfilePicture(profilePicture);
         avatarUrl = result.avatar.url;
       }
 
-      // Upload cover photo if provided
       let coverPhotoUrl = '';
       if (coverPhoto) {
         const result = await profileApi.uploadCoverPhoto(coverPhoto);
-        console.log('Cover photo upload result:', result);
         coverPhotoUrl = result.coverPhotoUrl;
       }
 
-      // Create profile data
+      // Now, create the complete profile data object
       const profileData = {
         name: userInfo.fullName,
+        role: userInfo.role,
+        bio: bio || undefined,
         avatar: avatarUrl ? { url: avatarUrl } : undefined,
         coverPhoto: coverPhotoUrl ? { url: coverPhotoUrl } : undefined,
-        bio: bio || undefined,
-        role: userInfo.role
       };
-      console.log('Profile data to submit:', profileData);
       
-      // Call the parent callback to continue the flow
-      onProfileComplete(profileData);
+      // Call the dedicated setup API endpoint
+      const updatedUser = await profileApi.setupProfile(profileData);
+      
+      // Update the auth context and signal completion
+      onProfileComplete(updatedUser);
+
     } catch (error) {
       console.error('Profile setup error:', error);
       setError('Failed to complete profile setup. Please try again.');
