@@ -51,19 +51,22 @@ export const uploadProfilePicture = async (file: File): Promise<{ avatar: { url:
 /**
  * Upload a cover photo
  * @param file The image file to upload
- * @returns The updated profile data with the new cover photo URL
+ * @returns The updated profile data with the new cover photo URL and publicId
  */
-export const uploadCoverPhoto = async (file: File): Promise<{ coverPhotoUrl: string }> => {
+export const uploadCoverPhoto = async (file: File): Promise<{ coverPhotoUrl: string; coverPhoto: { url: string; publicId: string } }> => {
   const formData = new FormData();
   formData.append('coverPhoto', file);
   
-  const response = await API.post<{ data: { coverPhoto: { url: string } } }>('/profile/cover', formData, {
+  const response = await API.post<{ data: { coverPhoto: { url: string; publicId: string } } }>('/profile/cover', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
   
-  return { coverPhotoUrl: response.data.data.coverPhoto.url };
+  return { 
+    coverPhotoUrl: response.data.data.coverPhoto.url,
+    coverPhoto: response.data.data.coverPhoto
+  };
 };
 
 /**
@@ -103,8 +106,8 @@ export const updateSkills = async (skills: string[]): Promise<ProfileData> => {
  */
 export const setupProfile = async (profileData: {
   name: string;
-  avatar?: { url: string };
-  coverPhoto?: { url: string };
+  avatar?: { url: string; publicId?: string };
+  coverPhoto?: { url: string; publicId?: string };
   bio?: string;
   role: 'student' | 'faculty';
 }): Promise<ProfileData> => {

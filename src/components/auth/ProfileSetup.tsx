@@ -54,16 +54,22 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
     
     try {
       // First, upload the images to get the URLs
-      let avatarUrl = '';
+      let avatar = undefined;
       if (profilePicture) {
         const result = await profileApi.uploadProfilePicture(profilePicture);
-        avatarUrl = result.avatar.url;
+        avatar = {
+          url: result.avatar.url,
+          publicId: result.avatar.publicId
+        };
       }
 
-      let coverPhotoUrl = '';
+      let coverPhotoData = undefined;
       if (coverPhoto) {
         const result = await profileApi.uploadCoverPhoto(coverPhoto);
-        coverPhotoUrl = result.coverPhotoUrl;
+        coverPhotoData = {
+          url: result.coverPhotoUrl,
+          publicId: result.coverPhoto.publicId
+        };
       }
 
       // Now, create the complete profile data object
@@ -71,12 +77,16 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userInfo, onProfileComplete
         name: userInfo.fullName,
         role: userInfo.role,
         bio: bio || undefined,
-        avatar: avatarUrl ? { url: avatarUrl } : undefined,
-        coverPhoto: coverPhotoUrl ? { url: coverPhotoUrl } : undefined,
+        avatar: avatar,
+        coverPhoto: coverPhotoData,
       };
+      
+      console.log('Setting up profile with data:', profileData);
       
       // Call the dedicated setup API endpoint
       const updatedUser = await profileApi.setupProfile(profileData);
+      console.log('Profile setup successfully with:', profileData);
+      console.log('Updated profile from backend:', updatedUser);
       
       // Update the auth context and signal completion
       onProfileComplete(updatedUser);
