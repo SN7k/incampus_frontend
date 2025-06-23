@@ -9,7 +9,7 @@ const ForgotPassword: React.FC<{ onBack: () => void; onOtpSent: (identifier: str
   const [role, setRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { authApi } = useAuth() as any;
+  const { authApi } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +115,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
-  const { login, loading, error, clearCorruptedData, authApi } = useAuth() as any;
+  const { login, loading, error, clearCorruptedData, authApi } = useAuth();
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
@@ -368,7 +368,7 @@ const OtpResetForm: React.FC<{
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [resendError, setResendError] = useState('');
-  const { authApi } = useAuth() as any;
+  const { authApi } = useAuth();
 
   // Handle countdown timer for resend OTP
   React.useEffect(() => {

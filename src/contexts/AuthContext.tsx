@@ -12,6 +12,7 @@ interface AuthContextType extends AuthState {
   verifyOTP: (email: string, otp: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
   clearCorruptedData: () => void;
+  authApi: typeof authApi;
 }
 
 const initialState: AuthState = {
@@ -30,7 +31,8 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => ({}),
   verifyOTP: async () => {},
   resendOTP: async () => {},
-  clearCorruptedData: () => {}
+  clearCorruptedData: () => {},
+  authApi: authApi,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -302,7 +304,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       signup, 
       verifyOTP, 
       resendOTP,
-      clearCorruptedData
+      clearCorruptedData,
+      authApi: authApi,
     }}>
       {children}
     </AuthContext.Provider>
