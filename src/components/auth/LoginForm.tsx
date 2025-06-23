@@ -13,15 +13,27 @@ const ForgotPassword: React.FC<{ onBack: () => void; onOtpSent: (identifier: str
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('ForgotPassword handleSubmit called');
     setError('');
     setLoading(true);
     try {
-      const result = await authApi.forgotPassword(identifier, role);
-      console.log('Forgot password API result:', result);
+      await authApi.forgotPassword(identifier, role);
       onOtpSent(identifier, role);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to send OTP.');
+      // Handle both Error objects (from interceptor) and axios error objects
+      let errorMessage = 'Failed to send OTP.';
+      
+      if (err instanceof Error) {
+        // This is a plain Error object from the API interceptor
+        errorMessage = err.message;
+      } else if (err?.response?.data?.message) {
+        // This is an axios error object
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        // Fallback for other error types
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -148,7 +160,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         setFormData(prev => ({...prev, identifier: otpIdentifier}));
       }, 2000);
     } catch (err: any) {
-      setResetError(err?.response?.data?.message || 'Failed to reset password.');
+      // Handle both Error objects (from interceptor) and axios error objects
+      let errorMessage = 'Failed to reset password.';
+      
+      if (err instanceof Error) {
+        // This is a plain Error object from the API interceptor
+        errorMessage = err.message;
+      } else if (err?.response?.data?.message) {
+        // This is an axios error object
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        // Fallback for other error types
+        errorMessage = err.message;
+      }
+      
+      console.error('Reset password error:', err);
+      setResetError(errorMessage);
     } finally {
       setResetLoading(false);
     }
@@ -340,6 +367,7 @@ const OtpResetForm: React.FC<{
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendError, setResendError] = useState('');
   const { authApi } = useAuth() as any;
 
   // Handle countdown timer for resend OTP
@@ -404,6 +432,7 @@ const OtpResetForm: React.FC<{
     if (resendCountdown > 0) return;
     
     setResendLoading(true);
+    setResendError('');
     try {
       // First try using the resendOTP method if the identifier is an email
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
@@ -421,8 +450,28 @@ const OtpResetForm: React.FC<{
       setTimeout(() => {
         setResendSuccess(false);
       }, 5000);
-    } catch (err) {
+    } catch (err: any) {
+      // Handle both Error objects (from interceptor) and axios error objects
+      let errorMessage = 'Failed to resend OTP.';
+      
+      if (err instanceof Error) {
+        // This is a plain Error object from the API interceptor
+        errorMessage = err.message;
+      } else if (err?.response?.data?.message) {
+        // This is an axios error object
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        // Fallback for other error types
+        errorMessage = err.message;
+      }
+      
       console.error('Failed to resend OTP:', err);
+      setResendError(errorMessage);
+      
+      // Clear error after 5 seconds
+      setTimeout(() => {
+        setResendError('');
+      }, 5000);
     } finally {
       setResendLoading(false);
     }
@@ -440,6 +489,13 @@ const OtpResetForm: React.FC<{
       {resendSuccess && (
         <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg">
           OTP has been resent successfully!
+        </div>
+      )}
+      
+      {resendError && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-center">
+          <AlertCircle size={20} className="mr-2" />
+          {resendError}
         </div>
       )}
       

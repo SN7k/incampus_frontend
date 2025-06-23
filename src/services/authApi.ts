@@ -115,9 +115,10 @@ export const authApi = {
         role,
         ...(isEmail ? { email: identifier } : { universityId: identifier })
       };
+      
       const response = await API.post<{ status: string; message: string }>('/auth/forgot-password', payload);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending forgot password OTP:', error);
       throw error;
     }
