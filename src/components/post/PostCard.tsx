@@ -386,36 +386,40 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </div>
       ) : null}
       
-      {/* Post actions */}
-      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={toggleLike}
-            className={`flex items-center space-x-1 ${
-              isLiked ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
-            }`}
-          >
-            <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-            <span>{likesCount > 0 ? likesCount : ''}</span>
-          </button>
-          
-          <div className="relative">
-            <button
-              onClick={handleShare}
-              className="flex items-center space-x-1 text-gray-500 dark:text-gray-400"
-            >
-              {shareIcon === 'share' && <Share2 className="h-5 w-5" />}
-              {shareIcon === 'copy' && <Copy className="h-5 w-5" />}
-              {shareIcon === 'check' && <Check className="h-5 w-5 text-green-500" />}
-            </button>
-            
-            {showShareTooltip && (
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-1 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                Link copied!
-              </div>
-            )}
-          </div>
+      {/* Post stats */}
+      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+        <div>
+          {likesCount > 0 && (
+            <span>{likesCount} like{likesCount !== 1 ? 's' : ''}</span>
+          )}
         </div>
+        <div></div>
+      </div>
+      
+      {/* Post actions */}
+      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
+        <button 
+          onClick={toggleLike}
+          className={`flex items-center justify-center space-x-2 py-1.5 rounded-md ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'} hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+        >
+          <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+          <span className="sm:inline">Like</span>
+        </button>
+        <button 
+          onClick={handleShare}
+          className="relative flex items-center justify-center space-x-2 py-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          {shareIcon === 'share' && <Share2 className="h-5 w-5" />}
+          {shareIcon === 'copy' && <Copy className="h-5 w-5" />}
+          {shareIcon === 'check' && <Check className="h-5 w-5 text-green-500" />}
+          <span className="sm:inline">{shareIcon === 'check' ? 'Copied!' : 'Share'}</span>
+          
+          {showShareTooltip && (
+            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+              Link copied to clipboard!
+            </div>
+          )}
+        </button>
       </div>
     </article>
   );
