@@ -4,6 +4,7 @@ import { Post } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAvatarUrl } from '../../utils/avatarUtils';
 import { postsApi } from '../../services/postsApi';
+import ImageGallery from './ImageGallery';
 
 interface PostCardProps {
   post: Post;
@@ -291,147 +292,132 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg mb-6 w-full max-w-2xl mx-auto">
-      {/* Post header */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+    <article className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-4 overflow-hidden">
+      {/* Post header with user info */}
+      <div className="flex justify-between items-center p-4">
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={navigateToProfile}>
           <img 
-            src={getAvatarUrl(post.user.avatar, post.user.name)}
-            alt={post.user.name}
-            className="w-10 h-10 rounded-full object-cover flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={(e) => {
-              console.log('PostCard: Profile picture clicked');
-              e.preventDefault();
-              e.stopPropagation();
-              navigateToProfile();
-            }}
-            onMouseDown={(e) => {
-              // Prevent any default behavior that might interfere
-              e.preventDefault();
-            }}
+            src={getAvatarUrl(post.user?.avatar, post.user?.name || 'User')} 
+            alt={post.user?.name || 'User'} 
+            className="w-10 h-10 rounded-full object-cover"
           />
-          <div className="overflow-hidden">
-            <div 
-              className="font-semibold text-gray-800 dark:text-gray-100 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              onClick={(e) => {
-                console.log('PostCard: Username clicked');
-                e.preventDefault();
-                e.stopPropagation();
-                navigateToProfile();
-              }}
-              onMouseDown={(e) => {
-                // Prevent any default behavior that might interfere
-                e.preventDefault();
-              }}
-            >
-              {/* Use current user's name if this post is from the current user */}
-              {post.user.name}
-              {post.user.role === 'faculty' && (
-                <span className="ml-2 text-xs font-medium px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
-                  Faculty
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center truncate">
-              {post.user.role === 'faculty' ? 'Faculty' : post.user.universityId} · {formatDate(post.createdAt)}
-            </div>
+          <div>
+            <h3 className="font-medium text-gray-900 dark:text-white">
+              {post.user?.name || 'Unknown User'}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {formatDate(new Date(post.createdAt))}
+            </p>
           </div>
         </div>
-        {/* Show the three-dot menu only if the current user is the owner of the post */}
-        {currentUser && getPostOwnerId(post) && (
-          String(currentUser.id) === String(getPostOwnerId(post))
-        ) && (
-          <div className="relative">
-            <button 
-              ref={buttonRef}
-              onClick={() => setShowMenu(!showMenu)}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex-shrink-0 ml-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+        
+        {/* Post menu */}
+        <div className="relative">
+          <button
+            ref={buttonRef}
+            onClick={() => setShowMenu(!showMenu)}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
+          
+          {showMenu && (
+            <div 
+              ref={menuRef}
+              className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
             >
-              <MoreHorizontal size={20} />
-            </button>
-            
-            {showMenu && (
-              <div 
-                ref={menuRef}
-                className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5 focus:outline-none"
-              >
+              <div className="py-1">
                 <button
-                  onClick={handleDeletePost}
-                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={async () => {
+                    await handleShare();
+                    setShowMenu(false);
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Trash2 size={16} className="mr-2" />
-                  Delete Post
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy link
                 </button>
+                
+                {/* Show delete option only for user's own posts */}
+                {currentUser && post.user && (currentUser.id === getPostOwnerId(post)) && (
+                  <button
+                    onClick={() => {
+                      handleDeletePost();
+                      setShowMenu(false);
+                      // Dispatch event to notify other components about the deletion
+                      window.dispatchEvent(new CustomEvent('postDeleted', { 
+                        detail: { postId: post.id } 
+                      }));
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete post
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Post content */}
-      <div className="px-4 py-2">
-        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line break-words">{post.content}</p>
-      </div>
-      
-      {/* Post media */}
-      {post.images && post.images.length > 0 && (
-        <div className="w-full">
-          {post.images[0].type === 'image' && (
-            <img 
-              src={post.images[0].url} 
-              alt="Post content" 
-              className="w-full h-auto object-cover max-h-[500px]"
-              loading="lazy"
-            />
-          )}
-          {post.images[0].type === 'video' && (
-            <video 
-              src={post.images[0].url} 
-              controls 
-              className="w-full h-auto max-h-[500px]"
-              preload="metadata"
-            />
-          )}
+      {post.content && (
+        <div className="px-4 py-2">
+          <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+            {post.content}
+          </p>
         </div>
       )}
       
-      {/* Post stats */}
-      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-        <div>
-          {likesCount > 0 && (
-            <span>{likesCount} like{likesCount !== 1 ? 's' : ''}</span>
-          )}
+      {/* Post media - Use the new ImageGallery component */}
+      {post.images && post.images.length > 0 ? (
+        <div className="mt-2">
+          <ImageGallery images={post.images} />
         </div>
-        <div></div>
-      </div>
+      ) : (post as any).media && (post as any).media.url ? (
+        // Fallback for legacy posts with single media
+        <div className="mt-2">
+          <img 
+            src={(post as any).media.url} 
+            alt="Post content" 
+            className="w-full object-cover max-h-[500px]"
+          />
+        </div>
+      ) : null}
       
       {/* Post actions */}
-      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
-        <button 
-          onClick={toggleLike}
-          className={`flex items-center justify-center space-x-2 py-1.5 rounded-md ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'} hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
-        >
-          <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
-          <span className="sm:inline">Like</span>
-        </button>
-        <button 
-          onClick={handleShare}
-          className="relative flex items-center justify-center space-x-2 py-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          {shareIcon === 'share' && <Share2 size={18} />}
-          {shareIcon === 'copy' && <Copy size={18} />}
-          {shareIcon === 'check' && <Check size={18} className="text-green-500" />}
-          <span className="sm:inline">{shareIcon === 'check' ? 'Copied!' : 'Share'}</span>
+      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={toggleLike}
+            className={`flex items-center space-x-1 ${
+              isLiked ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+            <span>{likesCount > 0 ? likesCount : ''}</span>
+          </button>
           
-          {showShareTooltip && (
-            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-              Link copied to clipboard!
-            </div>
-          )}
-        </button>
+          <div className="relative">
+            <button
+              onClick={handleShare}
+              className="flex items-center space-x-1 text-gray-500 dark:text-gray-400"
+            >
+              {shareIcon === 'share' && <Share2 className="h-5 w-5" />}
+              {shareIcon === 'copy' && <Copy className="h-5 w-5" />}
+              {shareIcon === 'check' && <Check className="h-5 w-5 text-green-500" />}
+            </button>
+            
+            {showShareTooltip && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-1 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                Link copied!
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-    </div>
+    </article>
   );
 };
 

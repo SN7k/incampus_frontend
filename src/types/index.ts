@@ -25,6 +25,11 @@ export interface Post {
   images?: Image[];
   likes: User[];
   createdAt: Date;
+  media?: {
+    type?: 'image' | 'video';
+    url: string;
+    publicId?: string;
+  }; // For backward compatibility
 }
 
 export interface Image {

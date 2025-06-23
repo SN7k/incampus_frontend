@@ -40,8 +40,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       return true;
     });
     
-    if (validFiles.length + mediaFiles.length > 5) {
-      setError('You can upload a maximum of 5 files');
+    // Check if adding these files would exceed the 3-image limit
+    if (validFiles.length + mediaFiles.length > 3) {
+      setError('You can upload a maximum of 3 images');
       return;
     }
     
@@ -200,11 +201,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={mediaFiles.length >= 5}
-                className="p-2 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={mediaFiles.length >= 3}
+                className={`p-2 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${mediaFiles.length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={mediaFiles.length >= 3 ? "Maximum 3 images allowed" : "Add images"}
               >
                 <Image className="h-5 w-5" />
               </button>
+              {mediaFiles.length > 0 && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {mediaFiles.length}/3 images
+                </span>
+              )}
             </div>
             
             <Button
