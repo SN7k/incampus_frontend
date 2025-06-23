@@ -111,17 +111,6 @@ function AppContent() {
   const handleProfileComplete = async (profileData: Partial<User>) => {
     // Store the profile data and move to friend suggestions
     setPendingProfileData(profileData);
-
-    // Immediately update AuthContext so profile page shows new images
-    if (profileData.avatar || profileData.coverPhoto || profileData.bio || profileData.name) {
-      updateProfileState({
-        name: profileData.name,
-        avatar: profileData.avatar,
-        coverPhoto: profileData.coverPhoto,
-        bio: profileData.bio
-      });
-    }
-
     setRegistrationStep('friend-suggestions');
   };
   
