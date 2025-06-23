@@ -312,20 +312,20 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </div>
         
         {/* Post menu */}
-        <div className="relative">
-          <button
-            ref={buttonRef}
-            onClick={() => setShowMenu(!showMenu)}
+          <div className="relative">
+            <button 
+              ref={buttonRef}
+              onClick={() => setShowMenu(!showMenu)}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
-          
-          {showMenu && (
-            <div 
-              ref={menuRef}
-              className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
             >
+            <MoreHorizontal className="h-5 w-5" />
+            </button>
+            
+            {showMenu && (
+              <div 
+                ref={menuRef}
+              className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+              >
               <div className="py-1">
                 <button
                   onClick={async () => {
@@ -356,18 +356,18 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                   </button>
                 )}
               </div>
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
       </div>
       
       {/* Post content */}
       {post.content && (
-        <div className="px-4 py-2">
+      <div className="px-4 py-2">
           <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
             {post.content}
           </p>
-        </div>
+      </div>
       )}
       
       {/* Post media - Use the new ImageGallery component */}
@@ -378,11 +378,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       ) : (post as any).media && (post as any).media.url ? (
         // Fallback for legacy posts with single media
         <div className="mt-2">
-          <img 
+            <img 
             src={(post as any).media.url} 
-            alt="Post content" 
+              alt="Post content" 
             className="w-full object-cover max-h-[500px]"
-          />
+            />
         </div>
       ) : null}
       
