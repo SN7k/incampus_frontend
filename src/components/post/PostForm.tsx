@@ -24,8 +24,18 @@ const PostForm: React.FC = () => {
   const navigateToProfile = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent opening the post modal
     
+    console.log('PostForm: Profile picture clicked, navigating to current user profile');
+    
+    // Always clear viewProfileUserId to show the current user's profile
+    localStorage.removeItem('viewProfileUserId');
+    
     // Save the current page to localStorage
     localStorage.setItem('currentPage', 'profile');
+    
+    // Dispatch a custom event to notify Profile component to show current user's profile
+    window.dispatchEvent(new CustomEvent('profileNavigation', { 
+      detail: { action: 'viewOwnProfile' } 
+    }));
     
     // Trigger a navigation event
     window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'profile' } }));
