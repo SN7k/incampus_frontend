@@ -117,7 +117,14 @@ const CollectionsPanel: React.FC<CollectionsPanelProps> = ({ userPosts, viewingU
 
 const Profile: React.FC = () => {
   const { user, updateProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'memories' | 'collections' | 'friends' | 'about'>('memories');
+  const [activeTab, setActiveTab] = useState<'memories' | 'collections' | 'friends' | 'about'>(() => {
+    // Initialize from localStorage if available
+    const savedTab = localStorage.getItem('activeProfileTab');
+    if (savedTab && ['memories', 'collections', 'friends', 'about'].includes(savedTab)) {
+      return savedTab as 'memories' | 'collections' | 'friends' | 'about';
+    }
+    return 'memories';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [friendsList, setFriendsList] = useState<User[]>([]);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
@@ -134,6 +141,11 @@ const Profile: React.FC = () => {
   const [requestSent, setRequestSent] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
   const [isUnfriending, setIsUnfriending] = useState(false);
+
+  // Save activeTab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('activeProfileTab', activeTab);
+  }, [activeTab]);
 
   // Animation variants
   const container = {

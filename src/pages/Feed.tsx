@@ -136,6 +136,45 @@ const Feed: React.FC = () => {
     }
   };
 
+  // Navigation handlers for quick links
+  const navigateToMemories = () => {
+    console.log('FEED: Navigating to memories');
+    localStorage.removeItem('viewProfileUserId');
+    localStorage.setItem('activeProfileTab', 'memories');
+    localStorage.setItem('currentPage', 'profile');
+    // Dispatch a custom event to notify Profile component
+    window.dispatchEvent(new CustomEvent('profileNavigation', { 
+      detail: { action: 'viewOwnProfile' } 
+    }));
+    // Navigate to profile page
+    window.dispatchEvent(new CustomEvent('navigate', { 
+      detail: { page: 'profile', timestamp: new Date().getTime() } 
+    }));
+  };
+
+  const navigateToCollections = () => {
+    console.log('FEED: Navigating to collections');
+    localStorage.removeItem('viewProfileUserId');
+    localStorage.setItem('activeProfileTab', 'collections');
+    localStorage.setItem('currentPage', 'profile');
+    // Dispatch a custom event to notify Profile component
+    window.dispatchEvent(new CustomEvent('profileNavigation', { 
+      detail: { action: 'viewOwnProfile' } 
+    }));
+    // Navigate to profile page
+    window.dispatchEvent(new CustomEvent('navigate', { 
+      detail: { page: 'profile', timestamp: new Date().getTime() } 
+    }));
+  };
+
+  const navigateToSettings = () => {
+    console.log('FEED: Navigating to settings');
+    localStorage.setItem('currentPage', 'settings');
+    window.dispatchEvent(new CustomEvent('navigate', { 
+      detail: { page: 'settings' } 
+    }));
+  };
+
   if (!user) return null;
 
   if (loading) {
@@ -184,13 +223,9 @@ const Feed: React.FC = () => {
                 <a
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
-                  onClick={() => {
-                    localStorage.removeItem('viewProfileUserId');
-                    localStorage.setItem('activeProfileTab', 'memories');
-                    localStorage.setItem('currentPage', 'profile');
-                    window.dispatchEvent(new CustomEvent('navigate', { 
-                      detail: { page: 'profile', timestamp: new Date().getTime() } 
-                    }));
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateToMemories();
                   }}
                 >
                   <BookOpen size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
@@ -199,13 +234,9 @@ const Feed: React.FC = () => {
                 <a
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
-                  onClick={() => {
-                    localStorage.removeItem('viewProfileUserId');
-                    localStorage.setItem('activeProfileTab', 'collections');
-                    localStorage.setItem('currentPage', 'profile');
-                    window.dispatchEvent(new CustomEvent('navigate', { 
-                      detail: { page: 'profile', timestamp: new Date().getTime() } 
-                    }));
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateToCollections();
                   }}
                 >
                   <Bookmark size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
@@ -214,8 +245,9 @@ const Feed: React.FC = () => {
                 <a
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'settings' } }));
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateToSettings();
                   }}
                 >
                   <Settings size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
@@ -231,7 +263,9 @@ const Feed: React.FC = () => {
                 <a
                   href="#"
                   className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg transition-colors"
-                  onClick={() => {}}
+                  onClick={(e) => {
+                    e.preventDefault();
+                  }}
                 >
                   <Heart size={16} className="mr-2 text-blue-600 dark:text-blue-400" />
                   Contribute

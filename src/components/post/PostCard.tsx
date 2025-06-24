@@ -24,66 +24,55 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   useEffect(() => {
     if (currentUser) {
       // Check if current user has liked this post
-      const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-      const postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
-      
-      // Set initial like state based on localStorage
-      setIsLiked(likedPosts[post.id] === true);
-      setLikesCount(postLikes.length);
+      const userLiked = post.likes.some(user => user.id === currentUser.id);
+      setIsLiked(userLiked);
+      setLikesCount(post.likes.length);
     }
-  }, [currentUser, post.id]);
+  }, [currentUser, post.id, post.likes]);
 
-  const toggleLike = () => {
+  const toggleLike = async () => {
     if (!currentUser) return; // Ensure user is logged in
     
-    // Update local state
-    const newIsLiked = !isLiked;
-    const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
-    
-    setIsLiked(newIsLiked);
-    setLikesCount(newLikesCount);
-    
-    // Update localStorage for user's liked posts
-    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-    if (newIsLiked) {
-      likedPosts[post.id] = true;
-    } else {
-      delete likedPosts[post.id];
-    }
-    localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-    
-    // Update localStorage for post's likes
-    let postLikes = JSON.parse(localStorage.getItem(`post_${post.id}_likes`) || '[]');
-    if (newIsLiked) {
-      // Add user to likes if not already present
-      if (!postLikes.includes(currentUser.id)) {
-        postLikes.push(currentUser.id);
-      }
-    } else {
-      // Remove user from likes
-      postLikes = postLikes.filter((id: string) => id !== currentUser.id);
-    }
-    localStorage.setItem(`post_${post.id}_likes`, JSON.stringify(postLikes));
-    
-    // Dispatch a custom event to notify other components about the like change
-    window.dispatchEvent(new CustomEvent('postLikeChanged', { 
-      detail: { 
-        postId: post.id,
-        likesCount: newLikesCount,
-        isLiked: newIsLiked,
-        userId: currentUser.id
-      } 
-    }));
-    
-    // Dispatch event for notifications if the user liked the post (not when unliking)
-    if (newIsLiked) {
-      window.dispatchEvent(new CustomEvent('postLike', { 
+    try {
+      // Update local state optimistically
+      const newIsLiked = !isLiked;
+      const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
+      
+      setIsLiked(newIsLiked);
+      setLikesCount(newLikesCount);
+      
+      // Call API to toggle like
+      const response = await postsApi.toggleLike(post.id);
+      
+      // Update state with actual response from server
+      setIsLiked(response.isLiked);
+      setLikesCount(response.likesCount);
+      
+      // Dispatch a custom event to notify other components about the like change
+      window.dispatchEvent(new CustomEvent('postLikeChanged', { 
         detail: { 
-          fromUser: currentUser.id,
           postId: post.id,
-          postAuthorId: post.user.id
+          likesCount: response.likesCount,
+          isLiked: response.isLiked,
+          userId: currentUser.id
         } 
       }));
+      
+      // Dispatch event for notifications if the user liked the post (not when unliking)
+      if (response.isLiked) {
+        window.dispatchEvent(new CustomEvent('postLike', { 
+          detail: { 
+            fromUser: currentUser.id,
+            postId: post.id,
+            postAuthorId: post.user.id
+          } 
+        }));
+      }
+    } catch (error) {
+      // Revert to original state if API call fails
+      console.error('Error toggling like:', error);
+      setIsLiked(!isLiked);
+      setLikesCount(isLiked ? likesCount + 1 : likesCount - 1);
     }
   };
 
@@ -218,50 +207,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   // Handle delete post
   const handleDeletePost = async () => {
     try {
-      let isUserCreatedPost = false;
-      let userPostsStr = localStorage.getItem('userPosts') || '[]';
-      let userPosts = JSON.parse(userPostsStr);
-      // Check if the post exists in userPosts (mock/local post)
-      for (let i = 0; i < userPosts.length; i++) {
-        if (userPosts[i].id === post.id) {
-          isUserCreatedPost = true;
-          break;
-        }
-      }
-      if (isUserCreatedPost) {
-        // Remove the post from userPosts
-        userPosts = userPosts.filter((p: any) => p.id !== post.id);
-        localStorage.setItem('userPosts', JSON.stringify(userPosts));
-      } else {
-        // Real post: call API
-        try {
-          await postsApi.deletePost(post.id);
-        } catch (apiError) {
-          // Optionally, show a non-intrusive error (e.g., toast)
-          return;
-        }
-      }
-      // For all posts (including mock posts), add to deletedPosts list
-      const deletedPostsStr = localStorage.getItem('deletedPosts') || '[]';
-      const deletedPosts = JSON.parse(deletedPostsStr);
-      if (!deletedPosts.includes(post.id)) {
-        deletedPosts.push(post.id);
-        localStorage.setItem('deletedPosts', JSON.stringify(deletedPosts));
-      }
-      localStorage.removeItem(`post_${post.id}_likes`);
-      const likedPostsStr = localStorage.getItem('likedPosts') || '{}';
-      const likedPosts = JSON.parse(likedPostsStr);
-      if (likedPosts[post.id]) {
-        delete likedPosts[post.id];
-        localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-      }
+      // Call API to delete the post
+      await postsApi.deletePost(post.id);
+      
+      // Dispatch event to notify other components about the deletion
       window.dispatchEvent(new CustomEvent('postDeleted', { 
         detail: { 
           postId: post.id,
-          userId: post.user?.id || '',
-          isUserCreatedPost
+          userId: post.user?.id || ''
         } 
       }));
+      
       setShowMenu(false);
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -341,14 +297,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 {/* Show delete option only for user's own posts */}
                 {currentUser && post.user && (currentUser.id === getPostOwnerId(post)) && (
                   <button
-                    onClick={() => {
-                      handleDeletePost();
-                      setShowMenu(false);
-                      // Dispatch event to notify other components about the deletion
-                      window.dispatchEvent(new CustomEvent('postDeleted', { 
-                        detail: { postId: post.id } 
-                      }));
-                    }}
+                    onClick={handleDeletePost}
                     className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
