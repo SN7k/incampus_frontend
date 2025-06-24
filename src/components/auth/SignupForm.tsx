@@ -118,7 +118,15 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin, onSignupSuccess 
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string; errors?: Array<{ msg?: string }> } } };
-        if (axiosError.response?.data?.message) {
+        
+        // Check for duplicate email or university ID error messages
+        const errorMessage = axiosError.response?.data?.message || '';
+        
+        if (errorMessage.includes('email already exists') || 
+            errorMessage.includes('University ID already exists') ||
+            errorMessage.includes('Duplicate')) {
+          setFormError('This email or university ID is already registered');
+        } else if (axiosError.response?.data?.message) {
           setFormError(axiosError.response.data.message);
         } else if (axiosError.response?.data?.errors) {
           // Show the first validation error

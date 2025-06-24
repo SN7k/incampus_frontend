@@ -177,11 +177,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('authState');
       localStorage.removeItem('currentPage');
       
+      // Check if the error message indicates the email/ID is already registered
+      let errorMessage = 'Login failed';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setState({
         isAuthenticated: false,
         user: null,
         loading: false,
-        error: error.message || 'Login failed'
+        error: errorMessage
       });
       throw error;
     }

@@ -115,7 +115,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
-  const { login, loading, error, clearCorruptedData, authApi } = useAuth();
+  const { login, loading, error: authError, clearCorruptedData, authApi } = useAuth();
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
@@ -126,6 +126,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
   const [view, setView] = useState<'login' | 'forgot' | 'otp'>('login');
   const [otpIdentifier, setOtpIdentifier] = useState('');
   const [otpRole, setOtpRole] = useState<UserRole>('student');
+  const [customError, setCustomError] = useState<string | null>(null);
 
   // For OTP reset password
   const [resetError, setResetError] = useState('');
@@ -134,9 +135,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCustomError(null); // Clear any previous custom errors
+    
     try {
       await login(formData.identifier, formData.password, formData.role);
-    } catch (error) {
+    } catch (error: any) {
+      // Check if the error message indicates the credentials might be registered for signup
+      if (error.message && 
+          (error.message.includes('Incorrect credentials') || 
+           error.message.includes('User not found'))) {
+        // Show a more helpful message suggesting the user might need to sign up
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.identifier);
+        const identifierType = isEmail ? 'email' : 'university ID';
+        
+        // Set custom error
+        setCustomError(`This ${identifierType} might not be registered. Would you like to sign up instead?`);
+      }
       setShowClearDataOption(true);
     }
   };
@@ -294,10 +308,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         </div>
 
         {/* Error Message */}
-        {error && (
+        {authError && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-center">
             <AlertCircle size={20} className="mr-2" />
-            {error}
+            {authError}
+          </div>
+        )}
+
+        {/* Custom Error Message */}
+        {customError && (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex flex-col">
+            <div className="flex items-center mb-2">
+              <AlertCircle size={20} className="mr-2 flex-shrink-0" />
+              <span>{customError}</span>
+            </div>
+            {customError.includes('sign up') && (
+              <button
+                onClick={onShowSignup}
+                className="ml-auto mt-1 px-4 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+              >
+                Sign Up Now
+              </button>
+            )}
           </div>
         )}
 
