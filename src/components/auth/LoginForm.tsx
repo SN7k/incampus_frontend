@@ -326,15 +326,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowSignup }) => {
         </Button>
       </form>
       
+      {/* Add prominent signup button */}
+      <div className="mt-4">
+        <Button
+          type="button"
+          onClick={onShowSignup}
+          className="w-full bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 dark:bg-gray-700 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-600"
+          size="lg"
+        >
+          Create New Account
+        </Button>
+      </div>
+      
       <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          <button
-            onClick={onShowSignup}
-            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-          >
-            Don't have an account? Sign up
-          </button>
-        </p>
         <p className="text-sm mt-2">
           <button
             type="button"
