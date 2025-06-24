@@ -283,7 +283,7 @@ const Profile: React.FC = () => {
         const [profileResponse, postsResponse, friendsResponse] = await Promise.all([
           profileApi.getUserProfile(profileIdString),
           postsApi.getUserPosts(profileIdString),
-          friendsApi.getFriendsList()
+          friendsApi.getUserFriends(profileIdString)
         ]);
         
         console.log('Profile: Successfully fetched data:', {
@@ -351,7 +351,7 @@ const Profile: React.FC = () => {
               
               // Fetch friends list
               try {
-                const friendsResponse = await friendsApi.getFriendsList();
+                const friendsResponse = await friendsApi.getUserFriends(user.id);
                 setFriendsList(friendsResponse);
               } catch (error) {
                 console.error('PROFILE: Error fetching friends:', error);

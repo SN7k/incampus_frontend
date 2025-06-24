@@ -78,6 +78,18 @@ export const friendsApi = {
       return []; // Return empty array on error
     }
   },
+  
+  // Get friends list of a specific user
+  getUserFriends: async (userId: string): Promise<User[]> => {
+    try {
+      const response = await API.get<FriendsResponse>(`/friends/user-friends/${userId}`);
+      const friends = response.data.data.friends || [];
+      return friends.map(transformUser);
+    } catch (error) {
+      console.error(`Error fetching friends for user ${userId}:`, error);
+      return []; // Return empty array on error
+    }
+  },
 
   // Get pending friend requests (both sent and received)
   getPendingRequests: async (): Promise<FriendRequest[]> => {
