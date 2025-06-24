@@ -20,11 +20,16 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
-  // Load likes from localStorage on component mount
+  // Load likes on component mount
   useEffect(() => {
     if (currentUser) {
-      // Check if current user has liked this post
-      const userLiked = post.likes.some(user => user.id === currentUser.id);
+      // Check if current user has liked this post by comparing IDs
+      const userLiked = Array.isArray(post.likes) && post.likes.some(
+        like => like.id === currentUser.id || 
+               (typeof like === 'string' && like === currentUser.id)
+      );
+      
+      console.log(`PostCard: Post ${post.id} - User liked: ${userLiked}, Likes count: ${post.likes.length}`);
       setIsLiked(userLiked);
       setLikesCount(post.likes.length);
     }
@@ -190,11 +195,16 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   // Listen for like changes from other components
   useEffect(() => {
     const handleLikeChange = (event: CustomEvent) => {
-      const { postId, likesCount: newLikesCount, userId } = event.detail;
+      const { postId, likesCount: newLikesCount, isLiked: newIsLiked, userId } = event.detail;
       
-      // Only update if this is the same post and not triggered by the current user
-      if (postId === post.id && currentUser && userId !== currentUser.id) {
+      if (postId === post.id) {
+        // Update likes count for all users
         setLikesCount(newLikesCount);
+        
+        // If this is the current user's action, update the isLiked state
+        if (currentUser && userId === currentUser.id) {
+          setIsLiked(newIsLiked);
+        }
       }
     };
     
@@ -349,10 +359,22 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
         <button 
           onClick={toggleLike}
-          className={`flex items-center justify-center space-x-2 py-1.5 rounded-md ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'} hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+          className={`flex items-center justify-center space-x-2 py-1.5 rounded-md 
+            ${isLiked 
+              ? 'text-red-500 font-medium' 
+              : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
+            } 
+            hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+          title={isLiked ? "Unlike" : "Like"}
         >
-          <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-          <span className="sm:inline">Like</span>
+          <Heart 
+            className={`h-5 w-5 transition-all duration-300 ${
+              isLiked 
+                ? 'fill-current scale-110' 
+                : ''
+            }`} 
+          />
+          <span className="sm:inline">{isLiked ? 'Liked' : 'Like'}</span>
         </button>
         <button 
           onClick={handleShare}
