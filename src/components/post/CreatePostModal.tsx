@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { postsApi } from '../../services/postsApi';
-import { X, Image } from 'lucide-react';
+import { X, Image, AlertCircle } from 'lucide-react';
 import Button from '../ui/Button';
 import { getAvatarUrl } from '../../utils/avatarUtils';
 
@@ -17,23 +17,30 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const maxRetries = 3;
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
+    // Reset error
+    setError('');
+    
     // Validate file types and sizes
     const validFiles = files.filter(file => {
-      const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      // Only allow images, not videos
+      const isValidType = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
       
       if (!isValidType) {
-        setError('Please select only image or video files');
+        setError('Please select only image files. Videos are not supported.');
         return false;
       }
       
       if (!isValidSize) {
-        setError('File size must be less than 10MB');
+        setError('File size must be less than 5MB');
         return false;
       }
       
@@ -46,7 +53,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       return;
     }
     
-    setError('');
+    if (validFiles.length === 0 && files.length > 0) {
+      // Don't update state if no valid files were selected
+      return;
+    }
+    
     setMediaFiles(prev => [...prev, ...validFiles]);
     
     // Create previews for new files
@@ -57,6 +68,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       };
       reader.readAsDataURL(file);
     });
+    
+    // Clear the file input to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const removeMedia = (index: number) => {
@@ -72,6 +88,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
     
     setLoading(true);
     setError('');
+    setUploadProgress(0);
     
     try {
       // Create post with content and media
@@ -81,7 +98,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         visibility: 'public' as const
       };
       
-      const newPost = await postsApi.createPost(postData);
+      const newPost = await postsApi.createPost(postData, (progress) => {
+        setUploadProgress(progress);
+      });
       
       // Normalize for frontend: ensure 'user' field exists
       if ((newPost as any)?.author && !(newPost as any)?.user) {
@@ -97,12 +116,36 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       setContent('');
       setMediaFiles([]);
       setMediaPreviews([]);
+      setUploadProgress(0);
+      setRetryCount(0);
       onClose();
       
     } catch (error: any) {
-      setError(error.message || 'Failed to create post. Please try again.');
+      console.error('Post creation error:', error);
+      
+      // Handle network errors
+      if (!navigator.onLine) {
+        setError('You are offline. Please check your internet connection and try again.');
+      } else if (error.message === 'Network Error' || error.message.includes('timeout')) {
+        // Network error but browser thinks we're online - could be server issue
+        if (retryCount < maxRetries) {
+          setError(`Upload failed. Retrying... (${retryCount + 1}/${maxRetries})`);
+          setRetryCount(prev => prev + 1);
+          setTimeout(() => {
+            handleSubmit();
+          }, 2000); // Wait 2 seconds before retrying
+          return;
+        } else {
+          setError('Failed to upload post after multiple attempts. Please try again later.');
+        }
+      } else {
+        // Other errors
+        setError(error.message || 'Failed to create post. Please try again.');
+      }
     } finally {
-      setLoading(false);
+      if (retryCount >= maxRetries) {
+        setLoading(false);
+      }
     }
   };
 
@@ -112,6 +155,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
       setMediaFiles([]);
       setMediaPreviews([]);
       setError('');
+      setUploadProgress(0);
+      setRetryCount(0);
       onClose();
     }
   };
@@ -138,8 +183,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
         {/* Content */}
         <div className="p-4">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg">
-              {error}
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
           
@@ -168,6 +214,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
             rows={4}
             maxLength={2000}
+            disabled={loading}
           />
           
           {/* Character count */}
@@ -187,7 +234,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
                   />
                   <button
                     onClick={() => removeMedia(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    disabled={loading}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 disabled:opacity-50"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -196,13 +244,28 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             </div>
           )}
           
+          {/* Upload progress */}
+          {loading && uploadProgress > 0 && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                Uploading: {uploadProgress}%
+              </p>
+            </div>
+          )}
+          
           {/* Action buttons */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={mediaFiles.length >= 3}
-                className={`p-2 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${mediaFiles.length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={mediaFiles.length >= 3 || loading}
+                className={`p-2 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${(mediaFiles.length >= 3 || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={mediaFiles.length >= 3 ? "Maximum 3 images allowed" : "Add images"}
               >
                 <Image className="h-5 w-5" />
@@ -217,7 +280,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
             <Button
               onClick={handleSubmit}
               loading={loading}
-              disabled={!content.trim() && mediaFiles.length === 0}
+              disabled={(!content.trim() && mediaFiles.length === 0) || loading}
               className="px-6"
             >
               Post
@@ -230,7 +293,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) =>
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*,video/*"
+          accept="image/*"
           onChange={handleFileSelect}
           className="hidden"
         />

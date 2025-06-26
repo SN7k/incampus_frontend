@@ -52,9 +52,10 @@ export const getUserPosts = async (userId: string): Promise<Post[]> => {
 /**
  * Create a new post
  * @param postData Post data to create
+ * @param onProgress Optional callback for upload progress (0-100)
  * @returns Created post
  */
-export const createPost = async (postData: CreatePostData): Promise<Post> => {
+export const createPost = async (postData: CreatePostData, onProgress?: (progress: number) => void): Promise<Post> => {
   // If there are images, use FormData
   if (postData.images && postData.images.length > 0) {
     const formData = new FormData();
@@ -73,6 +74,13 @@ export const createPost = async (postData: CreatePostData): Promise<Post> => {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 60000, // Extend timeout to 60 seconds for large uploads
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      }
     });
     
     return response.data.data.post;

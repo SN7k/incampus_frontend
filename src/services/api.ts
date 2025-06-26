@@ -8,7 +8,7 @@ const API = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 15000, // 15 second timeout
 });
 
 // Add request interceptor to include auth token
@@ -37,7 +37,19 @@ API.interceptors.response.use(
     // Handle network errors
     if (!error.response) {
       console.error('Network error:', error.message);
-      throw new Error('Network error. Please check your connection.');
+      
+      // Check if it's a timeout
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        throw new Error('Request timed out. The server might be busy. Please try again later.');
+      }
+      
+      // Check if browser is offline
+      if (!navigator.onLine) {
+        throw new Error('You are offline. Please check your internet connection and try again.');
+      }
+      
+      // Other network errors
+      throw new Error('Network error. Please check your connection or try again later.');
     }
     
     // Handle server errors
